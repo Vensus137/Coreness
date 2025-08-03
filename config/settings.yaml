@@ -1,0 +1,5 @@
+logger:
+  console_logging_enabled: true  # Управление выводом логов в консоль
+
+event_manager:
+  max_event_age_seconds: 10      # Глобальный лимит возраста события (сек) до запуска бота для обработки

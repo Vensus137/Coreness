@@ -1,0 +1,67 @@
+# Тестовые сценарии для валидатора
+validator_main:
+  actions:
+    - type: user
+      user_state: "validator_test"
+      expire: 60s
+    - type: send
+      text: |
+        ✅ <b>Тест валидации данных</b>
+        
+        Пожалуйста, введите сообщение для проверки всех правил валидации.
+        После отправки сообщения будут выполнены пять разных проверок.
+      inline:
+        - [{"🔙 Меню": "start_menu"}]
+
+validator_check:
+  actions:
+    - type: user
+      user_state: ""
+    - type: request
+      request_name: "validator_test"
+      chain: true
+    - type: validator
+      rules:
+        request_text:
+          - rule: "length_min"
+            value: 5
+      chain: true
+    - type: send
+      text: "✅ Проверка длины (min 5) пройдена!"
+      chain: completed
+    - type: validator
+      rules:
+        request_text:
+          - rule: "starts_with"
+            value: "test"
+      chain: true
+    - type: send
+      text: "✅ Проверка на начало строки ('test') пройдена!"
+      chain: completed
+    - type: validator
+      rules:
+        request_text:
+          - rule: "regex"
+            value: "^[A-Za-z0-9\\s]+$"
+      chain: true
+    - type: send
+      text: "✅ Проверка на латиницу и цифры (regex) пройдена!"
+      chain: completed
+    - type: validator
+      rules:
+        request_text:
+          - rule: "length_max"
+            value: 100
+      chain: true
+    - type: send
+      text: "✅ Проверка длины (max 100) пройдена!"
+      chain: completed
+    - type: validator
+      rules:
+        request_text:
+          - rule: "contains"
+            value: "валид"
+      chain: true
+    - type: send
+      text: "✅ Проверка на наличие подстроки 'валид' пройдена!"
+      chain: completed 

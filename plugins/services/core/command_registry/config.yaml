@@ -1,0 +1,15 @@
+name: "command_registry"
+description: "Сервис для регистрации команд бота в Telegram Bot API при запуске"
+singleton: true
+
+dependencies:
+  utilities:
+    - "logger"
+    - "plugins_manager"
+    - "bot_initializer"
+    - "settings_manager"
+
+features:
+  - "Регистрация команд в Telegram через Bot API при запуске"
+  - "Получение команд из bot.yaml через settings_manager"
+  - "Поддержка различных scope для команд" 

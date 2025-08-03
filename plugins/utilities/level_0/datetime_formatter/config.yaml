@@ -1,0 +1,160 @@
+name: "datetime_formatter"
+description: "Утилита для работы с датами и временем в проекте"
+singleton: true
+
+dependencies:
+  utilities:
+    - logger
+    - settings_manager
+
+settings:
+  timezone:
+    type: string
+    default: "Europe/Moscow"
+    description: "Временная зона по умолчанию"
+  format:
+    type: string
+    default: "iso"
+    description: "Формат по умолчанию для строк"
+
+interface:
+  methods:
+    now_utc:
+      description: "Получить текущее время в UTC (naive datetime)"
+      output:
+        type: datetime
+        description: "Текущее время UTC без timezone info"
+    now_utc_tz:
+      description: "Получить текущее время в UTC (timezone-aware datetime)"
+      output:
+        type: datetime
+        description: "Текущее время UTC с timezone info"
+    now_local:
+      description: "Получить текущее время в локальной временной зоне (naive datetime)"
+      output:
+        type: datetime
+        description: "Текущее время в локальной зоне без timezone info"
+    now_local_tz:
+      description: "Получить текущее время в локальной временной зоне (timezone-aware datetime)"
+      output:
+        type: datetime
+        description: "Текущее время в локальной зоне с timezone info"
+    to_utc:
+      description: "Преобразовать datetime в UTC (naive)"
+      input:
+        dt:
+          type: datetime
+          description: "Исходный datetime"
+      output:
+        type: datetime
+        description: "Datetime в UTC без timezone info"
+    to_utc_tz:
+      description: "Преобразовать datetime в UTC (timezone-aware)"
+      input:
+        dt:
+          type: datetime
+          description: "Исходный datetime"
+      output:
+        type: datetime
+        description: "Datetime в UTC с timezone info"
+    to_local:
+      description: "Преобразовать datetime в локальную временную зону (naive)"
+      input:
+        dt:
+          type: datetime
+          description: "Исходный datetime"
+      output:
+        type: datetime
+        description: "Datetime в локальной зоне без timezone info"
+    to_local_tz:
+      description: "Преобразовать datetime в локальную временную зону (timezone-aware)"
+      input:
+        dt:
+          type: datetime
+          description: "Исходный datetime"
+      output:
+        type: datetime
+        description: "Datetime в локальной зоне с timezone info"
+    format:
+      description: "Форматировать datetime в строку по настройкам"
+      input:
+        dt:
+          type: datetime
+          description: "Datetime для форматирования"
+      output:
+        type: string
+        description: "Отформатированная строка"
+    to_string:
+      description: "Форматировать datetime в строку по указанному формату"
+      input:
+        dt:
+          type: datetime
+          description: "Datetime для форматирования"
+        fmt:
+          type: string
+          description: "Формат (по умолчанию из настроек)"
+      output:
+        type: string
+        description: "Отформатированная строка"
+    to_iso_string:
+      description: "Преобразовать datetime в ISO строку"
+      input:
+        dt:
+          type: datetime
+          description: "Datetime для преобразования"
+      output:
+        type: string
+        description: "ISO строка"
+    to_datetime_string:
+      description: "Преобразовать datetime или ISO-строку в формат ДДДД-ММ-ГГ ЧЧ:ММ:СС"
+      input:
+        dt:
+          type: "datetime|string"
+          description: "Datetime или ISO строка"
+      output:
+        type: string
+        description: "Строка в формате ДДДД-ММ-ГГ ЧЧ:ММ:СС"
+    to_date_string:
+      description: "Преобразовать datetime или ISO-строку в формат даты ДДДД-ММ-ГГ"
+      input:
+        dt:
+          type: "datetime|string"
+          description: "Datetime или ISO строка"
+      output:
+        type: string
+        description: "Строка в формате ДДДД-ММ-ГГ"
+    to_serializable:
+      description: "Рекурсивно преобразовать все datetime в строки для JSON сериализации"
+      input:
+        obj:
+          type: "dict|list|datetime"
+          description: "Объект для преобразования"
+      output:
+        type: "dict|list|string"
+        description: "Объект с datetime преобразованными в строки"
+    parse:
+      description: "Парсить ISO строку в datetime"
+      input:
+        dt_str:
+          type: string
+          description: "ISO строка для парсинга"
+      output:
+        type: datetime
+        description: "Datetime объект"
+    parse_date_string:
+      description: "Универсальный парсер дат из строк в различных форматах"
+      input:
+        date_str:
+          type: string
+          description: "Строка с датой для парсинга"
+      output:
+        type: datetime
+        description: "Datetime объект"
+      notes: "Поддерживает форматы: ГГГГ-ММ-ДД, ГГГГ-ММ-ДД ЧЧ:ММ:СС, ISO формат"
+
+features:
+  - "Работа с временными зонами (UTC и локальная)"
+  - "Форматирование дат и времени в различные форматы"
+  - "Парсинг дат из строк в различных форматах"
+  - "Преобразование datetime в строки для JSON сериализации"
+  - "Универсальные методы для работы с датами и датами+временем" 

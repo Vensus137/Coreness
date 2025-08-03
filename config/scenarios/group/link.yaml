@@ -1,0 +1,25 @@
+link:
+  actions:
+    - type: invite_link
+      member_limit: 1
+      expire: 1m 30s
+    - type: send
+      text: |
+        Уникальная ссылка для вступления в группу:
+        {invite_link}
+      message_reply: true
+      chain: completed
+      private_answer: true
+
+link_drop:
+  actions:
+    - type: invite_link
+      cleanup: true
+      group_admin: true
+    - type: send
+      text: |
+        Удалены все ссылки для вступления в группу:
+        {invite_links_deleted|list}
+      message_reply: true
+      chain: completed
+      private_answer: true

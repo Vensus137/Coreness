@@ -1,0 +1,54 @@
+name: "user_states_repository"
+description: "Репозиторий для работы с таблицей UserStates (состояния пользователей)."
+table:
+  name: "user_states"
+  description: "Актуальные состояния пользователей"
+  fields:
+    user_id:
+      type: "INTEGER PRIMARY KEY"
+      description: "Telegram user_id пользователя"
+    state_type:
+      type: "TEXT NOT NULL"
+      description: "Тип состояния (feedback_input, ai_request, etc.)"
+    state_data:
+      type: "TEXT NULL"
+      description: "JSON с данными состояния"
+    updated_at:
+      type: "TEXT NOT NULL"
+      description: "Время последнего обновления состояния"
+    expired_at:
+      type: "TEXT NOT NULL"
+      description: "Время истечения состояния (ISO-строка, по умолчанию текущее локальное время; для бессрочных — далеко в будущем)"
+  indexes: []
+interface:
+  methods:
+    get_user_state:
+      description: "Получить состояние пользователя"
+      input:
+        user_id:
+          type: integer
+          description: "Telegram user_id"
+      output:
+        type: object
+        description: "Словарь с данными состояния или None"
+    clear_user_state:
+      description: "Очистить состояние пользователя"
+      input:
+        user_id:
+          type: integer
+          description: "Telegram user_id"
+      output:
+        type: boolean
+        description: "Успех операции"
+    update_user_state:
+      description: "Универсальное обновление или создание состояния пользователя"
+      input:
+        user_id:
+          type: integer
+          description: "ID пользователя для операции"
+        fields:
+          type: object
+          description: "Универсальный словарь полей состояния (state_type, expired_at - обязательные)"
+      output:
+        type: boolean
+        description: "Успех операции"

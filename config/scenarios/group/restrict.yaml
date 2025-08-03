@@ -1,0 +1,114 @@
+restrict_test:
+  actions:
+    - type: scenario
+      value: group.restrict.restrict_permissions_check
+    - type: scenario
+      value: group.restrict.restrict_extract_duration
+    - type: scenario
+      value: group.restrict.restrict_extract_username
+    - type: scenario
+      value: group.restrict.restrict_mute_result
+
+restrict_extract_duration:
+  actions:
+    - type: validator
+      duration: "{event_text|regex:(?:\\d+\\s*[dhms]\\s*)+}"
+      placeholder: true
+      chain: true
+    - type: validator
+      rules:
+        duration:
+          - rule: "not_empty"
+      chain: true
+    - type: "send"
+      text: "❌ Не удалось извлечь время ограничения"
+      callback_edit: false
+      chain: failed
+      chain_drop: completed
+    - type: validator
+      chain: true
+
+restrict_extract_username:
+  actions:
+    - type: validator
+      restrict_username: "{event_text|regex:@\\w+}"
+      placeholder: true
+      chain: true
+    - type: validator
+      rules:
+        restrict_username:
+          - rule: "not_empty"
+      chain: true
+    - type: validator
+      restrict_username: "{reply_username}"
+      restrict_user_id: "{reply_user_id}"
+      placeholder: true
+      chain: failed
+    - type: validator
+      rules:
+        restrict_user_id:
+          - rule: "not_empty"
+      chain: ["completed", "failed"]
+    - type: "send"
+      text: "❌ Не удалось извлечь username"
+      callback_edit: false
+      chain: failed
+      chain_drop: completed
+    - type: validator
+      chain: true
+
+restrict_mute_result:
+  actions:
+    - type: "restrict"
+      can_send_messages: false
+      chain: completed
+    - type: "send"
+      text: "🔒 Пользователь {restrict_username} ограничен на {duration_seconds} секунд"
+      callback_edit: false
+      chain: completed
+      chain_drop: completed
+    - type: "send"
+      text: "❌ Ошибка при ограничении пользователя"
+      callback_edit: false 
+      chain: true
+
+restrict_unmute_result:
+  actions:
+    - type: "restrict"
+      can_send_messages: true
+      chain: completed
+    - type: "send"
+      text: "✅ Пользователь {restrict_username} разблокирован"
+      callback_edit: false
+      chain: completed
+      chain_drop: completed
+    - type: "send"
+      text: "❌ Ошибка при разблокировке пользователя"
+      callback_edit: false 
+      chain: true
+
+restrict_unmute:
+  actions:
+    - type: scenario
+      value: group.restrict.restrict_permissions_check
+    - type: scenario
+      value: group.restrict.restrict_extract_username
+    - type: "restrict"
+      can_send_messages: true
+      chain: completed
+    - type: "send"
+      text: "✅ Пользователь {restrict_username} разблокирован"
+      callback_edit: false
+      chain: completed
+      chain_drop: completed
+    - type: "send"
+      text: "❌ Ошибка при разблокировке пользователя {restrict_username} {restrict_user_id}"
+      callback_edit: true 
+      chain: true
+
+restrict_permissions_check:
+  actions:
+    - type: validator
+      group_admin: true
+      chain: true
+      chain_drop: failed

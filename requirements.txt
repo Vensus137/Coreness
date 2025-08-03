@@ -1,0 +1,9 @@
+aiogram==3.4.1
+PyYAML==6.0.1
+SQLAlchemy==2.0.25
+aiosqlite==0.19.0
+python-dotenv==1.0.0
+pytz==2024.1 
+unidecode 
+emoji 
+requests>=2.0.0 

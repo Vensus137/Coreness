@@ -1,0 +1,89 @@
+request_check_main:
+  actions:
+    - type: user
+      user_state: ""
+    - type: send
+      text: |
+        📝 <b>Проверка запросов</b>
+        
+        <b>Выберите действие:</b>
+        ————————————————
+        • ⏳ <b>Получить запросы за 7 дней</b>
+        • 📅 <b>Запросы с 2025-07-26</b>
+        • 📋 <b>Получить все запросы</b>
+        • 🔢 <b>Последние 10 запросов</b>
+        • 🔍 <b>Детальная информация по запросу</b>
+        
+        <i>⬇️ Используйте кнопки ниже!</i>
+      inline:
+        - ["⏳ 7 дней", "📅 С даты"]
+        - ["📋 Все", "🔢 Последние 10"]
+        - ["🔍 Детали", {"🔙 Назад": "start_menu"}]
+
+request_check_last_7_days:
+  actions:
+    - type: request_management
+      operation: list
+      unexpired: 7d
+    - type: send
+      text: ""
+      inline:
+        - [{"🔙 Назад": "request_check_main"}]
+      chain: completed
+
+request_check_from_date:
+  actions:
+    - type: request_management
+      operation: list
+      from_date: "2025-07-26"
+    - type: send
+      text: ""
+      inline:
+        - [{"🔙 Назад": "request_check_main"}]
+      chain: completed
+
+request_check_all:
+  actions:
+    - type: request_management
+      operation: list
+    - type: send
+      text: ""
+      inline:
+        - [{"🔙 Назад": "request_check_main"}]
+      chain: completed
+
+request_check_last_10:
+  actions:
+    - type: request_management
+      operation: list
+      request_name: validator_test
+      limit: 10
+    - type: send
+      text: ""
+      inline:
+        - [{"🔙 Назад": "request_check_main"}]
+      chain: completed
+
+request_check_details_state:
+  actions:
+    - type: user
+      user_state: "request_details"
+    - type: send
+      text: |
+        🔍 <b>Детальная информация по запросу</b>
+        
+        <b>Пожалуйста, введите ID запроса (только число):</b>
+        
+        <i>❌ Для отмены нажмите кнопку ниже.</i>
+      inline:
+        - [{"🔙 Назад": "request_check_main"}]
+
+request_check_details_get:
+  actions:
+    - type: request_management
+      operation: details    
+    - type: send
+      text: ""
+      inline:
+        - [{"🔙 Назад": "request_check_main"}]
+      chain: completed
