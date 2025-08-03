@@ -1,0 +1,29 @@
+text:
+  exact:
+    "/help": "command.help"
+    "/link": "group.link.link"
+  state: {}
+  regex: {}
+  starts_with:
+    "/linkdrop": "group.link.link_drop"
+    "/link": "group.link.link"
+    "/private_test": "group.private_test.check_private"
+    "/mute": "group.restrict.restrict_test"
+    "/unmute": "group.restrict.restrict_unmute"
+  contains: {}
+    
+callback:
+  exact: {}
+  state: {}
+  contains: {}
+
+new_member:
+  group:                # Группа (exact tittle)
+    "Group": "group.welcome.welcome_group_main"
+  link:                 # Ссылка (contains invite_link)
+    "https://t.me/+aCdOwvjT5jYyNWUy": "group.welcome.welcome_from_link"
+  creator:              # Кто пригласил (username или @username)
+    "@username": "group.welcome.welcome_from_creator"
+  initiator:            # Добавил (username или @username)
+    "username": "group.welcome.welcome_added_by_initiator"
+  default: "group.welcome.welcome_default"

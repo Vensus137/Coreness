@@ -1,0 +1,88 @@
+name: "data_preparer"
+description: "Подготовщик данных для работы с SQLAlchemy моделями"
+
+dependencies:
+  utilities:
+    - "logger"
+    - "settings_manager"
+    - "datetime_formatter"
+
+settings:
+  auto_detect_json:
+    type: boolean
+    default: true
+    description: "Автоматически определять JSON поля"
+  strict_json_validation:
+    type: boolean
+    default: false
+    description: "Строгая валидация JSON (возвращать ошибку при невалидном JSON)"
+  strict_mode:
+    type: boolean
+    default: false
+    description: "Строгий режим - возвращать ошибку при невалидных данных"
+
+interface:
+  methods:
+    prepare_fields:
+      description: "Подготавливает поля для работы с SQLAlchemy моделью"
+      input:
+        model:
+          type: object
+          description: "SQLAlchemy модель (DeclarativeMeta)"
+        fields:
+          type: dict
+          description: "Словарь с полями для подготовки"
+        json_fields:
+          type: list
+          optional: true
+          description: "Список полей для JSON сериализации"
+      output:
+        type: dict
+        description: "Подготовленный словарь полей"
+    prepare_for_insert:
+      description: "Подготавливает поля для операции INSERT"
+      input:
+        model:
+          type: object
+          description: "SQLAlchemy модель (DeclarativeMeta)"
+        fields:
+          type: dict
+          description: "Словарь с полями для подготовки"
+        json_fields:
+          type: list
+          optional: true
+          description: "Список полей для JSON сериализации"
+        auto_timestamp_fields:
+          type: dict
+          optional: true
+          description: "Автоматически добавляемые timestamp поля"
+      output:
+        type: dict
+        description: "Подготовленный словарь полей для INSERT"
+    prepare_for_update:
+      description: "Подготавливает поля для операции UPDATE"
+      input:
+        model:
+          type: object
+          description: "SQLAlchemy модель (DeclarativeMeta)"
+        fields:
+          type: dict
+          description: "Словарь с полями для подготовки"
+        json_fields:
+          type: list
+          optional: true
+          description: "Список полей для JSON сериализации"
+        auto_timestamp_fields:
+          type: dict
+          optional: true
+          description: "Автоматически добавляемые timestamp поля"
+      output:
+        type: dict
+        description: "Подготовленный словарь полей для UPDATE"
+
+features:
+  - "Автоматическая конвертация типов данных"
+  - "Валидация JSON полей"
+  - "Поддержка обязательных полей"
+  - "Автоматическое заполнение timestamp полей"
+  - "Фильтрация несуществующих полей" 

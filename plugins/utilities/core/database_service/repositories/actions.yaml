@@ -1,0 +1,162 @@
+name: "actions_repository"
+description: "Репозиторий для работы с таблицей Actions (очередь действий)."
+table:
+  name: "actions"
+  description: "Очередь действий для обработки, поддержка последовательных сценариев"
+  fields:
+    id:
+      type: "INTEGER PRIMARY KEY AUTOINCREMENT"
+      description: "Первичный ключ"
+    user_id:
+      type: "INTEGER"
+      description: "ID пользователя"
+    chat_id:
+      type: "INTEGER"
+      description: "ID чата"
+    action_type:
+      type: "TEXT NOT NULL"
+      description: "Тип действия (send_message, set_state, etc.)"
+    action_data:
+      type: "TEXT NOT NULL"
+      description: "JSON с данными действия"
+    prev_data:
+      type: "TEXT NULL"
+      description: "JSON с информацией с предыдущих действий по цепочке"
+    response_data:
+      type: "TEXT NULL"
+      description: "JSON с результатом выполнения действия (response, ссылка, данные и т.д.)"
+    status:
+      type: "TEXT DEFAULT 'pending'"
+      description: "Статус действия (pending, hold, completed, failed)"
+    prev_action_id:
+      type: "INTEGER NULL"
+      description: "ID предыдущего действия в цепочке (NULL, если не цепочное)"
+    unlock_status:
+      type: "TEXT NULL"
+      description: "Ожидаемый статус предыдущего действия для разблокировки (например, 'completed', 'failed', 'any', список через запятую)"
+    chain_drop_status:
+      type: "TEXT NULL"
+      description: "Статусы для дропа цепочки (JSON массив, например ['failed', 'error']). Если текущий статус действия входит в этот список - вся цепочка прерывается"
+    is_unlocker_checked:
+      type: "BOOLEAN DEFAULT false"
+      description: "Флаг проверки анлокером (false - не проверено, true - проверено)"
+    created_at:
+      type: "TEXT NOT NULL"
+      description: "Время создания"
+    processed_at:
+      type: "TEXT NULL"
+      description: "Время обработки"
+    indexes:
+     - name: "idx_actions_status_created"
+       description: "Для поиска pending действий"
+     - name: "idx_actions_prev_action_id"
+       description: "Для универсального поиска действий с prev_action_id"
+     - name: "idx_actions_created_at"
+       description: "Для очистки старых действий по времени"
+     - name: "idx_actions_unlocker_check"
+       description: "Для поиска действий, требующих проверки анлокером (is_unlocker_checked, status, created_at)"
+interface:
+  methods:
+    add_action:
+      description: "Добавить новое действие в очередь."
+      input:
+        fields:
+          type: object
+          description: "Универсальный словарь полей для создания действия"
+      output:
+        type: integer
+        description: "ID созданного действия"
+    get_action_by_id:
+      description: "Получает действие по ID"
+      input:
+        action_id:
+          type: integer
+          description: "ID действия"
+      output:
+        type: object
+        description: "Словарь с данными действия или None"
+    update_action:
+      description: "Универсальное обновление полей действия по action_id."
+      input:
+        action_id:
+          type: integer
+          description: "ID действия"
+        fields:
+          type: object
+          description: "Универсальный словарь полей для обновления"
+      output:
+        type: boolean
+        description: "Успех операции"
+    get_actions_by_prev_action_id:
+      description: "Получает действия с конкретным prev_action_id, отфильтрованные по статусам."
+      input:
+        prev_action_id:
+          type: integer
+          description: "Конкретный prev_action_id для поиска"
+        statuses:
+          type: [string, array]
+          items: string
+          optional: true
+          description: "Статус или список статусов для фильтрации"
+        limit:
+          type: integer
+          optional: true
+          description: "Максимальное количество действий"
+      output:
+        type: list
+        description: "Список словарей с данными действий"
+    get_actions_by_prev_action_id_parsed:
+      description: "Получает действия с конкретным prev_action_id, отфильтрованные по статусам, с автоматическим парсингом."
+      input:
+        prev_action_id:
+          type: integer
+          description: "Конкретный prev_action_id для поиска"
+        statuses:
+          type: [string, array]
+          items: string
+          optional: true
+          description: "Статус или список статусов для фильтрации"
+        limit:
+          type: integer
+          optional: true
+          description: "Максимальное количество действий"
+      output:
+        type: list
+        description: "Список словарей с распарсенными данными действий"
+    get_action_by_id_parsed:
+      description: "Получает действие по ID с автоматическим парсингом и обработкой плейсхолдеров."
+      input:
+        action_id:
+          type: integer
+          description: "ID действия"
+      output:
+        type: object
+        description: "Словарь с распарсенными данными действия (с обработкой плейсхолдеров если placeholder: true) или None"
+    cleanup_old_actions:
+      description: "Удалить старые действия старше cutoff_datetime."
+      input:
+        cutoff_datetime:
+          type: string
+          description: "Граница по времени (ISO-строка)"
+        batch_size:
+          type: integer
+          optional: true
+          description: "Максимальное количество удаляемых действий за вызов"
+      output:
+        type: integer
+        description: "Количество удалённых действий"
+    get_actions_for_unlocker:
+      description: "Получает действия для проверки анлокером (не проверенные, с указанными статусами)."
+      input:
+        statuses:
+          type: [string, array]
+          items: string
+          optional: true
+          description: "Статус или список статусов для фильтрации (по умолчанию ['completed', 'failed', 'drop'])"
+        limit:
+          type: integer
+          optional: true
+          description: "Максимальное количество действий"
+      output:
+        type: list
+        description: "Список словарей с данными действий для проверки анлокером"

@@ -1,0 +1,32 @@
+# Меню для тестирования различных функций
+
+test_messages:
+  actions:
+    - type: scenario
+      value: "test_messages.messages_main"
+
+test_roles:
+  actions:
+    - type: scenario
+      value: "test_roles.roles_main"
+
+test_requests:
+  actions:
+    - type: scenario
+      value: "test_request.request_main"
+
+test_request_check:
+  actions:
+    - type: scenario
+      value: "request_check.request_check_main"
+
+test_chain:
+  actions:
+    - type: scenario
+      value: "test_chain.chain_main"
+  
+test_validation:
+  actions:
+    - type: scenario
+      value: "test_validation.validator_main"
+

@@ -1,0 +1,71 @@
+name: "invite_links_repository"
+description: "Репозиторий для работы с таблицей InviteLinks (пригласительные ссылки)."
+table:
+  name: "invite_links"
+  description: "Хранение информации о пригласительных ссылках Telegram для маппинга и истории"
+  fields:
+    id:
+      type: "INTEGER PRIMARY KEY AUTOINCREMENT"
+      description: "Первичный ключ"
+    invite_link:
+      type: "TEXT NOT NULL"
+      description: "URL пригласительной ссылки (https://t.me/...)"
+    chat_id:
+      type: "INTEGER NOT NULL"
+      description: "ID группы, где создана ссылка"
+    created_at:
+      type: "TEXT NOT NULL"
+      description: "Время создания ссылки"
+  indexes:
+    - name: "idx_invite_links_link"
+      description: "Для быстрого поиска по URL ссылки"
+    - name: "idx_invite_links_chat"
+      description: "Для поиска всех ссылок группы"
+interface:
+  methods:
+    add_invite_link:
+      description: "Добавить новую пригласительную ссылку."
+      input:
+        fields:
+          type: object
+          description: "Универсальный словарь полей для создания ссылки (invite_link, chat_id)"
+      output:
+        type: integer
+        description: "ID созданной ссылки"
+    get_invite_link_by_url:
+      description: "Получает ссылку по URL"
+      input:
+        invite_link:
+          type: string
+          description: "URL пригласительной ссылки"
+      output:
+        type: object
+        description: "Словарь с данными ссылки или None"
+    get_invite_links_by_chat:
+      description: "Получает все ссылки для чата"
+      input:
+        chat_id:
+          type: integer
+          description: "ID группы"
+      output:
+        type: list
+        description: "Список словарей с данными ссылок"
+    delete_invite_link:
+      description: "Удаляет ссылку из базы данных"
+      input:
+        invite_link:
+          type: string
+          description: "URL пригласительной ссылки"
+      output:
+        type: boolean
+        description: "Успех операции"
+    get_invite_links_by_urls:
+      description: "Получает ссылки по списку URL"
+      input:
+        invite_links:
+          type: array
+          items: string
+          description: "Список URL пригласительных ссылок"
+      output:
+        type: list
+        description: "Список словарей с данными ссылок" 

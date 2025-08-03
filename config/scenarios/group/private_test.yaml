@@ -1,0 +1,14 @@
+check_private:
+  actions:
+    - type: send
+      text: "🔍 Сообщение 1: отправляется в группу (обычное)"
+      callback_edit: false
+    - type: send
+      text: "🔒 Сообщение 2: отправляется в личные сообщения (private_answer: true)"
+      callback_edit: false
+      private_answer: true
+      chain: true
+    - type: send
+      text: "🔍 Сообщение 3: снова отправляется в группу (обычное)"
+      callback_edit: false
+      chain: true

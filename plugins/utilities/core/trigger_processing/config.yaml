@@ -1,0 +1,41 @@
+name: "trigger_processing"
+description: "Сервис для обработки триггеров: поиск сценария по событию (text/callback) или по inline-кнопке. Включает проверку состояний пользователей с ленивой очисткой. Используется для роутинга событий и генерации документации."
+
+dependencies:
+  utilities:
+    - "logger"
+    - "settings_manager"
+    - "scenarios_manager"
+    - "button_mapper"
+    - "database_service"
+    - "datetime_formatter"
+
+interface:
+  methods:
+    find_scenario_by_event:
+      description: "Поиск сценария по событию (text/callback)."
+      input:
+        event:
+          type: dict
+          description: "Событие с полями source_type, text/message_text или callback_data."
+      output:
+        type: string | null
+        description: "Имя найденного сценария или null, если не найден."
+    find_scenario_by_button:
+      description: "Поиск сценария по inline-кнопке. Поддерживает оба формата: строка (текст кнопки) или dict {\"Текст\": \"сценарий\"} для явного перехода."
+      input:
+        button_text:
+          type: string | dict
+          description: |
+            Текст кнопки (строка) или словарь {"Текст": "сценарий"}:
+              - Строка — поиск сценария по triggers.yaml (старый формат)
+              - Dict — явный переход к сценарию (новый формат)
+      output:
+        type: string | null
+        description: "Имя найденного сценария или null, если не найден."
+features:
+  - "Единая логика поиска сценария по триггеру для всех сервисов проекта"
+  - "Используется для роутинга событий и автодокументации" 
+  - "Поддержка явного перехода к сценарию через callback_data вида :scenario_name или через inline-кнопку-словарь {\"Текст\": \"сценарий\"}"
+  - "Проверка состояний пользователей с ленивой очисткой устаревших состояний"
+  - "Иерархия приоритетов: exact → state → contains для text событий" 

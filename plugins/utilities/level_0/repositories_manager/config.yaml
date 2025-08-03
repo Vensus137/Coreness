@@ -1,0 +1,55 @@
+name: "repositories_manager"
+description: "Менеджер репозиториев для работы с базой данных"
+singleton: true
+dependencies:
+  utilities:
+    - "logger"
+settings:
+  repositories_dir:
+    type: string
+    default: "repositories"
+    description: "Название папки с репозиториями (утилита найдет её автоматически в проекте)"
+interface:
+  methods:
+    get_repository_info:
+      description: "Получить информацию о репозитории по имени"
+      input:
+        name:
+          type: string
+          description: "Имя репозитория"
+      output:
+        type: dict | null
+        description: "Конфигурация репозитория или None"
+    get_all_repositories_info:
+      description: "Получить информацию о всех репозиториях"
+      input: {}
+      output:
+        type: dict
+        description: "Словарь {имя_репозитория: конфигурация_репозитория}"
+    get_table_info:
+      description: "Получить информацию о таблице репозитория"
+      input:
+        name:
+          type: string
+          description: "Имя репозитория"
+      output:
+        type: dict | null
+        description: "Информация о таблице или None"
+    get_repositories_directory:
+      description: "Получить путь к найденной папке репозиториев"
+      input: {}
+      output:
+        type: string | null
+        description: "Путь к папке репозиториев или None"
+    reload:
+      description: "Перезагрузить информацию о репозиториях"
+      input: {}
+      output:
+        type: void
+        description: "Нет возвращаемого значения"
+features:
+  - "Умный поиск папки репозиториев в проекте (по названию папки)"
+  - "Автоматическое сканирование и загрузка репозиториев"
+  - "Сбор информации о конфигурациях репозиториев для документации"
+  - "Кеширование информации о репозиториях для быстрого доступа"
+  - "Утилита для создания документации по репозиториям" 
