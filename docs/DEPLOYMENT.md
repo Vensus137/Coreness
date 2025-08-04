@@ -19,8 +19,7 @@
 
 3. **Выберите версию:**
    - **Base** - базовая версия
-   - **Pro** - профессиональная версия  
-   - **Max** - максимальная версия
+   - **Pro** - расширенная версия  
 
 4. **Настройте обновление:**
    - **Обновить заводские конфиги?** → **Y** (рекомендуется для первой установки)
@@ -47,7 +46,6 @@ python tools/core_updater.py
 # GitHub токены для обновления (опционально)
 UPDATE_TOKEN_BASE=your_base_update_token_here
 UPDATE_TOKEN_PRO=your_pro_update_token_here  
-UPDATE_TOKEN_MAX=your_max_update_token_here
 ```
 
 ### Ручной ввод
