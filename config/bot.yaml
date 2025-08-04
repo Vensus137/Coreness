@@ -1,7 +1,7 @@
 # Список команд, которые будут зарегистрированы в Telegram Bot API
 commands:
   - command: "start"
-    description: "Запустить бота"
+    description: "Основное меню"
     scope: all_private_chats
   - command: "help"
     description: "Справка"

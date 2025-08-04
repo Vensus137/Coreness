@@ -26,13 +26,6 @@ VERSIONS = {
         'repo_url': "https://github.com/Vensus137/coreness-pro-test",
         'branch': "main",
         'update_token_env': "UPDATE_TOKEN_PRO"
-    },
-    'max': {
-        'name': "Max",
-        'description': "Максимальная версия", 
-        'repo_url': "https://github.com/Vensus137/coreness-max-test",
-        'branch': "main",
-        'update_token_env': "UPDATE_TOKEN_MAX"
     }
 }
 
