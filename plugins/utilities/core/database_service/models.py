@@ -81,3 +81,15 @@ class InviteLink(Base):
         Index('idx_invite_links_link', 'invite_link'),
         Index('idx_invite_links_chat', 'chat_id'),
     )
+
+class Cache(Base):
+    __tablename__ = 'cache'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    hash_key = Column(String, nullable=False, unique=True)  # уникальный хеш
+    hash_metadata = Column(Text, nullable=True)             # JSON с метаданными
+    hash_file_path = Column(String, nullable=True)          # путь к файлу (может быть NULL)
+    created_at = Column(DateTime, nullable=False, default=dtf_now_local)
+    __table_args__ = (
+        Index('idx_cache_hash_key', 'hash_key', unique=True),
+        Index('idx_cache_created_at', 'created_at'),
+    )

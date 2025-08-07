@@ -30,3 +30,8 @@ test_validation:
     - type: scenario
       value: "test_validation.validator_main"
 
+test_speech:
+  actions:
+    - type: scenario
+      value: "speech_test_main"
+

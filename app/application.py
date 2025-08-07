@@ -5,8 +5,8 @@ from typing import List
 
 from plugins.utilities.foundation.logger.logger import Logger
 # Прямые импорты
-from plugins.utilities.foundation.plugins_manager.plugins_manager import \
-    PluginsManager
+from plugins.utilities.foundation.plugins_manager.plugins_manager import PluginsManager
+from plugins.utilities.foundation.settings_manager.settings_manager import SettingsManager
 
 from .di_container import DIContainer
 
@@ -19,6 +19,7 @@ class Application:
         self.logger = self.logger_instance.get_logger("application")
         self.is_running = False
         self.plugins_manager = None
+        self.settings_manager = None
         self.di_container = None
         self._background_tasks: List[asyncio.Task] = []
         self._shutdown_event = asyncio.Event()
@@ -46,15 +47,22 @@ class Application:
             self.logger.info("Инициализация plugins_manager...")
             self.plugins_manager = PluginsManager(logger=self.logger_instance.get_logger("plugins_manager"))
             
-            # 2. Создаем DI-контейнер с передачей plugins_manager
+            # 2. Создаем settings_manager
+            self.logger.info("Инициализация settings_manager...")
+            self.settings_manager = SettingsManager(
+                logger=self.logger_instance.get_logger("settings_manager"),
+                plugins_manager=self.plugins_manager
+            )
+            
+            # 3. Создаем DI-контейнер с передачей plugins_manager
             self.logger.info("Создание DI-контейнера...")
             self.di_container = DIContainer(logger=self.logger_instance.get_logger("DI container"), plugins_manager=self.plugins_manager)
             
-            # 3. Инициализируем все плагины автоматически
+            # 4. Инициализируем все плагины автоматически
             self.logger.info("Инициализация всех плагинов...")
             self.di_container.initialize_all_plugins()
             
-            # 4. Запускаем все сервисы в фоновых задачах
+            # 5. Запускаем все сервисы в фоновых задачах
             self.logger.info("Запуск всех сервисов...")
             await self._start_all_services()
             
@@ -77,6 +85,14 @@ class Application:
         
         for service_name, service_instance in services.items():
             try:
+                # Проверяем, включен ли сервис через settings_manager
+                service_settings = self.settings_manager.get_plugin_settings(service_name)
+                enabled = service_settings.get('enabled', True)  # По умолчанию включен
+                
+                if not enabled:
+                    self.logger.info(f"Сервис {service_name} отключен (enabled: false), пропускаем запуск")
+                    continue
+                
                 # Проверяем, есть ли у сервиса метод run
                 if hasattr(service_instance, 'run'):
                     self.logger.info(f"Запуск сервиса: {service_name}")

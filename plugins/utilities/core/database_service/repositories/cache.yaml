@@ -1,0 +1,101 @@
+name: "cache_repository"
+description: "Универсальный репозиторий для работы с таблицей Cache (кэш любых данных)."
+table:
+  name: "cache"
+  description: "Универсальный кэш для любых типов данных"
+  fields:
+    id:
+      type: "INTEGER PRIMARY KEY AUTOINCREMENT"
+      description: "Первичный ключ"
+    hash_key:
+      type: "TEXT NOT NULL UNIQUE"
+      description: "Уникальный хеш для идентификации записи"
+    hash_metadata:
+      type: "TEXT"
+      description: "JSON с метаданными записи"
+    hash_file_path:
+      type: "TEXT"
+      description: "Путь к файлу (может быть NULL)"
+    created_at:
+      type: "TEXT NOT NULL"
+      description: "Время создания записи"
+  indexes:
+    - name: "idx_cache_hash_key"
+      description: "Уникальный индекс для быстрого поиска по хешу"
+    - name: "idx_cache_created_at"
+      description: "Для очистки старых записей по времени"
+interface:
+  methods:
+    get_cache:
+      description: "Получить данные из кэша"
+      input:
+        hash_key:
+          type: string
+          description: "Хеш записи"
+      output:
+        type: object
+        description: "Словарь с данными кэша или None"
+    add_cache:
+      description: "Добавить новую запись в кэш"
+      input:
+        hash_key:
+          type: string
+          description: "Хеш записи"
+        file_path:
+          type: string
+          description: "Путь к файлу (опционально)"
+        metadata:
+          type: object
+          description: "Метаданные записи (опционально)"
+      output:
+        type: boolean
+        description: "Успешность операции"
+    update_cache:
+      description: "Обновить существующую запись в кэше"
+      input:
+        hash_key:
+          type: string
+          description: "Хеш записи"
+        fields:
+          type: object
+          description: "Поля для обновления"
+      output:
+        type: boolean
+        description: "Успешность операции"
+    add_or_update_cache:
+      description: "Универсальный метод для добавления или обновления кэша"
+      input:
+        hash_key:
+          type: string
+          description: "Хеш записи"
+        fields:
+          type: object
+          description: "Поля для создания/обновления записи"
+      output:
+        type: boolean
+        description: "Успешность операции"
+    delete_cache:
+      description: "Удалить запись из кэша"
+      input:
+        hash_key:
+          type: string
+          description: "Хеш записи"
+      output:
+        type: boolean
+        description: "Успешность операции"
+    has_cache:
+      description: "Проверить наличие записи в кэше"
+      input:
+        hash_key:
+          type: string
+          description: "Хеш записи"
+      output:
+        type: boolean
+        description: "Наличие записи в кэше"
+features:
+  - "Универсальное кэширование любых типов данных"
+  - "Поддержка файлов и метаданных"
+  - "Поддержка метаданных в JSON формате"
+  - "Индексы для быстрого поиска"
+  - "Транзакционность операций"
+  - "Автоматическое управление временными метками" 

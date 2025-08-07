@@ -16,18 +16,28 @@ VERSIONS = {
     'base': {
         'name': "Base",
         'description': "Базовая версия",
-        'repo_url': "https://github.com/Vensus137/coreness-base-test",
+        'repo_url': "https://github.com/Vensus137/coreness",
         'branch': "main",
         'update_token_env': "UPDATE_TOKEN_BASE"
     },
     'pro': {
         'name': "Pro", 
         'description': "Профессиональная версия",
-        'repo_url': "https://github.com/Vensus137/coreness-pro-test",
+        'repo_url': "https://github.com/Vensus137/coreness-pro",
         'branch': "main",
         'update_token_env': "UPDATE_TOKEN_PRO"
     }
 }
+
+# Папки и файлы для чистой синхронизации (удаляются и пересоздаются)
+CLEAN_SYNC_ITEMS = [
+    "plugins",              # Полная синхронизация всех плагинов
+    "tools",                # Полная синхронизация инструментов
+    "app",                  # Полная синхронизация приложения
+    # Можно добавить конкретные файлы для удаления
+    # "old_config.yaml",   # Удалить устаревший конфиг
+    # "deprecated.py",     # Удалить устаревший скрипт
+]
 
 # Заводские конфиги (обновляются отдельно по запросу)
 FACTORY_CONFIGS = [
@@ -54,6 +64,7 @@ def load_config():
     """Возвращает конфигурацию из глобальных переменных"""
     return {
         'versions': VERSIONS,
+        'clean_sync_items': CLEAN_SYNC_ITEMS,
         'factory_configs': FACTORY_CONFIGS,
         'exclude_paths': EXCLUDE_PATHS,
         'backup': BACKUP_CONFIG
@@ -134,6 +145,10 @@ def is_excluded(path, config):
         if path == excl or path.startswith(excl + os.sep):
             return True
     return False
+
+def is_clean_sync_item(path, config):
+    """Проверяет, нужно ли полностью синхронизировать элемент"""
+    return path in config['clean_sync_items']
 
 def remove_old(path):
     """Удаляет старый файл или папку"""
@@ -380,6 +395,10 @@ def main():
     print(f"  • Исключений: {', '.join(config['exclude_paths'])}")
     if not update_factory_configs:
         print(f"  • Заводских конфигов: {', '.join(config['factory_configs'])}")
+    
+    print(f"\n🗑 Чистая синхронизация (полное удаление и пересоздание):")
+    print(f"  • {', '.join(config['clean_sync_items'])}")
+    print(f"  • Остальные файлы обновляются без удаления устаревших")
 
     # Создаем резервную копию
     base_backup_dir = os.path.join(project_root, config['backup']['dir_name'])
@@ -539,9 +558,15 @@ def main():
                 abs_old = os.path.join(project_root, item)
                 abs_new = os.path.join(repo_root, item)
                 
-                print(f"♻️ Обновляю: {item}")
-                remove_old(abs_old)
-                copy_new(abs_new, abs_old)
+                # Проверяем тип синхронизации
+                if is_clean_sync_item(item, config):
+                    print(f"🗑 Чистая синхронизация: {item}")
+                    remove_old(abs_old)
+                    copy_new(abs_new, abs_old)
+                else:
+                    print(f"♻️ Обновляю: {item}")
+                    remove_old(abs_old)
+                    copy_new(abs_new, abs_old)
 
         # Устанавливаем зависимости
         install_dependencies()

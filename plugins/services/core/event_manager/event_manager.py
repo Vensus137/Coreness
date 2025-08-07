@@ -142,18 +142,32 @@ class EventManager:
 
         # Новое: если это reply-сообщение, добавляем текст исходного сообщения и данные автора
         if message.reply_to_message:
+            event['reply_message_id'] = message.reply_to_message.message_id
             event['reply_message_text'] = message.reply_to_message.text or message.reply_to_message.caption
             # Добавляем данные автора исходного сообщения (безопасное обращение)
             event['reply_user_id'] = message.reply_to_message.from_user.id if message.reply_to_message.from_user else None
             event['reply_username'] = message.reply_to_message.from_user.username if message.reply_to_message.from_user else None
             event['reply_first_name'] = message.reply_to_message.from_user.first_name if message.reply_to_message.from_user else None
             event['reply_last_name'] = getattr(message.reply_to_message.from_user, 'last_name', None) if message.reply_to_message.from_user else None
+            # Добавляем вложения исходного сообщения
+            event['reply_attachments'] = self._extract_attachments(message.reply_to_message)
 
         # Извлекаем вложения
+        event['attachments'] = self._extract_attachments(message)
+
+        return event
+
+    def _extract_attachments(self, message: types.Message) -> list:
+        """
+        Извлекает вложения из сообщения Telegram
+        Возвращает массив вложений с их типами и file_id
+        """
+        attachments = []
+        
         if message.photo:
             # Добавляем все размеры фото
             for photo in message.photo:
-                event['attachments'].append({
+                attachments.append({
                     'type': 'photo',
                     'file_id': photo.file_id,
                 })
@@ -172,7 +186,7 @@ class EventManager:
             else:
                 attachment_type = 'document'
 
-            event['attachments'].append({
+            attachments.append({
                 'type': attachment_type,
                 'file_id': message.document.file_id,
                 'mime_type': mime_type,
@@ -180,36 +194,36 @@ class EventManager:
             })
 
         if message.video:
-            event['attachments'].append({
+            attachments.append({
                 'type': 'video',
                 'file_id': message.video.file_id
             })
 
         if message.audio:
-            event['attachments'].append({
+            attachments.append({
                 'type': 'audio',
                 'file_id': message.audio.file_id
             })
 
         if message.voice:
-            event['attachments'].append({
+            attachments.append({
                 'type': 'voice',
                 'file_id': message.voice.file_id
             })
 
         if message.sticker:
-            event['attachments'].append({
+            attachments.append({
                 'type': 'sticker',
                 'file_id': message.sticker.file_id
             })
 
         if message.animation:
-            event['attachments'].append({
+            attachments.append({
                 'type': 'animation',
                 'file_id': message.animation.file_id
             })
-
-        return event
+            
+        return attachments
 
     def _create_new_member_event(self, message: types.Message) -> dict:
         """

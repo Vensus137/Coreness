@@ -48,6 +48,42 @@ interface:
       output:
         type: dict
         description: "Все настройки из settings.yaml"
+    get_project_root:
+      description: "Получить корень проекта"
+      input: {}
+      output:
+        type: Path
+        description: "Путь к корню проекта"
+    get_global_settings:
+      description: "Получить глобальные настройки из секции 'global'"
+      input: {}
+      output:
+        type: dict
+        description: "Глобальные настройки"
+    get_file_base_path:
+      description: "Получить базовый путь для файлов из глобальных настроек"
+      input: {}
+      output:
+        type: string
+        description: "Базовый путь для файлов (например, 'resources')"
+    resolve_file_path:
+      description: "Разрешить относительный путь файла относительно базового пути"
+      input:
+        relative_path:
+          type: string
+          description: "Относительный путь (например, 'speech/tts/file.mp3')"
+      output:
+        type: string
+        description: "Полный путь относительно корня проекта"
+    get_relative_path:
+      description: "Получить относительный путь файла от базового пути"
+      input:
+        full_path:
+          type: string
+          description: "Полный путь к файлу"
+      output:
+        type: string
+        description: "Относительный путь относительно базового пути"
     reload:
       description: "Перезагрузить настройки бота и глобальные параметры"
       input: {}

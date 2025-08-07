@@ -29,7 +29,7 @@ interface:
       input:
         repo_names:
           type: list
-          description: "Названия нужных репозиториев ('actions', 'users', 'user_states', 'requests', 'invite_links')"
+          description: "Названия нужных репозиториев"
       output:
         type: tuple
         description: "(session, repos) - сессия БД и словарь репозиториев"
@@ -44,4 +44,5 @@ features:
   - "Одна точка входа для работы с БД во всех слоях проекта"
   - "Легко расширяется новыми репозиториями"
   - "Контекстный менеджер для автоматического закрытия сессий"
-  - "Поддержка SQLite, PostgreSQL и других БД" 
+  - "Поддержка SQLite, PostgreSQL и других БД"
+  - "Автоматическое создание директории для базы данных" 
