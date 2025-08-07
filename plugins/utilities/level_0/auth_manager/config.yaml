@@ -1,0 +1,80 @@
+name: "auth_manager"
+description: "Универсальная утилита для управления авторизацией и токенами OAuth2"
+singleton: true
+dependencies:
+  utilities:
+    - "logger"
+    - "settings_manager"
+
+settings:
+  default_token_lifetime:
+    type: integer
+    default: 1800
+    description: "Время жизни токена по умолчанию в секундах (30 минут)"
+  token_refresh_threshold:
+    type: integer
+    default: 300
+    description: "За сколько секунд до истечения обновлять токен"
+  cache_cleanup_interval:
+    type: integer
+    default: 3600
+    description: "Интервал очистки кэша токенов в секундах"
+  services:
+    salutespeech:
+      auth_type: "oauth2"
+      token_url: "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+      scope: "SALUTE_SPEECH_PERS"
+      auth_key: "${SALUTESPEECH_AUTH_KEY}"
+      token_lifetime: 1800
+      refresh_threshold: 300
+      headers:
+        Content-Type: "application/x-www-form-urlencoded"
+        Accept: "application/json"
+
+interface:
+  methods:
+    get_token:
+      description: "Получить валидный токен для сервиса (с кэшированием)"
+      input:
+        service_name:
+          type: string
+          description: "Название сервиса (например, salutespeech)"
+      output:
+        type: string
+        description: "Access token для использования в API"
+    refresh_token:
+      description: "Принудительно обновить токен для сервиса"
+      input:
+        service_name:
+          type: string
+          description: "Название сервиса"
+      output:
+        type: string
+        description: "Новый access token"
+    clear_cache:
+      description: "Очистить кэш токенов для сервиса или всех сервисов"
+      input:
+        service_name:
+          type: string
+          description: "Название сервиса (если не указано - очистить все)"
+      output:
+        type: boolean
+        description: "True если кэш очищен успешно"
+    get_token_info:
+      description: "Получить информацию о токене (время жизни, сервис)"
+      input:
+        service_name:
+          type: string
+          description: "Название сервиса"
+      output:
+        type: dict
+        description: "Информация о токене (expires_at, service_name, cached)"
+
+features:
+  - "Универсальная поддержка OAuth2 авторизации"
+  - "Автоматическое кэширование токенов с проверкой времени жизни"
+  - "Конфигурируемые настройки для разных сервисов"
+  - "Автоматическое обновление токенов перед истечением"
+  - "Поддержка переменных окружения для секретов"
+  - "Централизованное управление авторизацией"
+  - "Встроенная поддержка SaluteSpeech API"

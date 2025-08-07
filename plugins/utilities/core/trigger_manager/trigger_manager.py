@@ -208,8 +208,10 @@ class TriggerManager:
 
     def _prepare_action_data(self, action: dict, event: Dict[str, Any], fail_reason: str) -> dict:
         """Подготавливает данные действия. Event уже безопасный справочник."""
-        # Простое объединение - event уже конвертирован в безопасный формат
-        action_data = {**action, **event}
+        # Объединение: action (конфиг) имеет приоритет над event
+        # Это позволяет переопределять данные события в сценариях
+        # Если action пустой - все данные event сохраняются
+        action_data = {**event, **action}
         
         if fail_reason:
             action_data['is_failed'] = True

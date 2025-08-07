@@ -1,7 +1,12 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Добавляем корневую директорию проекта в путь
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)
+
+# Переходим в корневую директорию проекта для корректной работы DI-контейнера
+os.chdir(project_root)
 
 # Загружаем переменные окружения из .env файла
 try:
@@ -65,7 +70,10 @@ def recreate_indexes(db_service, table_class):
         # Создаём индексы из модели
         for idx in model_indexes:
             print(f"Создаю индекс {idx.name}...")
-            idx.create(conn, checkfirst=True)
+            try:
+                idx.create(conn, checkfirst=True)
+            except Exception as e:
+                print(f"Ошибка при создании индекса {idx.name}: {e}")
     print(f"Индексы для таблицы {table.name} успешно пересозданы.")
 
 def drop_table(db_service, table_name):

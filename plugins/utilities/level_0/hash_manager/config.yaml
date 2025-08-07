@@ -1,0 +1,60 @@
+name: "hash_manager"
+description: "Утилита для генерации хэшей из атрибутов и файлов"
+
+dependencies:
+  utilities:
+    - "logger"
+
+interface:
+  methods:
+    generate_hash_from_attributes:
+      description: "Генерирует хэш из набора атрибутов с сортировкой"
+      input:
+        attributes:
+          type: object
+          description: "Словарь атрибутов для хэширования"
+      output:
+        type: string
+        description: "MD5 хэш атрибутов"
+    generate_hash_from_path:
+      description: "Ультрабыстрый хэш файла только по пути (для кэширования)"
+      input:
+        file_path:
+          type: string
+          description: "Путь к файлу"
+      output:
+        type: string
+        description: "MD5 хэш пути"
+    generate_hash:
+      description: "Универсальный метод генерации хэша"
+      input:
+        file_path:
+          type: string
+          description: "Путь к файлу (опционально)"
+        attributes:
+          type: object
+          description: "Атрибуты для хэширования (опционально)"
+      output:
+        type: string
+        description: "MD5 хэш"
+    generate_filename:
+      description: "Генерирует уникальное имя файла в формате prefix-code1-code2.extension"
+      input:
+        prefix:
+          type: string
+          description: "Префикс имени файла (например, голос)"
+        extension:
+          type: string
+          description: "Расширение файла (mp3, opus, wav и т.д.)"
+        code_length:
+          type: integer
+          description: "Длина кода (по умолчанию 8 для формата 4-4)"
+      output:
+        type: string
+        description: "Имя файла"
+features:
+  - "Ультрабыстрое хэширование файлов по пути"
+  - "Хэширование атрибутов с сортировкой"
+  - "Универсальный метод выбора способа хэширования"
+  - "Генерация имен файлов в формате 4-4"
+  - "Обработка ошибок" 

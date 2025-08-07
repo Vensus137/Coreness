@@ -6,4 +6,7 @@ python-dotenv==1.0.0
 pytz==2024.1 
 unidecode 
 emoji 
-requests>=2.0.0 
+requests>=2.31.0 
+pydub==0.25.1
+ffmpeg-python==0.2.0 
+python-magic==0.4.27 

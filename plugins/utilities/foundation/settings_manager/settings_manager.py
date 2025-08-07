@@ -89,6 +89,51 @@ class SettingsManager:
         """Получить все настройки из settings.yaml"""
         return self._cache.get('settings', {}).copy()
 
+    def get_project_root(self) -> Path:
+        """Получить корень проекта"""
+        return self.project_root
+
+    def get_global_settings(self) -> dict:
+        """Получить глобальные настройки из секции 'global'"""
+        return self.get_settings_section('global')
+
+    def get_file_base_path(self) -> str:
+        """Получить базовый путь для файлов из глобальных настроек"""
+        global_settings = self.get_global_settings()
+        return global_settings.get('file_base_path', 'resources')
+
+    def resolve_file_path(self, relative_path: str) -> str:
+        """
+        Разрешает относительный путь файла относительно базового пути
+        :param relative_path: относительный путь (например, 'speech/tts/file.mp3')
+        :return: полный путь относительно корня проекта
+        """
+        base_path = self.get_file_base_path()
+        return os.path.join(self.project_root, base_path, relative_path)
+
+    def get_relative_path(self, full_path: str) -> str:
+        """
+        Получает относительный путь файла от базового пути
+        :param full_path: полный путь к файлу
+        :return: относительный путь относительно базового пути
+        """
+        try:
+            base_path = self.get_file_base_path()
+            full_base_path = os.path.join(self.project_root, base_path)
+            
+            # Проверяем, что файл находится в базовом пути
+            if full_path.startswith(full_base_path):
+                # Убираем базовый путь и ведущий слеш
+                relative_path = os.path.relpath(full_path, full_base_path)
+                # Нормализуем разделители для Windows
+                return relative_path.replace('\\', '/')
+            else:
+                # Если файл не в базовом пути, возвращаем имя файла
+                return os.path.basename(full_path)
+        except Exception as e:
+            self.logger.warning(f"Ошибка получения относительного пути для {full_path}: {e}")
+            return os.path.basename(full_path)
+
     def get_plugin_settings(self, plugin_name: str) -> dict:
         """
         Универсальный метод для получения настроек любого плагина (утилиты или сервиса)

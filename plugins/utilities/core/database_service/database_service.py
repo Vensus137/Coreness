@@ -1,10 +1,13 @@
+import os
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from .models import Action, Base, InviteLink, Request, User, UserState
+from .models import Action, Base, Cache, InviteLink, Request, User, UserState
 from .repositories.actions import ActionsRepository
+from .repositories.cache import CacheRepository
+
 from .repositories.invite_links import InviteLinksRepository
 from .repositories.requests import RequestsRepository
 from .repositories.user_states import UserStatesRepository
@@ -27,17 +30,42 @@ class DatabaseService:
         self.database_url = settings.get('database_url', 'sqlite:///data/bot_core.db')
         self.echo = settings.get('echo', False)
         
+        # Создаём директорию для базы данных, если её нет
+        self._ensure_database_directory()
+        
         # Создаём engine и фабрику сессий
         self.engine = create_engine(self.database_url, echo=self.echo, future=True)
         self.session_factory = sessionmaker(bind=self.engine, autoflush=False, autocommit=False, future=True)
+        
+        # Создаём таблицы при инициализации
+        self.create_all()
+
+    def _ensure_database_directory(self):
+        """Создаёт директорию для базы данных, если её нет."""
+        try:
+            # Извлекаем путь к директории из URL базы данных
+            if self.database_url.startswith('sqlite:///'):
+                # Убираем 'sqlite:///' и получаем путь к файлу
+                db_path = self.database_url[10:]  # Убираем 'sqlite:///'
+                db_dir = os.path.dirname(db_path)
+                
+                # Создаём директорию, если она не существует
+                if db_dir and not os.path.exists(db_dir):
+                    os.makedirs(db_dir, exist_ok=True)
+                    self.logger.info(f"Создана директория для базы данных: {db_dir}")
+                elif db_dir:
+                    self.logger.debug(f"Директория для базы данных уже существует: {db_dir}")
+            else:
+                # Для других типов БД (PostgreSQL, MySQL) директория не нужна
+                self.logger.debug("Используется не-SQLite база данных, пропускаем создание директории")
+                
+        except Exception as e:
+            self.logger.error(f"Ошибка при создании директории для базы данных: {e}")
+            # Не прерываем инициализацию - возможно, директория уже существует
 
     @contextmanager
     def session_scope(self, *repo_names):
-        """Контекстный менеджер для сессии и репозиториев.
-        
-        Args:
-            *repo_names: Названия нужных репозиториев ('actions', 'users', 'user_states', 'requests')
-        """
+        """Контекстный менеджер для сессии и репозиториев."""
         session = self.session_factory()
         try:
             repos = {}
@@ -84,6 +112,15 @@ class DatabaseService:
                     session=session,
                     logger=self.logger,
                     model=InviteLink,
+                    datetime_formatter=self.datetime_formatter,
+                    data_preparer=self.data_preparer,
+                    data_converter=self.data_converter
+                )
+            if 'cache' in repo_names:
+                repos['cache'] = CacheRepository(
+                    session=session,
+                    logger=self.logger,
+                    model=Cache,
                     datetime_formatter=self.datetime_formatter,
                     data_preparer=self.data_preparer,
                     data_converter=self.data_converter
