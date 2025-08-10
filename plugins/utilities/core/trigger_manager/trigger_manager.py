@@ -279,14 +279,11 @@ class TriggerManager:
     def _create_action(self, action: dict, event: Dict[str, Any], action_data: dict, 
                       status: str, chain_params: dict, previous_action_id: int, actions_repo) -> int:
         """Создает действие в базе данных. Event уже безопасный справочник."""
-        user_id = event.get('user_id')
-        chat_id = event.get('chat_id', 0)
         action_type = action.get('type')
         
         # Подготавливаем параметры для создания действия
+        # user_id и chat_id уже есть в action_data, поэтому не дублируем их в отдельных полях
         action_params = {
-            'user_id': user_id,
-            'chat_id': chat_id,
             'action_type': action_type,
             'action_data': action_data,
             'status': status,

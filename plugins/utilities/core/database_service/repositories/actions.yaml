@@ -7,18 +7,12 @@ table:
     id:
       type: "INTEGER PRIMARY KEY AUTOINCREMENT"
       description: "Первичный ключ"
-    user_id:
-      type: "INTEGER"
-      description: "ID пользователя"
-    chat_id:
-      type: "INTEGER"
-      description: "ID чата"
     action_type:
       type: "TEXT NOT NULL"
       description: "Тип действия (send_message, set_state, etc.)"
     action_data:
       type: "TEXT NOT NULL"
-      description: "JSON с данными действия"
+      description: "JSON с данными действия (включая user_id и chat_id)"
     prev_data:
       type: "TEXT NULL"
       description: "JSON с информацией с предыдущих действий по цепочке"

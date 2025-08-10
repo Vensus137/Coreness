@@ -10,9 +10,6 @@ table:
     user_id:
       type: "INTEGER NOT NULL"
       description: "Telegram user_id пользователя"
-    chat_id:
-      type: "INTEGER NOT NULL"
-      description: "Telegram chat_id чата"
     request_text:
       type: "TEXT"
       description: "Текст запроса пользователя (опционально)"
@@ -39,7 +36,7 @@ interface:
       input:
         fields:
           type: object
-          description: "Универсальный словарь полей для создания запроса (user_id, chat_id, request_text, attachments, request_info, request_name)"
+          description: "Универсальный словарь полей для создания запроса (user_id, request_text, attachments, request_info, request_name)"
       output:
         type: integer
         description: "ID созданного запроса"
