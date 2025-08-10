@@ -37,7 +37,7 @@ class CacheRepository:
             self.logger.error(f"Ошибка получения кэша для {hash_key}: {e}")
             return None
 
-    def add_cache(self, hash_key: str, file_path: str = None, **metadata) -> bool:
+    def add_cache(self, hash_key: str, hash_file_path: str = None, **metadata) -> bool:
         """
         Добавить новую запись в кэш
         """
@@ -45,7 +45,7 @@ class CacheRepository:
             # Подготавливаем поля
             fields = {
                 'hash_key': hash_key,
-                'hash_file_path': file_path,
+                'hash_file_path': hash_file_path,
                 'created_at': self.datetime_formatter.now_local()
             }
             
@@ -120,14 +120,12 @@ class CacheRepository:
             
             if existing_record:
                 # Если запись существует, обновляем её
-                self.logger.debug(f"Запись найдена для {hash_key}, обновляем")
                 return self.update_cache(hash_key=hash_key, **fields)
             else:
                 # Если записи нет, создаем новую
-                # Извлекаем file_path из fields если он есть
-                file_path = fields.pop('file_path', None)
-                self.logger.debug(f"Запись не найдена для {hash_key}, создаем новую")
-                return self.add_cache(hash_key=hash_key, file_path=file_path, **fields)
+                # Извлекаем hash_file_path из fields если он есть
+                hash_file_path = fields.pop('hash_file_path', None)
+                return self.add_cache(hash_key=hash_key, hash_file_path=hash_file_path, **fields)
             
         except Exception as e:
             self.session.rollback()

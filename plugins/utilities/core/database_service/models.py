@@ -11,8 +11,6 @@ def dtf_now_local():
 class Action(Base):
     __tablename__ = 'actions'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, nullable=False)
-    chat_id = Column(Integer, nullable=False)
     action_type = Column(String, nullable=False)
     action_data = Column(Text, nullable=False)
     prev_data = Column(Text, nullable=True)  # JSON с информацией с предыдущих действий по цепочке
@@ -58,11 +56,10 @@ class Request(Base):
     __tablename__ = 'requests'
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, nullable=False)  # Telegram user_id
-    chat_id = Column(Integer, nullable=False)  # Telegram chat_id
+    request_name = Column(String, nullable=True)  # Классификатор запроса (опционально)
     request_text = Column(Text, nullable=True)  # Текст запроса пользователя (может быть None)
     attachments = Column(Text, nullable=True)  # JSON с вложениями (файлы, фото, видео и т.д.)
     request_info = Column(Text, nullable=True)  # JSON с дополнительной информацией по запросу
-    request_name = Column(String, nullable=True)  # Классификатор запроса (опционально)
     created_at = Column(DateTime, nullable=False, default=dtf_now_local)
     updated_at = Column(DateTime, nullable=False, default=dtf_now_local, onupdate=dtf_now_local)
     __table_args__ = (

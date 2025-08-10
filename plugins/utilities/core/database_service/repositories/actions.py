@@ -45,7 +45,6 @@ class ActionsRepository:
             
             action_id = getattr(action, 'id', 0)
             action_type = fields.get('action_type', 'unknown')
-            user_id = fields.get('user_id', 0)
     
             return action_id
             
