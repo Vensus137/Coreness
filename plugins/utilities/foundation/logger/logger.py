@@ -16,6 +16,34 @@ class Logger:
         # Путь к глобальному settings.yaml
         self.settings_path = Path('config/settings.yaml')
     
+    # --- Вспомогательные преобразования для безопасного слияния настроек ---
+    def _to_bool(self, value, fallback: bool) -> bool:
+        if value is None:
+            return fallback
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"1", "true", "yes", "on"}:
+                return True
+            if normalized in {"0", "false", "no", "off", ""}:
+                return False
+        return fallback
+
+    def _to_int(self, value, fallback: int) -> int:
+        try:
+            return int(value) if value is not None else fallback
+        except Exception:
+            return fallback
+
+    def _to_str(self, value, fallback: str) -> str:
+        try:
+            return str(value) if value is not None else fallback
+        except Exception:
+            return fallback
+    
     def _load_global_logger_settings(self) -> dict:
         """Чтение секции logger из config/settings.yaml"""
         if not self.settings_path.exists():
@@ -41,22 +69,31 @@ class Logger:
             except Exception:
                 local_config = {}
 
-        # Извлекаем значения и дефолты
+        # Извлекаем значения и дефолты из локального конфига (plugins/.../config.yaml)
         level = local_config.get('level', {}).get('default', 'INFO')
         file_enabled = local_config.get('file_enabled', {}).get('default', True)
         file_path = local_config.get('file_path', {}).get('default', 'logs/bot.log')
         max_file_size_mb = local_config.get('max_file_size_mb', {}).get('default', 10)
         backup_count = local_config.get('backup_count', {}).get('default', 5)
-        # console_enabled теперь может быть переопределён глобально
         local_console_enabled = local_config.get('console_enabled', {}).get('default', False)
 
-        # Проверяем глобальную настройку из settings.yaml
+        # Глобальные переопределения из config/settings.yaml (приоритет над локальными)
         global_logger_settings = self._load_global_logger_settings()
-        global_console_enabled = global_logger_settings.get('console_logging_enabled', None)
-        if global_console_enabled is not None:
-            console_enabled = bool(global_console_enabled)
+
+        # console_enabled: приоритет console_enabled, затем legacy console_logging_enabled, затем локальный
+        if 'console_enabled' in global_logger_settings:
+            console_enabled = self._to_bool(global_logger_settings.get('console_enabled'), local_console_enabled)
+        elif 'console_logging_enabled' in global_logger_settings:
+            console_enabled = self._to_bool(global_logger_settings.get('console_logging_enabled'), local_console_enabled)
         else:
             console_enabled = local_console_enabled
+
+        # Прочие поля: берём глобальные, если указаны, с аккуратным приведением типа
+        file_enabled = self._to_bool(global_logger_settings.get('file_enabled', file_enabled), file_enabled)
+        level = self._to_str(global_logger_settings.get('level', level), level)
+        file_path = self._to_str(global_logger_settings.get('file_path', file_path), file_path)
+        max_file_size_mb = self._to_int(global_logger_settings.get('max_file_size_mb', max_file_size_mb), max_file_size_mb)
+        backup_count = self._to_int(global_logger_settings.get('backup_count', backup_count), backup_count)
 
         return {
             'level': level,

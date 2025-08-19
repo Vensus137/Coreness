@@ -22,7 +22,7 @@ request_feedback_state:
   actions:
     - type: "user"
       user_state: "feedback"
-      expire: 10s
+      expire: 60s
     - type: "send"
       text: |
         📝 <b>Обратная связь</b>
@@ -42,7 +42,8 @@ request_feedback:
       user_state: ""
     - type: "request"
       request_name: "feedback"
-      request_info: "Фидбек от пользователя {user_id} (@{username}) в чате {chat_id}. Запрос: '{request_name}'. Текст: {event_text}"
+      request_info: "Фидбек от пользователя {user_id} (@{username}) в чате {chat_id}. Запрос: {request_name}. Текст: {event_text}"
+      placeholders: true
     - type: "send"
       text: |
         ✅ <b>Спасибо за обратную связь!</b>

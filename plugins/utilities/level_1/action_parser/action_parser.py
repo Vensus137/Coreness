@@ -36,14 +36,16 @@ class ActionParser:
         return merged
 
     def _parse_time_string(self, time_string: Optional[str]) -> Optional[int]:
-        """Универсальный парсер временных строк в секунды (например, '5d 4h 30m 15s')"""
+        """Универсальный парсер временных строк в секунды (например, '1w 5d 4h 30m 15s')"""
         if not time_string:
             return None
-        pattern = r"(\d+)\s*(d|h|m|s)"
+        pattern = r"(\d+)\s*(w|d|h|m|s)"
         total_seconds = 0
         for value, unit in re.findall(pattern, time_string):
             value = int(value)
-            if unit == 'd':
+            if unit == 'w':
+                total_seconds += value * 604800
+            elif unit == 'd':
                 total_seconds += value * 86400
             elif unit == 'h':
                 total_seconds += value * 3600

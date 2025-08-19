@@ -1,0 +1,43 @@
+name: "cache_cleaner"
+description: "Сервис для фоновой чистки кэша (таблица cache) и связанных файлов. Удаляет устаревшие записи батчами, выполняет VACUUM при больших объёмах."
+singleton: true
+dependencies:
+  utilities:
+    - "logger"
+    - "database_service"
+    - "settings_manager"
+    - "datetime_formatter"
+
+settings:
+  queue_read_interval:
+    type: integer
+    default: 600
+    description: "Интервал (в секундах) между циклами чистки"
+  queue_batch_size:
+    type: integer
+    default: 1000
+    description: "Максимум записей на один батч"
+  older_than_with_file_hours:
+    type: integer
+    default: 0
+    description: "Срок хранения записей с файлом (часы)"
+  older_than_without_file_hours:
+    type: integer
+    default: 0
+    description: "Срок хранения записей без файла (часы)"
+  threshold_for_vacuum:
+    type: integer
+    default: 10000
+    description: "Порог удаления для запуска VACUUM"
+  dry_run:
+    type: boolean
+    default: false
+    description: "Логировать без фактического удаления"
+
+features:
+  - "Периодическая чистка таблицы cache"
+  - "Удаление связанных файлов при их наличии"
+  - "Раздельные сроки хранения для записей с файлом и без"
+  - "Батч-очистка и VACUUM при больших объёмах"
+
+

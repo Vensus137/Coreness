@@ -12,7 +12,7 @@ restrict_test:
 restrict_extract_duration:
   actions:
     - type: validator
-      duration: "{event_text|regex:(?:\\d+\\s*[dhms]\\s*)+}"
+      duration: "{event_text|regex:(?:\\d+\\s*[wdhms]\\s*)+}"
       placeholder: true
       chain: true
     - type: validator
