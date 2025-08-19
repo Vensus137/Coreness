@@ -1,7 +1,7 @@
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
 
 from ..models import Cache
 
@@ -20,8 +20,6 @@ class CacheRepository:
         self.datetime_formatter = datetime_formatter
         self.data_preparer = data_preparer
         self.data_converter = data_converter
-
-    # === МЕТОДЫ РАБОТЫ С КЭШЕМ ===
 
     def get_cache(self, hash_key: str) -> Optional[Dict[str, Any]]:
         """Получить данные из кэша"""
@@ -141,8 +139,18 @@ class CacheRepository:
             
             if cache_record:
                 # Удаляем файл если существует
-                if cache_record.hash_file_path and os.path.exists(cache_record.hash_file_path):
-                    os.remove(cache_record.hash_file_path)
+                file_path = getattr(cache_record, 'hash_file_path', None)
+                if file_path:
+                    try:
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
+                            self.logger.debug(f"Файл удалён: {file_path}")
+                        else:
+                            self.logger.debug(
+                                f"Файл для удаления не найден: {file_path} (cwd={os.getcwd()})"
+                            )
+                    except Exception as fe:
+                        self.logger.error(f"Ошибка удаления файла {file_path}: {fe}")
                 
                 # Удаляем запись из БД
                 self.session.delete(cache_record)
@@ -165,3 +173,22 @@ class CacheRepository:
         except Exception as e:
             self.logger.error(f"Ошибка проверки кэша для {hash_key}: {e}")
             return False 
+
+    # === ДОПОЛНИТЕЛЬНЫЕ МЕТОДЫ ДЛЯ ОЧИСТКИ ===
+
+    def list_old_cache(self, cutoff, with_files: bool, limit: int) -> List[Dict[str, Any]]:
+        """Получить список устаревших записей кэша батчем."""
+        try:
+            query = self.session.query(self.model).filter(self.model.created_at < cutoff)
+            if with_files:
+                query = query.filter(self.model.hash_file_path.isnot(None), self.model.hash_file_path != '')
+            else:
+                query = query.filter(or_(self.model.hash_file_path.is_(None), self.model.hash_file_path == ''))
+
+            records = query.limit(limit).all()
+            if not records:
+                return []
+            return self.data_converter.to_dict_list(records, json_fields=self.JSON_FIELDS)
+        except Exception as e:
+            self.logger.error(f"Ошибка выборки устаревшего кэша: {e}")
+            return []

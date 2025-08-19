@@ -92,6 +92,21 @@ interface:
       output:
         type: boolean
         description: "Наличие записи в кэше"
+    list_old_cache:
+      description: "Получить список устаревших записей кэша батчем"
+      input:
+        cutoff:
+          type: datetime
+          description: "Записи старше этой даты"
+        with_files:
+          type: boolean
+          description: "True — только записи с файлом; False — только без файла"
+        limit:
+          type: integer
+          description: "Максимальное количество записей в ответе"
+      output:
+        type: list
+        description: "Список записей кэша (словари)"
 features:
   - "Универсальное кэширование любых типов данных"
   - "Поддержка файлов и метаданных"

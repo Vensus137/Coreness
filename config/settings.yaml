@@ -2,7 +2,9 @@ global:
   file_base_path: "resources"    # Базовая папка для всех файлов (вложений, аудио и т.д.)
 
 logger:
-  console_logging_enabled: true  # Управление выводом логов в консоль
+  console_enabled: true           # Управление выводом логов в консоль
+  console_logging_enabled: false  # Будет удалено в будущем
+  file_enabled: false             # Управление выводом логов в файл
 
 event_manager:
   max_event_age_seconds: 10      # Глобальный лимит возраста события (сек) до запуска бота для обработки
