@@ -16,9 +16,9 @@ VERSIONS = {
     'base': {
         'name': "Base",
         'description': "Базовая версия",
-        'repo_url': "https://github.com/Vensus137/coreness",
+        'repo_url': "https://github.com/Vensus137/Coreness",
         'branch': "main",
-        'update_token_env': "UPDATE_TOKEN_BASE"
+        'update_token_env': None  # Base версия не требует токена
     },
     'pro': {
         'name': "Pro", 
@@ -52,6 +52,12 @@ EXCLUDE_PATHS = [
     ".git",
     ".github",
     ".gitignore",
+    ".venv",           # Виртуальное окружение Python
+    "venv",            # Альтернативное название виртуального окружения
+    "__pycache__",     # Кэш Python
+    "*.pyc",           # Скомпилированные Python файлы
+    ".pytest_cache",   # Кэш pytest
+    ".coverage",       # Файлы покрытия тестами
 ]
 
 # Настройки бэкапа
@@ -84,6 +90,12 @@ def get_version_info(version, config):
 
 def get_github_token(version_info):
     """Получает GitHub токен для версии"""
+    # Base версия не требует токена (публичный репозиторий)
+    if version_info['update_token_env'] is None:
+        print("ℹ️ Base версия - публичный репозиторий, токен не требуется")
+        return None
+    
+    # Pro версия требует токен (приватный репозиторий)
     token_env = version_info['update_token_env']
     token = os.getenv(token_env)
     if not token:
@@ -142,8 +154,25 @@ def find_project_root():
 def is_excluded(path, config):
     """Проверяет, исключен ли путь из обновления"""
     for excl in config['exclude_paths']:
-        if path == excl or path.startswith(excl + os.sep):
+        # Точное совпадение
+        if path == excl:
             return True
+        
+        # Проверка на начало пути (для папок)
+        if excl.endswith(os.sep) or not excl.endswith('*'):
+            if path.startswith(excl + os.sep):
+                return True
+        
+        # Проверка wildcard паттернов
+        if excl.endswith('*'):
+            pattern = excl[:-1]  # Убираем *
+            if path.startswith(pattern):
+                return True
+        
+        # Проверка на вхождение в папку (например, __pycache__ в любой папке)
+        if excl in path.split(os.sep):
+            return True
+    
     return False
 
 def is_clean_sync_item(path, config):
@@ -346,6 +375,12 @@ def run_database_migration():
 # === ОСНОВНОЙ СКРИПТ ===
 def main():
     print("⚡️ Core Updater: сервис обновления ядра\n")
+    
+    # ⚠️ ВАЖНОЕ ПРЕДУПРЕЖДЕНИЕ
+    print("⚠️  ВАЖНО: Запускайте скрипт через консоль/терминал!")
+    print("   ❌ НЕ запускайте двойным кликом - это может привести к проблемам")
+    print("   ✅ Правильный запуск: python core_updater.py")
+    print("   💡 Если скрипт уже запущен, закройте его и запустите через консоль\n")
 
     # Проверяем путь на наличие кириллицы
     project_root = find_project_root()
@@ -411,98 +446,33 @@ def main():
         # Проверяем наличие токена в окружении
         github_token = get_github_token(version_info)
         
+        # Определяем заголовки для запроса
         if github_token:
-            # Пробуем подключиться с токеном из окружения
-            print(f"🔑 Пробую подключиться с токеном из окружения...")
+            # Pro версия - используем токен
+            print(f"🔑 Подключаюсь с токеном для Pro версии...")
             headers = {"Authorization": f"token {github_token}"}
-            
-            try:
-                # Скачиваем архив с GitHub
-                repo_url = version_info['repo_url']
-                branch = version_info['branch']
-                
-                # Пробуем разные методы скачивания
-                download_methods = [
-                    # 1. Archive по ветке (универсальный)
-                    f"{repo_url}/archive/refs/heads/{branch}.zip",
-                    # 2. Latest release (если есть)
-                    f"{repo_url}/releases/latest/download/source.zip",
-                ]
-                
-                print(f"🔽 Пробую скачать из репозитория: {repo_url}")
-                print(f"   Ветка: {branch}")
-                
-                # Пробуем разные методы скачивания
-                response = None
-                for i, zip_url in enumerate(download_methods, 1):
-                    print(f"   🔍 Метод {i}: {zip_url}")
-                    
-                    try:
-                        response = requests.get(zip_url, headers=headers)
-                        if response.status_code == 200:
-                            print(f"   ✅ Успешно! Размер: {len(response.content)} байт")
-                            break
-                        else:
-                            print(f"   ❌ Статус: {response.status_code}")
-                    except Exception as e:
-                        print(f"   ❌ Ошибка: {e}")
-                
-                if not response or response.status_code != 200:
-                    print(f"❌ Не удалось скачать ни одним методом")
-                    print("ℹ️ Проверьте:")
-                    print("   • Наличие релиза с архивом source.zip")
-                    print("   • Правильность GitHub токена")
-                    print("   • Доступность репозитория")
-                    raise Exception("Ошибка скачивания: все методы не удались")
-                    
-            except Exception as e:
-                print(f"❌ Не удалось подключиться с токеном из окружения")
-                github_token = request_manual_token()
-                headers = {"Authorization": f"token {github_token}"}
-                
-                # Повторяем попытку с ручным токеном
-                repo_url = version_info['repo_url']
-                branch = version_info['branch']
-                
-                download_methods = [
-                    f"{repo_url}/releases/latest/download/source.zip",
-                    f"{repo_url}/archive/refs/heads/{branch}.zip",
-                ]
-                
-                print(f"🔽 Повторная попытка скачивания...")
-                
-                response = None
-                for i, zip_url in enumerate(download_methods, 1):
-                    print(f"   🔍 Метод {i}: {zip_url}")
-                    
-                    try:
-                        response = requests.get(zip_url, headers=headers)
-                        if response.status_code == 200:
-                            print(f"   ✅ Успешно! Размер: {len(response.content)} байт")
-                            break
-                        else:
-                            print(f"   ❌ Статус: {response.status_code}")
-                    except Exception as e:
-                        print(f"   ❌ Ошибка: {e}")
-                
-                if not response or response.status_code != 200:
-                    raise Exception("Ошибка скачивания: все методы не удались")
         else:
-            # Токена нет в окружении, запрашиваем вручную
-            github_token = request_manual_token()
-            headers = {"Authorization": f"token {github_token}"}
-            
-            # Скачиваем с ручным токеном
+            # Base версия - без токена
+            print(f"🔓 Скачиваю Base версию без токена (публичный репозиторий)...")
+            headers = {}
+        
+        try:
+            # Скачиваем архив с GitHub
             repo_url = version_info['repo_url']
             branch = version_info['branch']
             
+            # Пробуем разные методы скачивания
             download_methods = [
-                f"{repo_url}/releases/latest/download/source.zip",
+                # 1. Archive по ветке (универсальный)
                 f"{repo_url}/archive/refs/heads/{branch}.zip",
+                # 2. Latest release (если есть)
+                f"{repo_url}/releases/latest/download/source.zip",
             ]
             
-            print(f"🔽 Скачиваю с ручным токеном...")
+            print(f"🔽 Скачиваю из репозитория: {repo_url}")
+            print(f"   Ветка: {branch}")
             
+            # Пробуем разные методы скачивания
             response = None
             for i, zip_url in enumerate(download_methods, 1):
                 print(f"   🔍 Метод {i}: {zip_url}")
@@ -518,7 +488,56 @@ def main():
                     print(f"   ❌ Ошибка: {e}")
             
             if not response or response.status_code != 200:
-                raise Exception("Ошибка скачивания: все методы не удались")
+                if github_token:
+                    # Pro версия - пробуем с ручным токеном
+                    print(f"❌ Не удалось скачать с токеном из окружения")
+                    print("ℹ️ Пробую запросить токен вручную...")
+                    github_token = request_manual_token()
+                    headers = {"Authorization": f"token {github_token}"}
+                    
+                    # Повторяем попытку с ручным токеном
+                    print(f"🔽 Повторная попытка скачивания с ручным токеном...")
+                    
+                    response = None
+                    for i, zip_url in enumerate(download_methods, 1):
+                        print(f"   🔍 Метод {i}: {zip_url}")
+                        
+                        try:
+                            response = requests.get(zip_url, headers=headers)
+                            if response.status_code == 200:
+                                print(f"   ✅ Успешно! Размер: {len(response.content)} байт")
+                                break
+                            else:
+                                print(f"   ❌ Статус: {response.status_code}")
+                        except Exception as e:
+                            print(f"   ❌ Ошибка: {e}")
+                    
+                    if not response or response.status_code != 200:
+                        raise Exception("Ошибка скачивания: все методы не удались")
+                else:
+                    # Base версия - показываем детали ошибки
+                    print(f"❌ Не удалось скачать Base версию")
+                    print("ℹ️ Проверьте:")
+                    print("   • Доступность репозитория")
+                    print("   • Наличие ветки main")
+                    print("   • Сетевые настройки")
+                    raise Exception("Ошибка скачивания Base версии: все методы не удались")
+                    
+        except Exception as e:
+            if github_token:
+                # Pro версия - показываем ошибки с токеном
+                print(f"❌ Ошибка скачивания Pro версии: {e}")
+                print("ℹ️ Проверьте:")
+                print("   • Правильность GitHub токена")
+                print("   • Доступ к приватному репозиторию")
+                print("   • Наличие релиза с архивом source.zip")
+            else:
+                # Base версия - показываем ошибки без токена
+                print(f"❌ Ошибка скачивания Base версии: {e}")
+                print("ℹ️ Проверьте:")
+                print("   • Доступность публичного репозитория")
+                print("   • Сетевые настройки")
+            raise
         
         # Обрабатываем скачанный архив
         with tempfile.TemporaryDirectory() as tmpdir:
