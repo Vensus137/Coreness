@@ -15,13 +15,16 @@ class TriggerManager:
         self.permission_manager = kwargs.get('permission_manager')  # Опциональная зависимость
         self.datetime_formatter = kwargs['datetime_formatter']
         self.bot = kwargs['bot_initializer'].get_bot()
+        
+        # Получаем глобальную настройку плейсхолдеров
+        self.settings_manager = kwargs['settings_manager']
+        global_settings = self.settings_manager.get_global_settings()
+        self.global_placeholders_enabled = global_settings.get('enable_global_placeholders', False)
 
     async def handle_event(self, event: Dict[str, Any]):
         """
-        Обработка входящего ивента: поиск триггера, разворачивание сценария, запись действий в очередь.
-        Event уже конвертирован в безопасный справочник через ObjectConverter.
+        Обрабатывает событие, запуская соответствующие сценарии.
         """
-        self.logger.debug(f"handle_event: входящий event: {event}")
         
         # 1. Поиск сценария по событию
         scenario_name = self.trigger_processing.find_scenario_by_event(event)
@@ -207,18 +210,20 @@ class TriggerManager:
         return None
 
     def _prepare_action_data(self, action: dict, event: Dict[str, Any], fail_reason: str) -> dict:
-        """Подготавливает данные действия. Event уже безопасный справочник."""
+        """Подготавливает данные действия с глобальными плейсхолдерами."""
         # Объединение: action (конфиг) имеет приоритет над event
         # Это позволяет переопределять данные события в сценариях
         # Если action пустой - все данные event сохраняются
         action_data = {**event, **action}
         
+        # Добавляем глобальную настройку плейсхолдеров, если не указана локально
+        if self.global_placeholders_enabled and 'placeholder' not in action:
+            action_data['placeholder'] = True
+        
         if fail_reason:
             action_data['is_failed'] = True
             action_data['fail_reason'] = fail_reason
-        else:
-            action_data['is_failed'] = False
-            
+        
         return action_data
 
     def _determine_action_status(self, action: dict, action_data: dict, previous_action_id: int) -> tuple:

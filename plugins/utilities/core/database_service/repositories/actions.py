@@ -178,7 +178,6 @@ class ActionsRepository:
         
         action = self.get_action_by_id(action_id)
         if not action:
-            self.logger.debug(f"❌ Действие {action_id} не найдено в БД")
             return None
             
         return self._process_action_with_placeholders(action)

@@ -1,0 +1,127 @@
+name: "promo_codes_repository"
+description: "Репозиторий для работы с таблицей PromoCode (промокоды)."
+table:
+  name: "promo_codes"
+  description: "База промокодов"
+  fields:
+    id:
+      type: "INTEGER PRIMARY KEY AUTOINCREMENT"
+      description: "Уникальный идентификатор промокода"
+    promo_code:
+      type: "TEXT NOT NULL"
+      description: "Код промокода (в верхнем регистре)"
+    promo_name:
+      type: "TEXT NOT NULL"
+      description: "Название акции/промокода"
+    user_id:
+      type: "INTEGER NULL"
+      description: "ID пользователя (NULL = для всех пользователей)"
+    started_at:
+      type: "TEXT NOT NULL"
+      description: "Дата начала действия промокода"
+    expired_at:
+      type: "TEXT NOT NULL"
+      description: "Дата окончания действия промокода"
+    created_at:
+      type: "TEXT NOT NULL"
+      description: "Дата создания промокода"
+    updated_at:
+      type: "TEXT NOT NULL"
+      description: "Дата последнего обновления промокода"
+  indexes:
+    - "idx_promo_codes_code"
+    - "idx_promo_codes_user"
+    - "idx_promo_codes_expired"
+    - "idx_promo_codes_active"
+interface:
+  methods:
+    get_promo_by_id:
+      description: "Получает промокод по ID"
+      input:
+        promo_id:
+          type: integer
+          description: "ID промокода"
+      output:
+        type: object
+        description: "Данные промокода или null"
+    
+    get_promo_by_hash_id:
+      description: "Получает промокод по хэш-идентификатору"
+      input:
+        hash_id:
+          type: string
+          description: "Хэш-идентификатор промокода"
+      output:
+        type: object
+        description: "Данные промокода или null"
+    
+    get_promos_by_filters:
+      description: "Получает промокоды по фильтрам"
+      input:
+        name_pattern:
+          type: string
+          description: "Фильтр по названию (частичное совпадение)"
+        user_id:
+          type: integer
+          description: "Фильтр по ID пользователя"
+        promo_code:
+          type: string
+          description: "Фильтр по коду промокода"
+        status:
+          type: string
+          description: "Статус: active/expired/all"
+        date_from:
+          type: string
+          description: "Фильтр по дате создания (с)"
+        date_to:
+          type: string
+          description: "Фильтр по дате создания (до)"
+        expired_before:
+          type: string
+          description: "Фильтр по дате истечения (до)"
+        expired_after:
+          type: string
+          description: "Фильтр по дате истечения (после)"
+      output:
+        type: array
+        description: "Список промокодов по фильтрам"
+    
+    create_promo:
+      description: "Создает новый промокод"
+      input:
+        fields:
+          type: object
+          description: "Универсальный словарь полей для создания промокода"
+      output:
+        type: integer
+        description: "ID созданного промокода"
+    
+    update_promo:
+      description: "Обновляет промокод"
+      input:
+        promo_id:
+          type: integer
+          description: "ID промокода для обновления"
+        fields:
+          type: object
+          description: "Универсальный словарь полей для обновления"
+      output:
+        type: boolean
+        description: "Успех операции"
+    
+    delete_promo:
+      description: "Удаляет промокод"
+      input:
+        promo_id:
+          type: integer
+          description: "ID промокода для удаления"
+      output:
+        type: boolean
+        description: "Успех операции"
+
+features:
+  - "Полноценная работа с промокодами"
+  - "Универсальная фильтрация по различным критериям"
+  - "Поддержка пользовательских и глобальных промокодов"
+  - "Автоматическое управление датами создания и обновления"
+  - "Гибкие возможности поиска и фильтрации"

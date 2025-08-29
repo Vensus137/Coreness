@@ -62,10 +62,8 @@ class AuthManager:
                 
                 session.mount('https://', SSLAdapter())
                 session.verify = True
-                self.logger.debug(f"SSL сессия создана с российскими сертификатами: {certs_path}")
             else:
                 session.verify = True
-                self.logger.debug("Российские SSL сертификаты не найдены, используем стандартные")
             
             return session
             
@@ -87,7 +85,6 @@ class AuthManager:
             service_config = cached_data.get('service_config', {})
             refresh_threshold = service_config.get('refresh_threshold', self.token_refresh_threshold)
             if time.time() < expires_at - refresh_threshold:
-                self.logger.debug(f"Используем кэшированный токен для {service_name}")
                 return token
             else:
                 self.logger.info(f"Токен для {service_name} истекает, обновляем...")
@@ -217,7 +214,6 @@ class AuthManager:
                     expired_services.append(service_name)
             for service_name in expired_services:
                 del self._token_cache[service_name]
-                self.logger.debug(f"Удален истекший токен для {service_name}")
             if expired_services:
                 self.logger.info(f"Очищено {len(expired_services)} истекших токенов")
             self._last_cache_cleanup = current_time

@@ -19,11 +19,11 @@ settings:
     description: "Максимум записей на один батч"
   older_than_with_file_hours:
     type: integer
-    default: 0
+    default: 240
     description: "Срок хранения записей с файлом (часы)"
   older_than_without_file_hours:
     type: integer
-    default: 0
+    default: 2400
     description: "Срок хранения записей без файла (часы)"
   threshold_for_vacuum:
     type: integer

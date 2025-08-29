@@ -159,11 +159,9 @@ class DIContainer:
             if class_name:
                 # Если найден класс, возвращаем его
                 plugin_class = getattr(module, class_name)
-                self.logger.debug(f"Загружен класс {class_name} для плагина {plugin_name}")
                 return plugin_class
             else:
                 # Если класс не найден, возвращаем сам модуль (для модулей с функциями)
-                self.logger.debug(f"Класс не найден для плагина {plugin_name}, используем модуль")
                 return module
             
         except Exception as e:
@@ -186,14 +184,12 @@ class DIContainer:
     
     def _get_class_name_from_module(self, module: Any, plugin_name: str) -> Optional[str]:
         """Поиск имени класса в модуле или возврат самого модуля"""
-        self.logger.debug(f"Поиск класса для плагина {plugin_name} в модуле {module.__name__}")
         
         # Сначала ищем класс с именем, соответствующим имени плагина
         class_name = plugin_name.replace('_', '').title()  # logger -> Logger
         if hasattr(module, class_name):
             attr = getattr(module, class_name)
             if isinstance(attr, type):
-                self.logger.debug(f"Найден класс {class_name} для плагина {plugin_name}")
                 return class_name
         
         # Если не найден, ищем классы, которые могут быть основными
@@ -208,10 +204,8 @@ class DIContainer:
                     attr_name not in ['Any', 'Dict', 'List', 'Optional', 'Type', 'Path'] and
                     not attr.__module__.startswith('pathlib') and
                     attr.__module__ == module.__name__):  # Класс должен быть определен в этом модуле
-                    self.logger.debug(f"Найден подходящий класс {attr_name} для плагина {plugin_name}")
                     return attr_name
         
-        self.logger.debug(f"Класс не найден для плагина {plugin_name}, будет использован модуль")
         # Если класс не найден, возвращаем None (будем использовать сам модуль)
         return None
     
@@ -244,7 +238,7 @@ class DIContainer:
         
         # Логируем информацию о зависимостях (только если есть проблемы)
         if missing_deps:
-            self.logger.debug(f"Утилита {utility_name}: {len(missing_deps)} зависимостей не найдено из {len(dependencies)}")
+            pass
         
         # Создаем экземпляр с зависимостями
         try:
@@ -287,7 +281,7 @@ class DIContainer:
         
         # Логируем информацию о зависимостях (только если есть проблемы)
         if missing_deps:
-            self.logger.debug(f"Сервис {service_name}: {len(missing_deps)} зависимостей не найдено из {len(dependencies)}")
+            pass
         
         # Создаем экземпляр с зависимостями
         try:
@@ -358,7 +352,6 @@ class DIContainer:
             if hasattr(service_instance, 'shutdown'):
                 try:
                     service_instance.shutdown()
-                    self.logger.debug(f"Вызван shutdown для сервиса: {service_name}")
                 except Exception as e:
                     self.logger.error(f"Ошибка shutdown сервиса {service_name}: {e}")
         

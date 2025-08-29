@@ -12,6 +12,8 @@ text:
     "validator_test": "test_validation.validator_check"
     "request_details": "request_check.request_check_details_get"
     "waiting_audio_upload": "handle_audio_upload"
+    "promocode_check": "promocode_check"
+    "promocode_details": "promocode_details"
   regex:
     "^/start\\s+\\w+\\s+\\w+\\s+\\w+$": "test_trigger.regex_start_with_three_params"
     "^/start\\s+\\w+\\s+\\w+$": "test_trigger.regex_start_with_two_params"

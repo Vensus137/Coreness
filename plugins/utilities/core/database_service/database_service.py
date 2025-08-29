@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from .models import Action, Base, Cache, InviteLink, Request, User, UserState
+from .models import Action, Base, Cache, InviteLink, Request, User, UserState, PromoCode
 from .repositories.actions import ActionsRepository
 from .repositories.cache import CacheRepository
 
@@ -12,6 +12,7 @@ from .repositories.invite_links import InviteLinksRepository
 from .repositories.requests import RequestsRepository
 from .repositories.user_states import UserStatesRepository
 from .repositories.users import UsersRepository
+from .repositories.promo_codes import PromoCodesRepository
 
 
 class DatabaseService:
@@ -54,10 +55,10 @@ class DatabaseService:
                     os.makedirs(db_dir, exist_ok=True)
                     self.logger.info(f"Создана директория для базы данных: {db_dir}")
                 elif db_dir:
-                    self.logger.debug(f"Директория для базы данных уже существует: {db_dir}")
+                    pass
             else:
                 # Для других типов БД (PostgreSQL, MySQL) директория не нужна
-                self.logger.debug("Используется не-SQLite база данных, пропускаем создание директории")
+                pass
                 
         except Exception as e:
             self.logger.error(f"Ошибка при создании директории для базы данных: {e}")
@@ -121,6 +122,15 @@ class DatabaseService:
                     session=session,
                     logger=self.logger,
                     model=Cache,
+                    datetime_formatter=self.datetime_formatter,
+                    data_preparer=self.data_preparer,
+                    data_converter=self.data_converter
+                )
+            if 'promo_codes' in repo_names:
+                repos['promo_codes'] = PromoCodesRepository(
+                    session=session,
+                    logger=self.logger,
+                    model=PromoCode,
                     datetime_formatter=self.datetime_formatter,
                     data_preparer=self.data_preparer,
                     data_converter=self.data_converter

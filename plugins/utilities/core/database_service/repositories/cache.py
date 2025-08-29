@@ -66,7 +66,6 @@ class CacheRepository:
             cache_record = self.model(**prepared_fields)
             self.session.add(cache_record)
             self.session.commit()
-            self.logger.info(f"Кэш создан для {hash_key}")
             return True
             
         except Exception as e:
@@ -144,11 +143,8 @@ class CacheRepository:
                     try:
                         if os.path.exists(file_path):
                             os.remove(file_path)
-                            self.logger.debug(f"Файл удалён: {file_path}")
                         else:
-                            self.logger.debug(
-                                f"Файл для удаления не найден: {file_path} (cwd={os.getcwd()})"
-                            )
+                            pass
                     except Exception as fe:
                         self.logger.error(f"Ошибка удаления файла {file_path}: {fe}")
                 

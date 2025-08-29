@@ -90,3 +90,23 @@ class Cache(Base):
         Index('idx_cache_hash_key', 'hash_key', unique=True),
         Index('idx_cache_created_at', 'created_at'),
     )
+
+class PromoCode(Base):
+    __tablename__ = 'promo_codes'
+    id = Column(Integer, primary_key=True)  # Убираем autoincrement
+    hash_id = Column(String, nullable=False, unique=True)     # Уникальный хэш-идентификатор
+    promo_code = Column(String, nullable=False)               # Код промокода (НЕ уникальный)
+    promo_name = Column(String, nullable=False)               # Название акции
+    user_id = Column(Integer, nullable=True)                  # Привязка к пользователю (NULL = для всех)
+    salt = Column(String, nullable=False, default='default')  # Соль для детерминированной генерации
+    started_at = Column(DateTime, nullable=False, default=dtf_now_local)
+    expired_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=dtf_now_local)
+    updated_at = Column(DateTime, nullable=False, default=dtf_now_local, onupdate=dtf_now_local)
+    __table_args__ = (
+        Index('idx_promo_codes_hash_id', 'hash_id', unique=True),
+        Index('idx_promo_codes_code', 'promo_code'),
+        Index('idx_promo_codes_user', 'user_id'),
+        Index('idx_promo_codes_expired', 'expired_at'),
+        Index('idx_promo_codes_active', 'started_at', 'expired_at'),
+    )

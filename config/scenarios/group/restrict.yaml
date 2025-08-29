@@ -31,22 +31,13 @@ restrict_extract_duration:
 restrict_extract_username:
   actions:
     - type: validator
-      restrict_username: "{event_text|regex:@\\w+}"
+      restrict_username: "{event_text|regex:@\\w+|fallback:{reply_username}}"
+      restrict_user_id: "{reply_user_id}"
       placeholder: true
       chain: true
     - type: validator
       rules:
         restrict_username:
-          - rule: "not_empty"
-      chain: true
-    - type: validator
-      restrict_username: "{reply_username}"
-      restrict_user_id: "{reply_user_id}"
-      placeholder: true
-      chain: failed
-    - type: validator
-      rules:
-        restrict_user_id:
           - rule: "not_empty"
       chain: ["completed", "failed"]
     - type: "send"
@@ -63,7 +54,7 @@ restrict_mute_result:
       can_send_messages: false
       chain: completed
     - type: "send"
-      text: "🔒 Пользователь {restrict_username} ограничен на {duration_seconds} секунд"
+      text: "🔒 Пользователь {restrict_username|tags} ограничен на {duration_seconds}"
       callback_edit: false
       chain: completed
       chain_drop: completed
@@ -78,7 +69,7 @@ restrict_unmute_result:
       can_send_messages: true
       chain: completed
     - type: "send"
-      text: "✅ Пользователь {restrict_username} разблокирован"
+      text: "✅ Пользователь {restrict_username|tags} разблокирован"
       callback_edit: false
       chain: completed
       chain_drop: completed
@@ -97,12 +88,12 @@ restrict_unmute:
       can_send_messages: true
       chain: completed
     - type: "send"
-      text: "✅ Пользователь {restrict_username} разблокирован"
+      text: "✅ Пользователь {restrict_username|tags} разблокирован"
       callback_edit: false
       chain: completed
       chain_drop: completed
     - type: "send"
-      text: "❌ Ошибка при разблокировке пользователя {restrict_username} {restrict_user_id}"
+      text: "❌ Ошибка при разблокировке пользователя {restrict_username|tags} {restrict_user_id}"
       callback_edit: true 
       chain: true
 
