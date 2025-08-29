@@ -11,6 +11,7 @@ validator_main:
         Пожалуйста, введите сообщение для проверки всех правил валидации.
         После отправки сообщения будут выполнены пять разных проверок.
       inline:
+        - [{"🔍 Подписка (1 чат)": "validator_is_member_single"}, {"🔍 Подписка (неск.)": "validator_is_member_multi"}]
         - [{"🔙 Меню": "start_menu"}]
 
 validator_check:
@@ -65,3 +66,55 @@ validator_check:
     - type: send
       text: "✅ Проверка на наличие подстроки 'валид' пройдена!"
       chain: completed 
+
+# Проверка членства в одном чате/канале
+validator_is_member_single:
+  actions:
+    - type: validator
+      rules:
+        user_id:
+          - rule: "is_member"
+            chat: -1002749258418
+            on_error: "drop"
+      chain: true
+    - type: scenario
+      value: ["validator_result_completed", "validator_result_failed", "validator_result_drop"]
+
+# Проверка членства в нескольких чатах/каналах
+validator_is_member_multi:
+  actions:
+    - type: validator
+      rules:
+        user_id:
+          - rule: "is_member"
+            chat:
+              - -1002749258418   # TODO: замените на реальный chat_id или "@channel_username"
+              - -1002222222222   # TODO: замените на реальный chat_id или "@channel_username"
+            mode: "any"
+            on_error: "pass"
+      chain: true
+    - type: scenario
+      value: ["validator_result_completed", "validator_result_failed", "validator_result_drop"]
+
+validator_result_failed:
+  actions:
+    - type: send
+      text: "❌ Пользователь не состоит в указанном чате/канале"
+      callback_edit: false
+      chain: failed
+      chain_drop: completed
+
+validator_result_drop:
+  actions:
+    - type: send
+      text: "⚠️ Не удалось проверить членство в чате/канале"
+      callback_edit: false
+      chain: drop
+      chain_drop: completed
+
+validator_result_completed:
+  actions:
+    - type: send
+      text: "✅ Пользователь состоит во всех указанных чатах/каналах"
+      callback_edit: false
+      chain: completed

@@ -165,7 +165,6 @@ class TriggerProcessing:
 
         for trigger_state, scenario in state_triggers.items():
             if trigger_state == state_type:
-                self.logger.debug(f"Найдено совпадение состояния: {state_type} → {scenario}")
                 return scenario
 
         return None
@@ -188,7 +187,6 @@ class TriggerProcessing:
                 now = self.datetime_formatter.now_local()
                 if user_state.get('expired_at') is not None:
                     if user_state['expired_at'] < now:
-                        self.logger.debug(f"Состояние пользователя {user_id} истекло по expired_at, очищаем")
                         user_states_repo.clear_user_state(user_id)
                         return None
 
@@ -211,7 +209,6 @@ class TriggerProcessing:
         """
         # Игнорируем не-приватные чаты
         if event and event.get('chat_type') != 'private':
-            self.logger.debug(f"Игнорируем событие по кнопке из чата типа {event.get('chat_type')}")
             return None
         triggers = self._get_triggers_for_event(event) if event else self.settings_manager.get_settings_section('triggers')
         if not button_text:
