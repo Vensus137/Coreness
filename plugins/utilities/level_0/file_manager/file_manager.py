@@ -167,7 +167,6 @@ class FileManager:
                 try:
                     # Проверяем, содержит ли путь кириллические символы
                     if any(ord(char) > 127 for char in file_path):
-                        self.logger.debug(f"Пропускаем magic для пути с кириллицей: {file_path}")
                         raise Exception("Путь содержит кириллические символы")
                     
                     mime_type = magic.from_file(file_path, mime=True)
@@ -204,7 +203,7 @@ class FileManager:
                             result['detection_method'] = 'pydub'
                             return result
                 except Exception as e:
-                    self.logger.debug(f"Ошибка определения формата через pydub: {e}")
+                    pass
             
             # Fallback к расширению файла (только если другие методы не сработали)
             file_ext = Path(file_path).suffix.lower().lstrip('.')
@@ -248,7 +247,7 @@ class FileManager:
                                 'channels': audio.channels,
                             }
                         except Exception as e:
-                            self.logger.debug(f"Ошибка определения длительности аудио: {e}")
+                            pass
                 
                 # Видео форматы
                 elif detected_extension in ['mp4', 'avi', 'mov', 'mkv', 'webm']:
@@ -266,7 +265,7 @@ class FileManager:
                                 'size': probe['format'].get('size')
                             }
                         except Exception as e:
-                            self.logger.debug(f"Ошибка определения длительности видео: {e}")
+                            pass
             
             # Fallback: пробуем оба метода (если расширение не определено или не распознано)
             # Сначала пробуем как аудио
@@ -284,7 +283,7 @@ class FileManager:
                         'channels': audio.channels
                     }
                 except Exception as e:
-                    self.logger.debug(f"Файл не является аудио: {e}")
+                    pass
             
             # Пробуем как видео
             if FFMPEG_AVAILABLE:
@@ -301,7 +300,7 @@ class FileManager:
                         'size': probe['format'].get('size')
                     }
                 except Exception as e:
-                    self.logger.debug(f"Файл не является видео: {e}")
+                    pass
             
             # Не удалось определить длительность
             return {
@@ -336,12 +335,11 @@ class FileManager:
                 try:
                     # Проверяем, содержит ли путь кириллические символы
                     if any(ord(char) > 127 for char in file_path):
-                        self.logger.debug(f"Пропускаем magic для пути с кириллицей: {file_path}")
                         raise Exception("Путь содержит кириллические символы")
                     
                     mime_type = magic.from_file(file_path, mime=True)
                     
-                                        # Специальная обработка для OPUS файлов
+                    # Специальная обработка для OPUS файлов
                     if mime_type == 'audio/ogg':
                         # Проверяем, действительно ли это OPUS
                         extension_result = self.get_file_extension(file_path)
@@ -353,7 +351,7 @@ class FileManager:
                     return result
                         
                 except Exception as e:
-                    self.logger.debug(f"Ошибка определения MIME-типа через magic: {e}")
+                    self.logger.warning(f"Ошибка определения MIME-типа через magic: {e}")
             
             # Fallback к расширению файла
             file_ext = Path(file_path).suffix.lower()

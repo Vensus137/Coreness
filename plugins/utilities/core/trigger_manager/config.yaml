@@ -11,6 +11,7 @@ dependencies:
     - "permission_manager"
     - "datetime_formatter"
     - "bot_initializer"
+    - "settings_manager"
 interface:
   methods:
     handle_event:

@@ -3,7 +3,6 @@ import os
 import time
 from typing import Dict, Any
 
-
 class HashManager:
     """
     Утилита для генерации хэшей из атрибутов и файлов.
@@ -112,3 +111,54 @@ class HashManager:
         except Exception as e:
             self.logger.error(f"Ошибка генерации имени файла: {e}")
             raise 
+
+    def generate_code(self, length: int = 8, use_digits: bool = True, 
+                     use_letters: bool = True, random: bool = False, **attributes) -> str:
+        """Генерирует код заданной длины (случайный или детерминированный)"""
+        try:
+            # Валидация длины
+            if length < 6 or length > 16:
+                raise ValueError("Длина кода должна быть от 6 до 16 символов")
+            
+            # Если случайная генерация, добавляем timestamp и random
+            if random:
+                import random as random_module
+                attributes['timestamp'] = int(time.time() * 1000)
+                attributes['random'] = random_module.randint(1000, 9999)
+            
+            # Генерируем SHA256 хеш (64 символа hex)
+            hash_hex = hashlib.sha256(
+                self._prepare_attributes_string(**attributes).encode()
+            ).hexdigest()
+            
+            # Определяем набор символов
+            chars = ""
+            if use_letters:
+                chars += "abcdefghijklmnopqrstuvwxyz"  # 26 символов
+            if use_digits:
+                chars += "0123456789"  # 10 символов
+            
+            if not chars:
+                raise ValueError("Должен быть выбран хотя бы один тип символов")
+            
+            # Конвертируем hex в код нужной длины
+            result = ""
+            for i in range(length):
+                # Берем по 2 символа hex за раз (1 байт)
+                hex_pair = hash_hex[i * 2:(i * 2) + 2]
+                # Конвертируем hex в число (0-255)
+                byte_value = int(hex_pair, 16)
+                # Получаем индекс символа
+                char_index = byte_value % len(chars)
+                result += chars[char_index]
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Ошибка генерации кода: {e}")
+            raise
+
+    def _prepare_attributes_string(self, **attributes) -> str:
+        """Подготавливает строку атрибутов для хеширования"""
+        sorted_items = sorted(attributes.items())
+        return "_".join(f"{k}={v}" for k, v in sorted_items) 

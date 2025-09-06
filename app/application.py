@@ -101,7 +101,7 @@ class Application:
                     task = asyncio.create_task(service_instance.run(), name=service_name)
                     self._background_tasks.append(task)
                     
-                    self.logger.debug(f"Сервис {service_name} запущен в фоновой задаче")
+                    pass
                 else:
                     self.logger.warning(f"Сервис {service_name} не имеет метода run()")
                     
@@ -126,7 +126,7 @@ class Application:
                 for task in self._background_tasks:
                     if not task.done():
                         task.cancel()
-                        self.logger.debug(f"Задача {task.get_name()} отменена")
+                        pass
                 
                 # Ждем завершения всех задач
                 await asyncio.gather(*self._background_tasks, return_exceptions=True)
@@ -155,7 +155,7 @@ class Application:
                 for task in self._background_tasks:
                     if not task.done():
                         task.cancel()
-                        self.logger.debug(f"Задача {task.get_name()} отменена")
+                        pass
             
             # Shutdown DI-контейнера
             if self.di_container:

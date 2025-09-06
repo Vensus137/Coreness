@@ -52,9 +52,32 @@ interface:
       output:
         type: string
         description: "Имя файла"
+    generate_code:
+      description: "Генерирует код заданной длины (случайный или детерминированный)"
+      input:
+        length:
+          type: integer
+          description: "Длина генерируемого кода (6-16)"
+        use_digits:
+          type: boolean
+          description: "Использовать цифры"
+        use_letters:
+          type: boolean
+          description: "Использовать буквы"
+        random:
+          type: boolean
+          description: "Случайная генерация (true) или детерминированная (false)"
+        attributes:
+          type: object
+          description: "Атрибуты для генерации хеша (для детерминированной генерации)"
+      output:
+        type: string
+        description: "Уникальный код в lowercase"
+
 features:
   - "Ультрабыстрое хэширование файлов по пути"
   - "Хэширование атрибутов с сортировкой"
   - "Универсальный метод выбора способа хэширования"
   - "Генерация имен файлов в формате 4-4"
+  - "Универсальная генерация кодов (случайных или детерминированных) с настраиваемыми параметрами (6-16 символов)"
   - "Обработка ошибок" 

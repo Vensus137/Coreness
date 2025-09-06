@@ -1,0 +1,34 @@
+name: "users_directory"
+description: "Утилита для поиска и обновления данных пользователей (локальная БД)"
+singleton: true
+dependencies:
+  utilities:
+    - "logger"
+    - "database_service"
+interface:
+  methods:
+    get_user_id_by_username:
+      description: "Получить user_id по username (без @). Возвращает null, если не найден"
+      input:
+        username:
+          type: string
+          description: "Логин пользователя, допускается с @ или без"
+      output:
+        type: integer|null
+        description: "user_id или null, если пользователь не найден"
+    add_or_update_user:
+      description: "Добавить или обновить пользователя по user_id и username"
+      input:
+        user_id:
+          type: integer
+          description: "Идентификатор пользователя"
+        username:
+          type: string
+          description: "Логин пользователя, допускается с @ или без"
+      output:
+        type: boolean
+        description: "True, если операция выполнена успешно"
+features:
+  - "Поиск пользователя по username в локальной базе"
+  - "Добавление/обновление пользователя по user_id и username"
+

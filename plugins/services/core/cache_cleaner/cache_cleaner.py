@@ -14,8 +14,8 @@ class CacheCleaner:
         settings = self.settings_manager.get_plugin_settings('cache_cleaner')
         self.queue_read_interval: int = settings.get('queue_read_interval', 600)
         self.queue_batch_size: int = settings.get('queue_batch_size', 1000)
-        self.older_than_with_file_hours: int = settings.get('older_than_with_file_hours', 72)
-        self.older_than_without_file_hours: int = settings.get('older_than_without_file_hours', 168)
+        self.older_than_with_file_hours: int = settings.get('older_than_with_file_hours', 240)
+        self.older_than_without_file_hours: int = settings.get('older_than_without_file_hours', 2400)
         self.threshold_for_vacuum: int = settings.get('threshold_for_vacuum', 10000)
         self.dry_run: bool = settings.get('dry_run', False)
 
