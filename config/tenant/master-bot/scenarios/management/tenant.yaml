@@ -1,0 +1,575 @@
+# ============================================
+# Управление тенантом
+# Назначение: выбор, смена и управление тенантами с привязкой к владельцам
+# Использует User Storage для хранения активного тенанта
+# ============================================
+
+# ============================================
+# БЛОК 1: Главное меню тенанта
+# ============================================
+
+tenant:
+  description: "Универсальный сценарий управления тенантом - проверка доступа и активного тенанта"
+  
+  trigger:
+    - event_type: "message"
+      event_text: "/tenant"
+    - event_type: "callback"
+      callback_data: "tenant"
+
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Получаем активный тенант из User Storage
+    - action: "get_user_storage"
+      params:
+        key: "active_tenant_id"
+        _response_key: "active_tenant_id"
+    
+    # Проверяем, есть ли активный тенант
+    - action: "validate"
+      params:
+        condition: "{_cache.active_tenant_id|exists} == True and {_cache.active_tenant_id|fallback:0} > 0"
+      transition:
+        - action_result: "success"
+          transition_action: "jump_to_scenario"
+          transition_value: "tenant_menu"
+        - action_result: "failed"
+          transition_action: "jump_to_scenario"
+          transition_value: "tenant_not_selected"
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+
+# Меню тенанта (с редактированием сообщения)
+tenant_menu:
+  description: "Отображение меню активного тенанта"
+
+  step:
+    # Получаем активный тенант из User Storage
+    - action: "get_user_storage"
+      params:
+        key: "active_tenant_id"
+        _response_key: "active_tenant_id"
+    
+    # Получаем статус бота тенанта
+    - action: "get_tenant_status"
+      params:
+        tenant_id: "{_cache.active_tenant_id}"
+    
+    - action: "send_message"
+      params:
+        text: |
+          🏠 <b>Меню тенанта <code>{_cache.active_tenant_id}</code></b>
+          
+          Статус бота: <code>{_cache.bot_is_active|equals:True|value:✅ Включен|fallback:{_cache.bot_is_active|equals:False|value:❌ Выключен|fallback:❓ Неизвестно}}</code>
+          Статус работы: <code>{_cache.bot_is_working|equals:True|value:✅ Работает|fallback:{_cache.bot_is_working|equals:False|value:❌ Не работает|fallback:❓ Неизвестно}}</code>
+
+          Дата обновления: <code>{_cache.last_updated_at|format:datetime_full|fallback:❓ Неизвестно}</code>
+          {_cache.last_error|length|true|value:Последняя ошибка: <code></code>}<code>{_cache.last_failed_at|format:datetime_full}</code>{_cache.last_failed_at|length|true|value: — }<code>{_cache.last_error|fallback:}</code>
+        inline:
+          - [{"🏢 Tenant Storage": "tenant_storage_menu"}, {"👤 User Storage": "user_storage_menu"}]
+          - [{"⚙️ Конфигурация тенанта": "tenant_config_menu"}, {"🔑 Установить токен": "set_bot_token_input"}]
+          - [{"🔄 Синхронизация данных": "sync_tenant_data"}, {"🔄 Обновить статус": "tenant"}]
+          - [{"🔀 Сменить тенант": "tenant_not_selected"}]
+
+# ============================================
+# БЛОК 2: Выбор тенанта
+# ============================================
+
+# Меню выбора тенанта
+tenant_not_selected:
+  description: "Определение типа пользователя и отображение списка доступных тенантов"
+
+  trigger:
+    - event_type: "callback"
+      callback_data: "tenant_not_selected"
+  
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Проверяем, является ли пользователь администратором
+    - action: "validate"
+      params:
+        condition: "{_cache.storage_values.admin} == True"
+      transition:
+        - action_result: "success"
+          transition_action: "jump_to_scenario"
+          transition_value: "tenant_select_all"
+        - action_result: "failed"
+          transition_action: "jump_to_scenario"
+          transition_value: "tenant_select_owner"
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "tenant_select_owner"
+
+# Меню выбора тенантов владельца (для обычных пользователей)
+tenant_select_owner:
+  description: "Отображение списка тенантов владельца для выбора"
+
+  step:
+    # Проверяем, есть ли привязанные тенанты
+    - action: "validate"
+      params:
+        condition: "{_cache.storage_values.tenant_owner|exists} == True and {_cache.storage_values.tenant_owner|length} > 0"
+      transition:
+        - action_result: "success"
+          transition_action: "continue"
+        - action_result: "failed"
+          transition_action: "jump_to_scenario"
+          transition_value: "tenant_no_access"
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    # Строим динамическую клавиатуру из тенантов владельца
+    - action: "build_keyboard"
+      params:
+        items: "{_cache.storage_values.tenant_owner}"
+        keyboard_type: "inline"
+        text_template: "Тенант $value$"
+        callback_template: "select_tenant_$value$"
+        buttons_per_row: 3
+    
+    # Отправляем сообщение с динамической клавиатурой
+    - action: "send_message"
+      params:
+        text: |
+          📋 <b>Выбор тенанта</b>
+          
+          Выберите доступный тенант из списка:
+        inline:
+          - "{_cache.keyboard|expand}"
+          - [{"🔙 Назад": "start"}]
+
+# Меню выбора всех тенантов (для системных администраторов)
+tenant_select_all:
+  description: "Отображение списка всех тенантов для выбора (системные + публичные)"
+
+  step:
+    # Получаем список всех тенантов
+    - action: "get_tenants_list"
+      params: {}
+    
+    # Строим динамическую клавиатуру из всех тенантов (системные + публичные)
+    - action: "build_keyboard"
+      params:
+        items: "{_cache.tenant_ids}"
+        keyboard_type: "inline"
+        text_template: "Тенант $value$"
+        callback_template: "select_tenant_$value$"
+        buttons_per_row: 3
+    
+    # Отправляем сообщение с динамической клавиатурой
+    - action: "send_message"
+      params:
+        text: |
+          📋 <b>Выбор тенанта</b>
+          
+          Выберите доступный тенант из списка:
+        inline:
+          - "{_cache.keyboard|expand}"
+          - [{"🔙 Назад": "start"}]
+
+# Уведомление об отсутствии доступных тенантов
+tenant_no_access:
+  description: "Уведомление об отсутствии доступных тенантов"
+
+  step:
+    - action: "send_message"
+      params:
+        text: |
+          ℹ️ <b>Нет доступных тенантов</b>
+          
+          У вас нет привязанных тенантов. Обратитесь к администратору системы для получения доступа.
+        inline:
+          - [{"🔙 Назад": "start"}]
+
+# ============================================
+# БЛОК 3: Обработка выбора тенанта
+# ============================================
+
+# Обработка выбора тенанта из динамической клавиатуры
+tenant_select_handler:
+  description: "Обработка выбора тенанта с проверкой доступа и сохранением в User Storage"
+
+  trigger:
+    - event_type: "callback"
+      condition: '$callback_data ~ "select_tenant_"'
+
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Извлекаем ID тенанта из callback_data (формат: select_tenant_105)
+    # Используем плейсхолдер для извлечения значения с модификатором regex
+    - action: "validate"
+      params:
+        condition: '{callback_data|regex:select_tenant_(\d+)|exists} == True'
+      transition:
+        - action_result: "failed"
+          transition_action: "jump_to_scenario"
+          transition_value: "invalid_tenant_number"
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "invalid_tenant_number"
+    
+    # Проверяем, является ли пользователь администратором
+    - action: "validate"
+      params:
+        condition: "{_cache.storage_values.admin} == True"
+      transition:
+        - action_result: "success"
+          transition_action: "jump_to_scenario"
+          transition_value: "tenant_select_save"
+        - action_result: "failed"
+          transition_action: "continue"
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    # Для обычных пользователей проверяем доступ к выбранному тенанту
+    # Используем плейсхолдер для извлечения значения с модификатором regex
+    - action: "validate"
+      params:
+        condition: '{callback_data|regex:select_tenant_(\d+)} in {_cache.storage_values.tenant_owner}'
+      transition:
+        - action_result: "success"
+          transition_action: "jump_to_scenario"
+          transition_value: "tenant_select_save"
+        - action_result: "failed"
+          transition_action: "jump_to_scenario"
+          transition_value: "tenant_access_denied"
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+
+# Сохранение выбранного тенанта в User Storage
+tenant_select_save:
+  description: "Сохранение выбранного тенанта в User Storage и переход к меню"
+
+  step:
+    # Сохраняем активный тенант в User Storage
+    - action: "set_user_storage"
+      params:
+        key: "active_tenant_id"
+        value: '{callback_data|regex:select_tenant_(\d+)}'
+    
+    # Переходим к меню тенанта
+    - action: "execute_scenario"
+      params:
+        scenario: "tenant"
+
+# Отказ в доступе к тенанту
+tenant_access_denied:
+  description: "Уведомление об отказе в доступе к выбранному тенанту"
+
+  step:
+    - action: "send_message"
+      params:
+        text: |
+          ❌ <b>Доступ ограничен</b>
+          
+          У вас нет доступа к выбранному тенанту.
+          
+          Обратитесь к администратору системы для получения доступа.
+        inline:
+          - [{"🔙 К списку тенантов": "tenant_not_selected"}]
+
+# Обработка неверного выбора тенанта
+invalid_tenant_number:
+  description: "Уведомление о неверном выборе тенанта"
+  
+  step:
+    - action: "send_message"
+      params:
+        text: |
+          ⚠️ <b>Ошибка выбора тенанта</b>
+          
+          Выбранный тенант недоступен или не существует.
+          
+          Попробуйте выбрать тенант снова.
+        inline:
+          - [{"🔙 К списку тенантов": "tenant_not_selected"}]
+
+# ============================================
+# БЛОК 4: Синхронизация и обновление
+# ============================================
+
+# Синхронизация всего тенанта
+sync_tenant_data:
+  description: "Синхронизация всего тенанта (бот + сценарии + storage)"
+
+  trigger:
+    - event_type: "callback"
+      callback_data: "sync_tenant_data"
+
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Получаем активный тенант из User Storage
+    - action: "get_user_storage"
+      params:
+        key: "active_tenant_id"
+        _response_key: "active_tenant_id"
+    
+    # Отправка уведомления
+    - action: "send_message"
+      params:
+        text: |
+          ⏳ Синхронизация данных тенанта...
+          
+          Тенант: <code>{_cache.active_tenant_id|fallback:неизвестный}</code>
+    
+    # Синхронизация всего тенанта (pull из GitHub + синхронизация всех данных)
+    - action: "sync_tenant"
+      params:
+        tenant_id: "{_cache.active_tenant_id}"
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+
+    # Успешное завершение
+    - action: "send_message"
+      params:
+        text: |
+          ✅ Данные тенанта синхронизированы
+          
+          Тенант: <code>{_cache.active_tenant_id}</code>
+      transition:
+        - action_result: "any"
+          transition_action: "jump_to_scenario"
+          transition_value: "tenant_menu"
+
+# ============================================
+# БЛОК 5: Установка токена бота
+# ============================================
+
+# Запрос токена бота
+set_bot_token_input:
+  description: "Запрос токена бота для установки"
+
+  trigger:
+    - event_type: "callback"
+      callback_data: "set_bot_token_input"
+
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Получаем активный тенант из User Storage
+    - action: "get_user_storage"
+      params:
+        key: "active_tenant_id"
+        _response_key: "active_tenant_id"
+    
+    # Отправка сообщения с инструкцией
+    - action: "send_message"
+      params:
+        text: |
+          🔑 <b>Установка токена бота</b>
+          
+          Тенант: <code>{_cache.active_tenant_id}</code>
+          
+          Введите токен бота для установки.
+          
+          Для удаления токена введите <code>null</code> или <code>none</code> (в любом регистре).
+          
+          ⚠️ <b>Внимание:</b> Бот должен быть создан через синхронизацию конфигурации перед установкой токена.
+        inline:
+          - [{"❌ Отмена": "tenant"}]
+    
+    # Устанавливаем состояние ожидания ввода
+    - action: "set_user_state"
+      params:
+        state: "set_bot_token"
+        expires_in_seconds: 300
+
+# Обработка ввода токена
+set_bot_token_handler:
+  description: "Обработка ввода токена бота"
+
+  trigger:
+    - event_type: "message"
+      user_state: "set_bot_token"
+
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Проверка, что ввод не является командой
+    - action: "execute_scenario"
+      params:
+        scenario: "check_message"
+    
+    # Получаем активный тенант из User Storage
+    - action: "get_user_storage"
+      params:
+        key: "active_tenant_id"
+        _response_key: "active_tenant_id"
+    
+    # Очищаем состояние
+    - action: "clear_user_state"
+    
+    # Проверяем, не является ли ввод null/none (для удаления токена)
+    - action: "validate"
+      params:
+        condition: '{event_text|lower} == "null" or {event_text|lower} == "none"'
+      transition:
+        - action_result: "success"
+          transition_action: "jump_to_scenario"
+          transition_value: "set_bot_token_delete"
+        - action_result: "failed"
+          transition_action: "continue"
+        - action_result: "error"
+          transition_action: "continue"
+    
+    # Валидация формата токена (число:строка)
+    - action: "validate"
+      params:
+        condition: '$event_text regex "^\\d+:[A-Za-z0-9_-]+$"'
+      transition:
+        - action_result: "success"
+          transition_action: "continue"
+        - action_result: "failed"
+          transition_action: "jump_to_scenario"
+          transition_value: "set_bot_token_invalid_format"
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "set_bot_token_invalid_format"
+    
+    # Отправка уведомления о начале установки
+    - action: "send_message"
+      params:
+        text: |
+          ⏳ Установка токена бота...
+          
+          Тенант: <code>{_cache.active_tenant_id}</code>
+    
+    # Устанавливаем токен бота
+    - action: "set_bot_token"
+      params:
+        tenant_id: "{_cache.active_tenant_id}"
+        bot_token: "{event_text}"
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "set_bot_token_error"
+    
+    # Успешное завершение
+    - action: "send_message"
+      params:
+        text: |
+          ✅ Токен бота установлен
+          
+          Тенант: <code>{_cache.active_tenant_id}</code>
+          
+          Токен будет проверен автоматически при запуске пулинга.
+        message_edit: "{_cache.last_message_id}"
+      transition:
+        - action_result: "any"
+          transition_action: "jump_to_scenario"
+          transition_value: "tenant_menu"
+
+# Обработка ошибки неверного формата токена
+set_bot_token_invalid_format:
+  description: "Обработка ошибки неверного формата токена"
+
+  step:
+    - action: "send_message"
+      params:
+        text: |
+          ❌ <b>Неверный формат токена</b>
+          
+          Токен бота должен иметь формат: <code>число:строка</code>
+          
+          Пример: <code>123456789:ABCdefGHIjklMNOpqrsTUVwxyz</code>
+          
+          Пожалуйста, введите токен в правильном формате.
+        inline:
+          - [{"🔙 К меню тенанта": "tenant"}]
+
+# Удаление токена (через ввод null/none)
+set_bot_token_delete:
+  description: "Удаление токена бота через ввод null/none"
+
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Получаем активный тенант из User Storage
+    - action: "get_user_storage"
+      params:
+        key: "active_tenant_id"
+        _response_key: "active_tenant_id"
+    
+    # Отправка уведомления о начале удаления
+    - action: "send_message"
+      params:
+        text: |
+          ⏳ Удаление токена бота...
+          
+          Тенант: <code>{_cache.active_tenant_id}</code>
+    
+    # Удаляем токен бота (передаем null)
+    - action: "set_bot_token"
+      params:
+        tenant_id: "{_cache.active_tenant_id}"
+        bot_token: null
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "set_bot_token_error"
+    
+    # Успешное завершение
+    - action: "send_message"
+      params:
+        text: |
+          ✅ Токен бота удален
+          
+          Тенант: <code>{_cache.active_tenant_id}</code>
+          
+          Токен был удален из конфигурации бота. Пулинг остановлен.
+        message_edit: "{_cache.last_message_id}"
+      transition:
+        - action_result: "any"
+          transition_action: "jump_to_scenario"
+          transition_value: "tenant_menu"
+
+# Обработка ошибки установки токена
+set_bot_token_error:
+  description: "Обработка ошибки установки токена"
+
+  step:
+    - action: "send_message"
+      params:
+        text: |
+          ❌ <b>Ошибка установки токена</b>
+          
+          Проверьте:
+          • Бот должен быть создан через синхронизацию конфигурации
+          • Токен должен быть корректным
+
+          ID пользователя: <code>{user_id}</code>
+          Лог ошибки: <code>{last_error.message|fallback:Неизвестная ошибка}</code>
+        inline:
+          - [{"🔙 К меню тенанта": "tenant"}]
+

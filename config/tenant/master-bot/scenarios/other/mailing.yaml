@@ -1,0 +1,96 @@
+# Рассылка сообщений
+# Скрытая команда /mail - не отображается в списке команд
+
+# Команда /mail - переход в меню рассылки
+mail:
+  description: "Скрытая команда рассылки сообщений"
+  
+  trigger:
+    - event_type: "message"
+      event_text: "/mail"
+
+  step:
+    # Проверка доступа администратора
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check_admin"
+
+    # Переход в меню рассылки
+    - action: "execute_scenario"
+      params:
+        scenario: "mailing_menu"
+
+# Меню рассылки с предпросмотром сообщения и списком получателей
+mailing_menu:
+  description: "Меню рассылки с предпросмотром сообщения и списком получателей"
+
+  step:
+    # Получаем группу mailing из storage
+    - action: "get_storage"
+      params:
+        group_key: "mailing"
+    
+    # Отправляем текст рассылки (как оно будет уходить)
+    - action: "send_message"
+      params:
+        text: "{_cache.storage_values.text}"
+        attachment: "{_cache.storage_values.attachment|fallback:}"
+        message_edit: false
+    
+    # Отправляем информацию о получателях и клавиатуру
+    - action: "send_message"
+      params:
+        text: |
+          <b>Получатели:</b>
+          {_cache.storage_values.recipients|list}
+          
+          <b>Всего получателей:</b> <code>{_cache.storage_values.recipients|length}</code>
+        inline:
+          - [{"✅ Отправить": "mailing_send"}]
+          - [{"🔙 Назад": "start"}]
+        message_edit: false
+
+# Отправка рассылки
+mailing_send:
+  description: "Отправка рассылки всем получателям"
+  
+  trigger:
+    - event_type: "callback"
+      callback_data: "mailing_send"
+
+  step:
+    # Проверка доступа администратора
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check_admin"
+    
+    # Получаем группу mailing из storage
+    - action: "get_storage"
+      params:
+        group_key: "mailing"
+    
+    # Отправляем уведомление о начале рассылки
+    - action: "send_message"
+      params:
+        text: |
+          ⏳ Отправка рассылки...
+          
+          Получателей: <code>{_cache.storage_values.recipients|length}</code>
+        message_edit: false
+    
+    # Отправляем сообщение всем получателям
+    - action: "send_message"
+      params:
+        target_chat_id: "{_cache.storage_values.recipients}"
+        text: "{_cache.storage_values.text}"
+        attachment: "{_cache.storage_values.attachment|fallback:}"
+        message_edit: false
+    
+    # Уведомление об успешной отправке
+    - action: "send_message"
+      params:
+        text: |
+          ✅ Рассылка отправлена успешно!
+          
+          Получателей: <code>{_cache.storage_values.recipients|length}</code>
+        message_edit: false
