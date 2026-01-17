@@ -1,0 +1,197 @@
+# ============================================
+# Анимации загрузки
+# Назначение: система плавных анимаций загрузки через редактирование сообщения
+# ============================================
+
+# Меню выбора типа загрузки
+loading_menu:
+  description: "Меню выбора типа анимации загрузки"
+  
+  trigger:
+    - event_type: "message"
+      event_text: "/loading"
+    - event_type: "callback"
+      callback_data: "loading_menu"
+
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Отправляем меню с вариантами загрузки
+    - action: "send_message"
+      params:
+        text: |
+          🎨 <b>Выберите тип анимации загрузки:</b>
+          
+          Выберите один из вариантов для тестирования:
+        inline:
+          - [{"Точки": "loading_dots"}, {"Точки (пульс)": "loading_emoji"}]
+          - [{"Эмодзи-прогресс": "loading_emoji_progress"}, {"Волна": "loading_wave"}]
+          - [{"Пульс": "loading_pulse"}, {"Две точки": "loading_double_dots"}]
+          - [{"Планеты": "loading_planets"}, {"Луна": "loading_moon"}]
+          - [{"Пульс (простой)": "loading_simple_pulse"}, {"Волна (простая)": "loading_simple_wave"}]
+          - [{"Две точки (просто)": "loading_simple_double_dots"}]
+
+# Основной сценарий анимации загрузки
+loading_animation:
+  description: "Тест плавной анимации загрузки - циклическое редактирование сообщения"
+  
+  trigger:
+    - event_type: "callback"
+      callback_data: "loading_dots"
+    - event_type: "callback"
+      callback_data: "loading_emoji"
+    - event_type: "callback"
+      callback_data: "loading_emoji_progress"
+    - event_type: "callback"
+      callback_data: "loading_pulse"
+    - event_type: "callback"
+      callback_data: "loading_wave"
+    - event_type: "callback"
+      callback_data: "loading_double_dots"
+    - event_type: "callback"
+      callback_data: "loading_planets"
+    - event_type: "callback"
+      callback_data: "loading_moon"
+    - event_type: "callback"
+      callback_data: "loading_simple_pulse"
+    - event_type: "callback"
+      callback_data: "loading_simple_wave"
+    - event_type: "callback"
+      callback_data: "loading_simple_double_dots"
+  
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Шаг 0: Запускаем sleep в фоне для имитации долгого запроса
+    - action: "sleep"
+      async: true
+      action_id: "loading_sleep"
+      params:
+        seconds: 5.0
+    
+    # Шаг 1: Инициализируем данные загрузки в кэш
+    - action: "execute_scenario"
+      params:
+        scenario: "loading_init_data"
+      transition:
+        - action_result: "any"
+          transition_action: "move_steps"
+          transition_value: 2  # Пропускаем шаг анимации в первый раз, попадаем на валидацию готовности
+    
+    # Шаг 2: Шаг анимации (пропускается в первый раз)
+    - action: "execute_scenario"
+      params:
+        scenario: "loading_animation_step"
+    
+    # Шаг 3: Цикл анимации - проверка готовности
+    - action: "validate"
+      params:
+        condition: "{_async_action.loading_sleep|ready} == True"
+      transition:
+        - action_result: "success"
+          transition_action: "move_steps"
+          transition_value: 1  # Готово - переходим к финальному сообщению
+        - action_result: "failed"
+          transition_action: "move_steps"
+          transition_value: -1  # Не готово - возвращаемся на шаг анимации (шаг 2)
+    
+    # Шаг 4: Редактируем сообщение финальным текстом
+    - action: "send_message"
+      params:
+        text: |
+          ✅ <b>Готово!</b>
+          
+          Обработка завершена успешно.
+          Время выполнения: 5 секунд
+        message_edit: "{_cache.loading_data.loading_message_id}"
+
+# Подсценарий для инициализации данных
+loading_init_data:
+  description: "Инициализация данных для анимации загрузки"
+  # НЕТ ТРИГГЕРОВ - вызывается только программно
+  
+  step:
+    # Шаг 0: Получаем группу ui с анимациями
+    - action: "get_storage"
+      params:
+        group_key: "ui"
+    
+    # Шаг 1: Сохраняем данные загрузки в кэш
+    # Тип загрузки извлекается из callback_data и сохраняется сразу в структуру
+    - action: "set_cache"
+      params:
+        _namespace: "loading_data"
+        cache:
+          loading_type: "{callback_data|regex:loading_(.+)}"
+          loading_messages: "{_cache.storage_values.loading_animations.{callback_data|regex:loading_(.+)}.messages}"
+          loading_interval: "{_cache.storage_values.loading_animations.{callback_data|regex:loading_(.+)}.interval}"
+          loading_index: 0
+          loading_array_length: "{_cache.storage_values.loading_animations.{callback_data|regex:loading_(.+)}.messages|length}"
+
+# Подсценарий для одного шага анимации
+loading_animation_step:
+  description: "Один шаг анимации загрузки - редактирование сообщения и увеличение индекса"
+  # НЕТ ТРИГГЕРОВ - вызывается только программно
+  
+  step:
+    # Шаг 0: Отправляем/редактируем сообщение с текстом по текущему индексу
+    - action: "send_message"
+      params:
+        text: "{_cache.loading_data.loading_messages[{_cache.loading_data.loading_index}]}"
+        message_edit: "{_cache.loading_data.loading_message_id|fallback:false}"
+    
+    # Шаг 1: Проверяем наличие message_id
+    # Если его не было (был None), сохраняем last_message_id после отправки
+    - action: "validate"
+      params:
+        condition: "{_cache.loading_data.loading_message_id|is_null} == False"
+      transition:
+        - action_result: "success"
+          transition_action: "move_steps"
+          transition_value: 2  # Уже есть - пропускаем сохранение, идем к обновлению индекса
+        - action_result: "failed"
+          transition_action: "continue"  # Нет - сохраняем last_message_id
+
+    # Шаг 2: Сохраняем message_id в кэш
+    - action: "set_cache"
+      params:
+        _namespace: "loading_data"
+        cache:
+          loading_message_id: "{_cache.last_message_id}"
+    
+    # Шаг 3: Вычисляем следующий индекс и сохраняем
+    - action: "set_cache"
+      params:
+        _namespace: "loading_data"
+        cache:
+          loading_index: "{_cache.loading_data.loading_index|+1}"
+    
+    # Шаг 4: Проверяем, не превысили ли длину массива
+    - action: "validate"
+      params:
+        condition: "{_cache.loading_data.loading_index} >= {_cache.loading_data.loading_array_length}"
+      transition:
+        - action_result: "success"
+          transition_action: "continue"  # Превысили - сбрасываем на 0
+        - action_result: "failed"
+          transition_action: "move_steps"
+          transition_value: 2  # Не превысили - индекс уже сохранен, пропускаем сброс
+    
+    # Шаг 5: Сбрасываем индекс на 0
+    - action: "set_cache"
+      params:
+        _namespace: "loading_data"
+        cache:
+          loading_index: 0
+    
+    # Шаг 6: Задержка перед следующей итерацией
+    - action: "sleep"
+      params:
+        seconds: "{_cache.loading_data.loading_interval|+0}"
+

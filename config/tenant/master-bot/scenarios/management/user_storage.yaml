@@ -1,0 +1,743 @@
+# ============================================
+# User Storage
+# Назначение: управление User Storage пользователя
+# ============================================
+
+# ============================================
+# БЛОК 1: Главное меню
+# ============================================
+
+# Главное меню User Storage
+user_storage_menu:
+  description: "Главное меню управления User Storage"
+  
+  trigger:
+    - event_type: "callback"
+      callback_data: "user_storage_menu"
+  
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Получаем активный тенант из User Storage
+    - action: "get_user_storage"
+      params:
+        key: "active_tenant_id"
+        _response_key: "active_tenant_id"
+    
+    - action: "send_message"
+      params:
+        text: |
+          👤 <b>User Storage <code>{_cache.active_tenant_id}</code></b>
+          
+          Введите: <b>user_id</b> <b>ключ</b> <b>значение</b>
+          
+          • <b>Одно слово</b> (user_id) — просмотр всего storage пользователя
+          • <b>Два слова</b> (user_id ключ) — просмотр значения ключа
+          • <b>Три слова</b> (user_id ключ значение) — изменение/добавление значения
+          
+          Пример: <code>123456789 temp_data some_value</code>
+        inline:
+          - [{"🔙 Назад": "tenant"}]
+    
+    # Устанавливаем состояние ожидания ввода
+    - action: "set_user_state"
+      params:
+        state: "user_storage_input"
+        expires_in_seconds: 300
+
+# ============================================
+# БЛОК 2: Обработка ввода
+# ============================================
+
+# Обработка ввода user_id/ключа/значения
+user_storage_input_handler:
+  description: "Обработка ввода user_id, ключа и значения"
+  
+  trigger:
+    - event_type: "message"
+      user_state: "user_storage_input"
+  
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Проверка, что ввод не является командой
+    - action: "execute_scenario"
+      params:
+        scenario: "check_message"
+    
+    # Очищаем состояние
+    - action: "clear_user_state"
+    
+    # Сохраняем введенные данные в User Storage для передачи между сценариями
+    - action: "set_user_storage"
+      params:
+        key: "temp_user_id"
+        value: "{event_text|regex:^([^\\s]+)}"
+    
+    # Определяем количество слов в вводе
+    - action: "validate"
+      params:
+        condition: '$event_text regex "^[^\\s]+$"'
+      transition:
+        # Одно слово - только user_id
+        - action_result: "success"
+          transition_action: "jump_to_scenario"
+          transition_value: "user_storage_view_user"
+        # Два или более слов
+        - action_result: "failed"
+          transition_action: "continue"
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    # Сохраняем ключ (второе слово)
+    - action: "set_user_storage"
+      params:
+        key: "temp_key"
+        value: "{event_text|regex:\\s+([^\\s]+)|lower}"
+    
+    # Проверяем, есть ли третье слово (значение)
+    - action: "validate"
+      params:
+        condition: '$event_text regex "^[^\\s]+\\s+[^\\s]+\\s+"'
+      transition:
+        # Три или более слов - user_id + ключ + значение
+        - action_result: "success"
+          transition_action: "continue"
+        # Два слова - user_id + ключ
+        - action_result: "failed"
+          transition_action: "jump_to_scenario"
+          transition_value: "user_storage_view_key"
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    # Сохраняем значение (все после второго пробела) в User Storage
+    - action: "set_user_storage"
+      params:
+        key: "temp_value"
+        value: "{event_text|regex:\\s+[^\\s]+\\s+(.+)$}"
+    
+    # Переходим к изменению значения
+    - action: "execute_scenario"
+      params:
+        scenario: "user_storage_edit_value"
+
+# ============================================
+# БЛОК 3: Просмотр storage пользователя
+# ============================================
+
+# Просмотр storage пользователя
+user_storage_view_user:
+  description: "Просмотр всего storage пользователя в YAML формате"
+  
+  step:
+    # Получаем активный тенант и user_id из User Storage
+    - action: "get_user_storage"
+      params:
+        key: "active_tenant_id"
+        _response_key: "active_tenant_id"
+    
+    - action: "get_user_storage"
+      params:
+        key: "temp_user_id"
+        _response_key: "temp_user_id"
+    
+    # Получаем весь storage пользователя с форматированием
+    - action: "get_user_storage"
+      params:
+        tenant_id: "{_cache.active_tenant_id}"
+        user_id: "{_cache.temp_user_id|regex:^\\d+$}"
+        format: true
+        _namespace: "view_user"
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+        - action_result: "not_found"
+          transition_action: "jump_to_scenario"
+          transition_value: "user_storage_user_not_found"
+    
+    # Отправляем storage пользователя в YAML формате
+    - action: "send_message"
+      params:
+        text: |
+          📄 <b>User Storage <code>{_cache.active_tenant_id}</code></b>
+          
+          Пользователь: <code>{_cache.temp_user_id}</code>
+          
+          <b>Storage в YAML формате:</b>
+          <pre>{_cache.view_user.formatted_text|fallback:ℹ️ Storage пуст}</pre>
+
+          💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+        inline:
+          - [{"🗑️ Удалить storage": "user_storage_delete_user_confirm"}, {"🔙 Назад": "user_storage_menu"}]
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    # Устанавливаем состояние ожидания ввода
+    - action: "set_user_state"
+      params:
+        state: "user_storage_input"
+        expires_in_seconds: 300
+
+# Уведомление о том, что пользователь не найден
+user_storage_user_not_found:
+  description: "Уведомление о том, что storage пользователя не найден"
+  
+  step:
+    - action: "send_message"
+      params:
+        text: |
+          ❌ <b>Storage пользователя не найден</b>
+          
+          Пользователь <code>{_cache.temp_user_id}</code> не существует или storage пуст.
+          
+          💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+        inline:
+          - [{"🔙 Назад": "user_storage_menu"}]
+    
+    # Устанавливаем состояние ожидания ввода
+    - action: "set_user_state"
+      params:
+        state: "user_storage_input"
+        expires_in_seconds: 300
+
+# ============================================
+# БЛОК 4: Просмотр значения ключа
+# ============================================
+
+# Просмотр значения ключа
+user_storage_view_key:
+  description: "Просмотр значения ключа"
+  
+  step:
+    # Получаем активный тенант, user_id и ключ из User Storage
+    - action: "get_user_storage"
+      params:
+        key: "active_tenant_id"
+        _response_key: "active_tenant_id"
+    
+    - action: "get_user_storage"
+      params:
+        key: "temp_user_id"
+        _response_key: "temp_user_id"
+    
+    - action: "get_user_storage"
+      params:
+        key: "temp_key"
+        _response_key: "temp_key"
+    
+    # Получаем значение ключа с форматированием
+    - action: "get_user_storage"
+      params:
+        tenant_id: "{_cache.active_tenant_id}"
+        user_id: "{_cache.temp_user_id|regex:^\\d+$}"
+        key: "{_cache.temp_key}"
+        format: true
+        _namespace: "view_key"
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+        - action_result: "not_found"
+          transition_action: "jump_to_scenario"
+          transition_value: "user_storage_key_not_found"
+    
+    # Отправляем значение ключа
+    - action: "send_message"
+      params:
+        text: |
+          📋 <b>User Storage <code>{_cache.active_tenant_id}</code></b>
+          
+          Пользователь: <code>{_cache.temp_user_id}</code>
+          Ключ: <code>{_cache.temp_key}</code>
+          
+          <b>Значение:</b>
+          <pre>{_cache.view_key.formatted_text|fallback:не установлено}</pre>
+
+          💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+        inline:
+          - [{"🗑️ Удалить значение": "user_storage_delete_value_confirm"}, {"🔙 Назад": "user_storage_menu"}]
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    # Устанавливаем состояние ожидания ввода
+    - action: "set_user_state"
+      params:
+        state: "user_storage_input"
+        expires_in_seconds: 300
+
+# Уведомление о том, что ключ не найден
+user_storage_key_not_found:
+  description: "Уведомление о том, что ключ не найден"
+  
+  step:
+    # Получаем user_id и ключ из User Storage
+    - action: "get_user_storage"
+      params:
+        key: "temp_user_id"
+        _response_key: "temp_user_id"
+    
+    - action: "get_user_storage"
+      params:
+        key: "temp_key"
+        _response_key: "temp_key"
+      
+    - action: "send_message"
+      params:
+        text: |
+          ❌ <b>Ключ не найден</b>
+          
+          Пользователь: <code>{_cache.temp_user_id}</code>
+          Ключ: <code>{_cache.temp_key}</code>
+          
+          Ключ не существует в storage пользователя.
+          
+          💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+        inline:
+          - [{"🔙 Назад": "user_storage_menu"}]
+    
+    # Устанавливаем состояние ожидания ввода
+    - action: "set_user_state"
+      params:
+        state: "user_storage_input"
+        expires_in_seconds: 300
+
+# ============================================
+# БЛОК 5: Изменение/добавление значения
+# ============================================
+
+# Изменение/добавление значения
+user_storage_edit_value:
+  description: "Изменение/добавление значения (user_id + ключ + значение введены)"
+  
+  step:
+    # Получаем активный тенант, user_id, ключ и значение из User Storage
+    - action: "get_user_storage"
+    
+    # Получаем текущее значение для отображения (если существует)
+    - action: "get_user_storage"
+      params:
+        tenant_id: "{_cache.user_storage_values.active_tenant_id}"
+        user_id: "{_cache.user_storage_values.temp_user_id|regex:^\\d+$}"
+        key: "{_cache.user_storage_values.temp_key}"
+        format: true
+        _namespace: "current_value"
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+        - action_result: "not_found"
+          transition_action: "jump_to_scenario"
+          transition_value: "user_storage_edit_new_value"
+    
+    # Показываем подтверждение с текущим и новым значением
+    - action: "send_message"
+      params:
+        text: |
+          ⚠️ <b>Подтверждение изменения</b>
+          
+          Тенант: <code>{_cache.user_storage_values.active_tenant_id}</code>
+          Пользователь: <code>{_cache.user_storage_values.temp_user_id}</code>
+          Ключ: <code>{_cache.user_storage_values.temp_key}</code>
+          
+          <b>Текущее значение:</b>
+          <pre>{_cache.current_value.formatted_text|fallback:не установлено}</pre>
+
+          <b>Новое значение:</b>
+          <pre>{_cache.user_storage_values.temp_value}</pre>
+          
+          Вы уверены, что хотите сохранить это значение?
+          
+          💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+        inline:
+          - [{"✅ Изменить": "user_storage_edit_execute"}, {"🗑️ Удалить": "user_storage_delete_value_confirm"}, {"🔙 Назад": "user_storage_menu"}]
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    # Устанавливаем состояние ожидания ввода
+    - action: "set_user_state"
+      params:
+        state: "user_storage_input"
+        expires_in_seconds: 300
+
+# Подтверждение добавления нового значения (для случая, когда значение не найдено)
+user_storage_edit_new_value:
+  description: "Подтверждение добавления нового значения для несуществующего ключа"
+  
+  step:
+    # Получаем весь User Storage (нужно несколько значений)
+    - action: "get_user_storage"
+    
+    - action: "send_message"
+      params:
+        text: |
+          ⚠️ <b>Подтверждение добавления нового значения</b>
+          
+          Тенант: <code>{_cache.user_storage_values.active_tenant_id}</code>
+          Пользователь: <code>{_cache.user_storage_values.temp_user_id}</code>
+          Ключ: <code>{_cache.user_storage_values.temp_key}</code>
+          
+          <i>Ключ не существует, будет создан новый.</i>
+          
+          <b>Новое значение:</b>
+          <pre>{_cache.user_storage_values.temp_value}</pre>
+          
+          Вы уверены, что хотите сохранить это значение?
+          
+          💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+        inline:
+          - [{"✅ Добавить": "user_storage_edit_execute"}, {"🔙 Назад": "user_storage_menu"}]
+    
+    # Устанавливаем состояние ожидания ввода
+    - action: "set_user_state"
+      params:
+        state: "user_storage_input"
+        expires_in_seconds: 300
+
+# Выполнение сохранения значения
+user_storage_edit_execute:
+  description: "Выполнение сохранения значения"
+  
+  trigger:
+    - event_type: "callback"
+      callback_data: "user_storage_edit_execute"
+  
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Получаем весь User Storage (нужно несколько значений)
+    - action: "get_user_storage"
+    
+    # Сохраняем значение (возвращает сохраненные данные в response_data)
+    - action: "set_user_storage"
+      params:
+        tenant_id: "{_cache.user_storage_values.active_tenant_id}"
+        user_id: "{_cache.user_storage_values.temp_user_id|regex:^\\d+$}"
+        key: "{_cache.user_storage_values.temp_key}"
+        value: "{_cache.user_storage_values.temp_value}"
+        format: true
+        _namespace: "edit_saved"
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    - action: "send_message"
+      params:
+        text: |
+          ✅ <b>Значение сохранено</b>
+          
+          Пользователь: <code>{_cache.user_storage_values.temp_user_id}</code>
+          Ключ: <code>{_cache.user_storage_values.temp_key}</code>
+          
+          <b>Сохраненное значение:</b>
+          <pre>{_cache.edit_saved.formatted_text|fallback:не установлено}</pre>
+        inline:
+          - [{"🔙 Назад": "user_storage_menu"}]
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    # Очищаем временные данные из User Storage
+    - action: "delete_user_storage"
+      params:
+        key: "temp_user_id"
+    
+    - action: "delete_user_storage"
+      params:
+        key: "temp_key"
+    
+    - action: "delete_user_storage"
+      params:
+        key: "temp_value"
+
+# ============================================
+# БЛОК 6: Удаление значения
+# ============================================
+
+# Подтверждение удаления значения
+user_storage_delete_value_confirm:
+  description: "Подтверждение удаления значения"
+  
+  trigger:
+    - event_type: "callback"
+      callback_data: "user_storage_delete_value_confirm"
+  
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Получаем весь User Storage (нужно несколько значений)
+    - action: "get_user_storage"
+    
+    # Получаем текущее значение для отображения
+    - action: "get_user_storage"
+      params:
+        tenant_id: "{_cache.user_storage_values.active_tenant_id}"
+        user_id: "{_cache.user_storage_values.temp_user_id|regex:^\\d+$}"
+        key: "{_cache.user_storage_values.temp_key}"
+        format: true
+        _namespace: "delete_value"
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+        - action_result: "not_found"
+          transition_action: "jump_to_scenario"
+          transition_value: "user_storage_delete_value_not_found"
+    
+    # Показываем подтверждение удаления
+    - action: "send_message"
+      params:
+        text: |
+          ⚠️ <b>Подтверждение удаления значения</b>
+          
+          Тенант: <code>{_cache.user_storage_values.active_tenant_id}</code>
+          Пользователь: <code>{_cache.user_storage_values.temp_user_id}</code>
+          Ключ: <code>{_cache.user_storage_values.temp_key}</code>
+          
+          <b>Текущее значение:</b>
+          <pre>{_cache.delete_value.formatted_text|fallback:не установлено}</pre>
+          
+          Вы уверены, что хотите удалить это значение?
+        inline:
+          - [{"✅ Да, удалить": "user_storage_delete_value_execute"}, {"❌ Отмена": "user_storage_menu"}]
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+
+# Уведомление о том, что значение не найдено
+user_storage_delete_value_not_found:
+  description: "Уведомление о том, что значение не найдено"
+  
+  step:
+    # Получаем user_id и ключ из User Storage
+    - action: "get_user_storage"
+      params:
+        key: "temp_user_id"
+        _response_key: "temp_user_id"
+    
+    - action: "get_user_storage"
+      params:
+        key: "temp_key"
+        _response_key: "temp_key"
+    
+    - action: "send_message"
+      params:
+        text: |
+          ❌ <b>Значение не найдено</b>
+          
+          Пользователь: <code>{_cache.temp_user_id}</code>
+          Ключ: <code>{_cache.temp_key}</code>
+          
+          Значение не существует.
+          
+          💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+        inline:
+          - [{"🔙 Назад": "user_storage_menu"}]
+    
+    # Устанавливаем состояние ожидания ввода
+    - action: "set_user_state"
+      params:
+        state: "user_storage_input"
+        expires_in_seconds: 300
+
+# Выполнение удаления значения
+user_storage_delete_value_execute:
+  description: "Выполнение удаления значения"
+  
+  trigger:
+    - event_type: "callback"
+      callback_data: "user_storage_delete_value_execute"
+  
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Получаем весь User Storage (нужно несколько значений)
+    - action: "get_user_storage"
+    
+    # Получаем значение перед удалением для отображения
+    - action: "get_user_storage"
+      params:
+        tenant_id: "{_cache.user_storage_values.active_tenant_id}"
+        user_id: "{_cache.user_storage_values.temp_user_id|regex:^\\d+$}"
+        key: "{_cache.user_storage_values.temp_key}"
+        _namespace: "deleted_value"
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+        - action_result: "not_found"
+          transition_action: "continue"
+    
+    # Удаляем значение
+    - action: "delete_user_storage"
+      params:
+        tenant_id: "{_cache.user_storage_values.active_tenant_id}"
+        user_id: "{_cache.user_storage_values.temp_user_id|regex:^\\d+$}"
+        key: "{_cache.user_storage_values.temp_key}"
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    - action: "send_message"
+      params:
+        text: |
+          ✅ <b>Значение удалено</b>
+          
+          Пользователь: <code>{_cache.user_storage_values.temp_user_id}</code>
+          Ключ: <code>{_cache.user_storage_values.temp_key}</code>
+          Значение: <code>{_cache.deleted_value.user_storage_values|fallback:не удалось получить}</code>
+        inline:
+          - [{"🔙 Назад": "user_storage_menu"}]
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    # Очищаем временные данные из User Storage
+    - action: "delete_user_storage"
+      params:
+        key: "temp_user_id"
+    
+    - action: "delete_user_storage"
+      params:
+        key: "temp_key"
+
+# ============================================
+# БЛОК 7: Удаление storage пользователя
+# ============================================
+
+# Подтверждение удаления storage пользователя
+user_storage_delete_user_confirm:
+  description: "Подтверждение удаления всего storage пользователя"
+  
+  trigger:
+    - event_type: "callback"
+      callback_data: "user_storage_delete_user_confirm"
+  
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Получаем активный тенант и user_id из User Storage
+    - action: "get_user_storage"
+      params:
+        key: "active_tenant_id"
+        _response_key: "active_tenant_id"
+    
+    - action: "get_user_storage"
+      params:
+        key: "temp_user_id"
+        _response_key: "temp_user_id"
+    
+    # Получаем storage пользователя для отображения информации
+    - action: "get_user_storage"
+      params:
+        tenant_id: "{_cache.active_tenant_id}"
+        user_id: "{_cache.temp_user_id|regex:^\\d+$}"
+        format: true
+        _namespace: "delete_user"
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    - action: "send_message"
+      params:
+        text: |
+          ⚠️ <b>Подтверждение удаления storage пользователя</b>
+          
+          Тенант: <code>{_cache.active_tenant_id}</code>
+          Пользователь: <code>{_cache.temp_user_id}</code>
+          
+          <b>Содержимое storage:</b>
+          <pre>{_cache.delete_user.formatted_text|fallback:Storage пуст}</pre>
+          
+          ⚠️ <b>Внимание!</b> Будет удален весь storage пользователя со всеми значениями!
+        inline:
+          - [{"✅ Да, удалить": "user_storage_delete_user_execute"}, {"❌ Отмена": "user_storage_menu"}]
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+
+# Выполнение удаления storage пользователя
+user_storage_delete_user_execute:
+  description: "Выполнение удаления всего storage пользователя"
+  
+  trigger:
+    - event_type: "callback"
+      callback_data: "user_storage_delete_user_execute"
+  
+  step:
+    # Проверка доступа
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Получаем активный тенант и user_id из User Storage
+    - action: "get_user_storage"
+      params:
+        key: "active_tenant_id"
+        _response_key: "active_tenant_id"
+    
+    - action: "get_user_storage"
+      params:
+        key: "temp_user_id"
+        _response_key: "temp_user_id"
+    
+    # Удаляем весь storage пользователя (без key удаляются все записи)
+    - action: "delete_user_storage"
+      params:
+        tenant_id: "{_cache.active_tenant_id}"
+        user_id: "{_cache.temp_user_id|regex:^\\d+$}"
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    - action: "send_message"
+      params:
+        text: |
+          ✅ <b>Storage пользователя удален</b>
+          
+          Пользователь <code>{_cache.temp_user_id}</code> - весь storage успешно удален.
+        inline:
+          - [{"🔙 Назад": "user_storage_menu"}]
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    # Очищаем временные данные из User Storage
+    - action: "delete_user_storage"
+      params:
+        key: "temp_user_id"

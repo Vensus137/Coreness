@@ -1,0 +1,14 @@
+# Конфигурация Telegram бота для Master тенанта (системное управление)
+is_active: true
+
+# Команды бота (для таблицы BotCommand)
+commands:
+  - command: "tenant"
+    description: "Меню тенанта"
+    scope: "all_private_chats"
+  - command: "help"
+    description: "Справка"
+    scope: "all_private_chats"
+  - command: "me"
+    description: "Информация о пользователе"
+    scope: "all_private_chats"

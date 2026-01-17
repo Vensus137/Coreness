@@ -1,0 +1,51 @@
+# Глобальные настройки системы
+
+# === УПРАВЛЕНИЕ ПЛАГИНАМИ ===
+
+plugin_management:
+  # Управление сервисами (основа запуска приложения)
+  services:
+    default_enabled: true     # Сервисы по умолчанию выключены
+    disabled_services: []
+    enabled_services: []
+  
+  # Управление утилитами (тонкая настройка вспомогательных компонентов)
+  utilities:
+    default_enabled: true     # Утилиты по умолчанию включены (инициализируются только при необходимости)
+    disabled_utilities: []    # Список отключенных утилит
+    enabled_utilities: []     # Список принудительно включенных утилит
+
+# === ГЛОБАЛЬНЫЕ НАСТРОЙКИ ===
+
+global:
+  file_base_path: "resources"           # Базовая директория для всех файлов
+  backup_dir: "data/backups"            # Базовая директория для всех бэкапов БД
+  tenants_config_path: "config/tenant"  # Путь к конфигурации тенантов
+  max_system_tenant_id: 100             # Максимальный ID системного тенанта
+  
+  # Настройки graceful shutdown
+  shutdown:
+    di_container_timeout: 5.0      # Время на shutdown DI-контейнера (всех плагинов)
+    plugin_timeout: 3.0             # Стандартное время на shutdown каждого плагина
+    background_tasks_timeout: 2.0   # Время на завершение фоновых задач приложения
+
+# === НАСТРОЙКИ СЕРВИСОВ ===
+
+logger:
+  console_enabled: true
+  file_enabled: true
+
+event_processor:
+  enable_time_comparison: false
+
+bot_hub:
+  use_webhooks: false
+
+tenant_hub:
+  use_webhooks: false
+
+http_api_service:
+  enabled: false
+
+backup_service:
+  enabled: true
