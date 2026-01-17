@@ -1,0 +1,100 @@
+# Master Bot Commands
+# Hidden command /start - not shown in command list
+start:
+  description: "Hidden command to start Master Bot"
+  
+  trigger:
+    - event_type: "message"
+      event_text: "/start"
+    - event_type: "callback"
+      callback_data: "start"
+
+  step:
+    # Access check
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+
+    # Greeting (will execute only after successful access check)
+    - action: "send_message"
+      params:
+        text: |
+          🔧 <b>Master Bot</b> - Системное управление
+          
+          Добро пожаловать в панель управления системой!
+        inline:
+          - [{"🏠 Управление тенантом": "tenant"}, {"ℹ️ Справка": "help"}]
+        message_edit: true
+
+# Help command - brief information about Master Bot
+help:
+  description: "Help command with brief information about Master Bot"
+  
+  trigger:
+    - event_type: "message"
+      event_text: "/help"
+    - event_type: "callback"
+      callback_data: "help"
+
+  step:
+    # Access check
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Bot information (will execute only after successful access check)
+    - action: "send_message"
+      params:
+        text: |
+          🔧 <b>Справка</b>
+          
+          <b>Команды:</b>
+          • /tenant - управление тенантами
+          • /help - эта справка
+          • /mail - рассылка сообщений (для администратора)
+          
+          <i>Обратитесь к администратору системы при возникновении проблем.</i>
+        inline:
+          - [{"🏠 Управление тенантом": "tenant"}]
+        message_edit: true
+
+# Public command /me - user information
+me:
+  description: "Public command to display user information"
+  
+  trigger:
+    - event_type: "message"
+      event_text: "/me"
+
+  step:
+    # User information (available to all)
+    - action: "send_message"
+      params:
+        text: |
+          👤 <b>Информация о пользователе</b>
+          
+          <b>ID:</b> <code>{user_id}</code>
+          <b>Username:</b> <code>@{username|fallback:не указан}</code>
+          <b>Имя:</b> <code>{first_name|fallback:не указано}</code>
+          <b>Фамилия:</b> <code>{last_name|fallback:не указана}</code>
+          <b>Язык:</b> <code>{language_code|fallback:не указан}</code>
+        message_edit: true
+
+# Hidden command /file - get file_id and type of attachments
+file_info:
+  description: "Hidden command to get file_id and type of attachments for subsequent forwarding"
+  
+  trigger:
+    - event_type: "message"
+      event_text: "/file"
+
+  step:
+    # File information (available to all)
+    - action: "send_message"
+      params:
+        text: |
+          📎 <b>Информация о файле</b>
+          
+          <b>file_id:</b> <code>{event_attachment[0].file_id|fallback:{reply_attachment[0].file_id|fallback:Файл не найден}}</code>
+          <b>type:</b> <code>{event_attachment[0].type|fallback:{reply_attachment[0].type|fallback:Тип не найден}}</code>
+        message_edit: true

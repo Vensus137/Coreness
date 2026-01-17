@@ -1,0 +1,698 @@
+name: tenant_hub
+description: Сервис для управления конфигурациями тенантов - координатор загрузки данных
+singleton: true
+type: service
+
+dependencies:
+  - logger
+  - settings_manager
+  - database_manager
+  - action_hub
+  - condition_parser
+  - task_manager
+  - datetime_formatter
+  - action_validator
+  - cache_manager
+
+optional_dependencies:
+  - http_server
+
+settings:
+  github_url:
+    type: string
+    default: "https://github.com/Vensus137/Coreness-Tenant"
+    description: "URL GitHub репозитория с конфигурациями публичных тенантов"
+  
+  github_token:
+    type: string
+    default: "${GITHUB_TENANT_TOKEN}"
+    description: "GitHub токен для доступа к приватному репозиторию"
+  
+  sync_interval:
+    type: integer
+    default: 30
+    description: "Интервал автоматической синхронизации с GitHub (в секундах). Интервал между окончанием предыдущей синхронизации и началом следующей. 0 = отключить автосинхронизацию."
+  
+  storage_max_depth:
+    type: integer
+    default: 20
+    description: "Максимальная глубина вложенности для валидации storage структур (словари, массивы)"
+  
+  storage_max_records:
+    type: integer
+    default: 100
+    description: "Максимальное количество записей storage, возвращаемых при получении данных. Ограничение на выгрузку огромных storage. По умолчанию 100 записей."
+  
+  storage_groups_max_limit:
+    type: integer
+    default: 200
+    description: "Максимальное количество групп, возвращаемых при получении списка групп. Ограничение на отображение огромных списков групп. По умолчанию 200 групп."
+  
+  cache_ttl:
+    type: integer
+    default: 315360000
+    description: "TTL для кэша тенантов (10 лет в секундах). Вечный кэш, инвалидируется явно"
+  
+  use_webhooks:
+    type: boolean
+    default: false
+    description: "Использовать вебхуки GitHub вместо пулинга (требует включенный http_server). Если false - используется пулинг как fallback"
+  
+  github_webhook_secret:
+    type: string
+    default: "${GITHUB_WEBHOOK_SECRET}"
+    description: "Секрет для валидации подписи GitHub вебхуков (HMAC SHA256). Должен совпадать с секретом, указанным в настройках вебхука GitHub репозитория. Устанавливается через переменную окружения GITHUB_WEBHOOK_SECRET"
+  
+  github_webhook_endpoint:
+    type: string
+    default: "/webhooks/github"
+    description: "Путь эндпоинта для GitHub вебхуков. Должен совпадать с URL, указанным в настройках вебхука GitHub репозитория"
+
+actions:
+  sync_tenant:
+    description: Синхронизация конфигурации тенанта с базой данных (сначала обновляет из GitHub, затем синхронизирует)
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта для синхронизации"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error, timeout, not_found"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+  sync_all_tenants:
+    description: Синхронизация всех тенантов (сначала pull из GitHub, потом синхронизация всех)
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        description: "Данные для синхронизации (пустой объект)"
+        properties: {}
+    output:
+      result:
+        type: string
+        description: "Результат: success, partial_success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+  sync_tenant_data:
+    description: "Синхронизация данных тенанта: создание/обновление тенанта"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+  sync_tenant_bot:
+    description: "Синхронизация бота тенанта: pull из GitHub + парсинг + синхронизация"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+  sync_tenant_scenarios:
+    description: "Синхронизация сценариев тенанта: pull из GitHub + парсинг + синхронизация"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+  
+  sync_tenant_storage:
+    description: "Синхронизация storage тенанта: pull из GitHub + парсинг + синхронизация"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+  sync_tenant_config:
+    description: "Синхронизация конфига тенанта: pull из GitHub + парсинг + синхронизация"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+  sync_tenants_from_files:
+    description: "Синхронизация тенантов из списка измененных файлов (универсальный метод для вебхуков и пуллинга)"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          files:
+            type: array
+            optional: false
+            description: "Список файлов в формате [\"path1\", \"path2\"] или [{\"filename\": \"path\"}, ...]"
+            items:
+              type: string
+    output:
+      result:
+        type: string
+        description: "Результат: success, partial_success, error"
+      response_data:
+        type: object
+        optional: true
+        description: "Данные ответа (synced_tenants, total_tenants, errors)"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+
+  get_tenant_status:
+    description: "Получение статуса тенанта"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          bot_is_active:
+            type: boolean
+            description: "Активен ли бот тенанта из настроек БД (флаг is_active в БД)"
+          bot_is_polling:
+            type: boolean
+            description: "Активен ли пулинг бота тенанта (запущен ли процесс пулинга)"
+          bot_is_webhook_active:
+            type: boolean
+            description: "Активен ли вебхук бота тенанта (установлен ли вебхук через Telegram API)"
+          bot_is_working:
+            type: boolean
+            description: "Работает ли бот тенанта (пулинг ИЛИ вебхуки активны). Показывает реальный статус работы бота"
+          last_updated_at:
+            type: string
+            optional: true
+            description: "Дата последнего успешного обновления тенанта"
+          last_failed_at:
+            type: string
+            optional: true
+            description: "Дата последней ошибки при обновлении тенанта"
+          last_error:
+            type: string
+            optional: true
+            description: "Текст последней ошибки при обновлении тенанта"
+  
+  get_storage:
+    description: "Получение значений storage для тенанта. Поддерживает получение всех значений, группы, конкретного значения, а также поиск по паттернам"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта (обязательно)"
+          group_key:
+            type: string
+            optional: true
+            description: "Ключ группы (точное совпадение, приоритет над group_key_pattern)"
+          group_key_pattern:
+            type: string
+            optional: true
+            min_length: 1
+            description: "Паттерн для поиска группы (ILIKE, используется если group_key не указан)"
+          key:
+            type: string
+            optional: true
+            description: "Ключ атрибута (точное совпадение, приоритет над key_pattern). Используется только если указан group_key или group_key_pattern"
+          key_pattern:
+            type: string
+            optional: true
+            min_length: 1
+            description: "Паттерн для поиска ключа (ILIKE, используется если key не указан). Используется только если указан group_key или group_key_pattern"
+          format:
+            type: boolean
+            optional: true
+            description: "Если true, возвращает дополнительное поле formatted_text с данными в формате YAML"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error, not_found"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          storage_values:
+            type: any
+            replaceable: true
+            description: "Запрошенные данные. Если указаны group_key и key - возвращается прямое значение (примитив или объект как есть). Если указан только group_key - возвращается структура группы {key: value}. Если ничего не указано - возвращается полная структура {group_key: {key: value}}"
+          formatted_text:
+            type: string
+            optional: true
+            description: "Отформатированный текст в формате YAML (возвращается только если format=true)"
+
+  set_storage:
+    description: "Установка значений storage для тенанта. Поддерживает смешанный подход: полная структура через values или частичная через group_key/key/value"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        description: "Параметры для установки значений. Приоритет: group_key -> key -> value -> values"
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта (обязательно)"
+          group_key:
+            type: string
+            optional: true
+            description: "Ключ группы (с поддержкой плейсхолдеров). Если указан, используется смешанный подход"
+          key:
+            type: string
+            optional: true
+            description: "Ключ значения (с поддержкой плейсхолдеров). Используется вместе с group_key"
+          value:
+            type: any
+            optional: true
+            description: "Значение для установки. Используется вместе с group_key и key"
+          values:
+            type: object
+            optional: true
+            description: "Структура для установки. Если указан group_key - структура для группы {key: value}, иначе полная структура {group_key: {key: value}}"
+          format:
+            type: boolean
+            optional: true
+            description: "Если true, возвращает дополнительное поле formatted_text с данными в формате YAML"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          storage_values:
+            type: any
+            replaceable: true
+            description: "Установленные данные. Если установлено одно значение (group_key + key + value) - возвращается прямое значение (примитив или объект как есть). Если установлена группа (group_key + values) - возвращается структура группы {key: value}. Если установлена полная структура (values) - возвращается полная структура {group_key: {key: value}}"
+          formatted_text:
+            type: string
+            optional: true
+            description: "Отформатированный текст в формате YAML (возвращается только если format=true)"
+
+  delete_storage:
+    description: "Удаление значений или групп из storage. Если указан key или key_pattern - удаляется значение, иначе удаляется группа"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта (обязательно)"
+          group_key:
+            type: string
+            optional: true
+            description: "Ключ группы (точное совпадение, приоритет над group_key_pattern)"
+          group_key_pattern:
+            type: string
+            optional: true
+            min_length: 1
+            description: "Паттерн для поиска группы (ILIKE, используется если group_key не указан)"
+          key:
+            type: string
+            optional: true
+            description: "Ключ атрибута (точное совпадение, приоритет над key_pattern). Если указан - удаляется значение, иначе удаляется группа"
+          key_pattern:
+            type: string
+            optional: true
+            min_length: 1
+            description: "Паттерн для поиска ключа (ILIKE, используется если key не указан). Если указан - удаляется значение, иначе удаляется группа"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error, not_found"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+  get_storage_groups:
+    description: "Получение списка уникальных ключей групп для тенанта. Возвращает только список group_key без значений (с ограничением на количество групп)"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта (обязательно)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          group_keys:
+            type: array
+            items:
+              type: string
+            replaceable: true
+            description: "Список уникальных ключей групп (ограничен настройкой storage_groups_max_limit)"
+          is_truncated:
+            type: boolean
+            optional: true
+            description: "Флаг, указывающий что список был обрезан (true если групп больше лимита, иначе поле отсутствует)"
+
+  get_tenants_list:
+    description: "Получение списка всех ID тенантов с разделением на публичные и системные"
+    access_rules: ["system_access"]
+    public: false
+    input:
+      data:
+        type: object
+        description: "Данные для получения списка тенантов (пустой объект)"
+        properties: {}
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          tenant_ids:
+            type: array
+            description: "Массив ID всех тенантов"
+            items:
+              type: integer
+          public_tenant_ids:
+            type: array
+            description: "Массив ID публичных тенантов"
+            items:
+              type: integer
+          system_tenant_ids:
+            type: array
+            description: "Массив ID системных тенантов"
+            items:
+              type: integer
+          tenant_count:
+            type: integer
+            description: "Общее количество тенантов"
+
+  update_tenant_config:
+    description: "Обновление конфига тенанта (обновляет БД, инвалидирует кэш). Обновляет только переданные поля, остальные не трогает"
+    access_rules: ["system_access"]
+    public: false
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+          ai_token:
+            type: "string|None"
+            optional: true
+            description: "AI API токен для тенанта (опционально, если не передан - поле не обновляется, если передан null - удаляется)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"

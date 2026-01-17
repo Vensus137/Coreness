@@ -1,0 +1,53 @@
+services:
+  app:
+    extends:
+      file: docker-compose.yml
+      service: app
+    image: app:latest
+    container_name: app
+    restart: always  # Для prod - всегда перезапускать
+    environment:
+      - ENVIRONMENT=prod
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    # Для prod: код в образе (без volume для всего проекта), только данные/конфиги
+    # Volumes полностью переопределяют базовые volumes из docker-compose.yml
+    volumes:
+      - ./supervisord.conf:/etc/supervisor/conf.d/supervisord.conf:ro
+      # Данные (база данных и другие данные) - должны быть доступны и изменяемы
+      - ../data:/workspace/data:rw
+      # Конфигурация (может изменяться через системные действия, например у системных тенантов)
+      - ../config:/workspace/config:rw
+      # Логи (для удобства просмотра и отладки)
+      - ../logs:/workspace/logs:rw
+    # Проброс порта для вебхуков (GitHub и Telegram) - prod окружение
+    ports:
+      - "443:443"  # HTTPS сервер для вебхуков (prod) - стандартный HTTPS порт, разрешен Telegram
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    # Ресурсы настраиваются локально через docker-compose.override.yml
+    # Используйте: ./docker/compose resources set app --cpus 2 --memory 2G
+    # или после установки: dc resources set app --cpus 2 --memory 2G
+
+  postgres:
+    extends:
+      file: docker-compose.yml
+      service: postgres
+    container_name: postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-core_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-coreness1234}
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      # Переопределяем volumes для монтирования prod конфига
+      - ../data/postgresql:/var/lib/postgresql/data
+      # Скрипт инициализации для автоматической установки расширения pgvector
+      - ./init-pgvector.sql:/docker-entrypoint-initdb.d/01-init-pgvector.sql:ro
+      - ./postgresql.prod.conf:/etc/postgresql/postgresql.conf:ro
+      - ./pg_hba.prod.conf:/etc/postgresql/pg_hba.conf:ro
+    ports:
+      - "5432:5432"  # Prod окружение использует стандартный порт 5432
+

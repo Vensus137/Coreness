@@ -1,0 +1,166 @@
+name: "database_manager"
+description: "Централизованный доступ к базе данных и связанным репозиториям."
+singleton: true
+
+dependencies:
+  - "logger"
+  - "settings_manager"
+  - "datetime_formatter"
+  - "data_converter"
+    
+settings:
+  database_preset:
+    type: string
+    default: "sqlite"
+    description: "Пресет базы данных: 'sqlite' или 'postgresql'"
+  
+  database:
+    type: object
+
+    sqlite:
+      database_url: "sqlite:///data/core.db"
+      # Настройки пула соединений для SQLite (оптимизировано для 1GB RAM)
+      connection_pool:
+        pool_size: 35                # Сбалансированный пул
+        max_overflow: 15             # Умеренный overflow
+        pool_pre_ping: true
+        pool_recycle: 300
+        connect_timeout: 1
+      # SQLite PRAGMA оптимизации (оптимизировано для операционной базы)
+      # Сбалансированные настройки памяти: ~200MB (cache + mmap) для оптимального соотношения скорость/память
+      pragma_settings:
+        journal_mode: "WAL"          # Write-Ahead Logging для лучшей параллельности (чтение/запись)
+        cache_size: 25000             # 100MB кэша (баланс между производительностью и памятью)
+        synchronous: "NORMAL"         # Баланс между производительностью и надежностью (FULL надежнее но медленнее)
+        temp_store: "MEMORY"          # Временные таблицы в памяти (быстрее чем на диск)
+        busy_timeout: 30000           # Таймаут ожидания блокировки (30 секунд)
+        foreign_keys: true            # Включены внешние ключи (проверка целостности)
+        mmap_size: 104857600          # 100MB memory-mapped I/O (баланс между скоростью и памятью)
+      # SQLite engine настройки
+      engine_settings:
+        echo: false
+        future: true
+        isolation_level: null  # null = автокоммит, "AUTOCOMMIT" = явный автокоммит
+        pool_pre_ping: true
+        pool_reset_on_return: "commit"
+      
+      description: "Конфигурация SQLite с ограничениями пула и оптимизациями"
+
+    postgresql:
+      # Компоненты подключения
+      # host: имя сервиса в docker-compose (postgres для prod, postgres-test для test)
+      # Переопределяется в config/settings.yaml каждого окружения
+      host: "postgres"
+      port: 5432  # Стандартный порт PostgreSQL (переопределяется через переменные окружения для test/prod)
+      username: "postgres"
+      password: ""  # Пустой пароль для trust authentication внутри Docker сети
+      database: "core_db"
+      
+      # Настройки ожидания подключения
+      connection_retry:
+        max_retries: 3  # Максимальное количество попыток подключения
+        retry_interval: 1  # Интервал между попытками (в секундах)
+      
+      # Отключение SQLAlchemy логирования
+      echo: false
+      echo_pool: false
+      
+      # Настройки PostgreSQL задаются через postgresql.conf файлы в docker/
+      # (postgresql.test.conf для test, postgresql.prod.conf для prod)
+      
+      # Настройки пула соединений
+      connection_pool:
+        pool_size: 50
+        max_overflow: 20
+        pool_pre_ping: true
+        pool_recycle: 600
+        connect_timeout: 2  # 2 секунды timeout подключения
+      
+      # PostgreSQL engine настройки
+      engine_settings:
+        echo: false
+        echo_pool: false
+        future: true
+        connect_args:
+          options: "-c client_encoding=utf8"
+        session_settings:
+          autoflush: false
+          autocommit: false
+          future: true
+    description: "Доступные пресеты баз данных: sqlite и postgresql"
+
+methods:
+  get_repository:
+    description: "Получить репозиторий для работы с базой данных"
+    input:
+      repo_name:
+        type: string
+        description: "Название репозитория (cache, actions)"
+    output:
+      type: object
+      description: "Объект репозитория для работы с БД"
+
+  create_all:
+    description: "Создаёт все таблицы в БД согласно моделям"
+    input: {}
+    output:
+      type: void
+      description: "Нет возвращаемого значения"
+
+  get_database_config:
+    description: "Возвращает полную конфигурацию текущей базы данных"
+    input: {}
+    output:
+      type: dict
+      description: "Словарь с полной конфигурацией БД (включает type, url и параметры подключения в зависимости от типа БД: host, port, username, password, database для PostgreSQL или db_path для SQLite)"
+      
+  get_available_databases:
+    description: "Возвращает список доступных баз данных"
+    input: {}
+    output:
+      type: list
+      description: "Список доступных пресетов баз данных"
+
+  drop_all_views:
+    description: "Удаляет все системные view для PostgreSQL (для SQLite игнорируется). Используется перед миграцией."
+    input: {}
+    output:
+      type: boolean
+      description: "Результат операции удаления view"
+
+  create_all_views:
+    description: "Создаёт все view для PostgreSQL (для SQLite игнорируется)"
+    input: {}
+    output:
+      type: boolean
+      description: "Результат операции создания view"
+
+  create_backup:
+    description: "Создает бэкап базы данных в формате plain SQL + gzip для PostgreSQL или .bak.gz для SQLite. Использует глобальную переменную backup_dir из настроек"
+    input:
+      backup_filename:
+        type: string
+        optional: true
+        description: "Опциональное имя файла бэкапа (без расширения). Если не указано, генерируется автоматически с timestamp"
+    output:
+      type: string
+      description: "Путь к созданному файлу бэкапа или None в случае ошибки"
+
+  restore_backup:
+    description: "Восстанавливает базу данных из бэкапа. Использует глобальную переменную backup_dir из настроек"
+    input:
+      backup_filename:
+        type: string
+        optional: true
+        description: "Опциональное имя файла бэкапа для восстановления. Если не указано, восстанавливается из последнего бэкапа"
+    output:
+      type: boolean
+      description: "True если восстановление успешно, False в случае ошибки"
+
+features:
+  - "Одна точка входа для работы с БД во всех слоях проекта"
+  - "Легко расширяется новыми репозиториями"
+  - "Контекстный менеджер для автоматического закрытия сессий"
+  - "Поддержка SQLite и PostgreSQL"
+  - "Автоматическое создание директории для базы данных"
+  - "Оптимизированные настройки пула соединений для PostgreSQL" 

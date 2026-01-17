@@ -1,0 +1,122 @@
+name: "user_manager"
+description: "Управление данными пользователей с кэшированием"
+singleton: true
+
+dependencies:
+  - "logger"
+  - "settings_manager"
+  - "database_manager"
+  - "datetime_formatter"
+  - "cache_manager"
+  
+settings:
+  cache_ttl:
+    type: integer
+    default: 600
+    description: "Время жизни кэша в секундах (10 минут). Используется для явного указания TTL при сохранении в cache_manager"
+
+methods:
+  save_user_data:
+    description: "Сохранение данных пользователя с кэшированием"
+    input:
+      user_data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            description: "ID тенанта"
+          user_id:
+            type: integer
+            description: "ID пользователя Telegram"
+          username:
+            type: string
+            description: "Имя пользователя (опционально)"
+          first_name:
+            type: string
+            description: "Имя (опционально)"
+          last_name:
+            type: string
+            description: "Фамилия (опционально)"
+          language_code:
+            type: string
+            description: "Код языка (опционально)"
+          is_bot:
+            type: boolean
+            description: "Является ли ботом (опционально)"
+          is_premium:
+            type: boolean
+            description: "Премиум пользователь (опционально)"
+    output:
+      type: boolean
+      description: "True если данные сохранены успешно"
+
+  get_user_by_id:
+    description: "Получение данных пользователя"
+    input:
+      user_id:
+        type: integer
+        description: "ID пользователя Telegram"
+      tenant_id:
+        type: integer
+        description: "ID тенанта"
+    output:
+      type: object
+      optional: true
+      description: "Данные пользователя или None если не найден"
+
+  set_user_state:
+    description: "Установка состояния пользователя"
+    input:
+      user_id:
+        type: integer
+        description: "ID пользователя Telegram"
+      tenant_id:
+        type: integer
+        description: "ID тенанта"
+      state:
+        type: string
+        description: "Состояние пользователя (None или пустая строка для сброса)"
+      expires_in_seconds:
+        type: integer
+        description: "Время истечения в секундах (None или 0 = навсегда, устанавливается 3000 год)"
+    output:
+      type: object
+      optional: true
+      description: "Полные данные пользователя или None при ошибке"
+
+  get_user_state:
+    description: "Получение состояния пользователя с проверкой истечения"
+    input:
+      user_id:
+        type: integer
+        description: "ID пользователя Telegram"
+      tenant_id:
+        type: integer
+        description: "ID тенанта"
+    output:
+      type: object
+      optional: true
+      description: "Словарь с user_state и user_state_expired_at или None при ошибке"
+
+  clear_user_state:
+    description: "Очистка состояния пользователя (внутренний метод)"
+    input:
+      user_id:
+        type: integer
+        description: "ID пользователя Telegram"
+      tenant_id:
+        type: integer
+        description: "ID тенанта"
+    output:
+      type: object
+      optional: true
+      description: "Полные данные пользователя или None при ошибке"
+
+features:
+  - "Автоматическое сохранение данных пользователей при парсинге событий"
+  - "Кэширование через cache_manager для предотвращения частых обращений к БД"
+  - "Поддержка TTL кэша (10 минут по умолчанию)"
+  - "Интеграция с существующей архитектурой БД"
+  - "Управление состоянием пользователей с поддержкой истечения"
+  - "Автоматическая очистка истекших состояний"
+  - "Кэш-первый подход для работы с состояниями"

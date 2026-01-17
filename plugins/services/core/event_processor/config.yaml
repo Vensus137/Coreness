@@ -1,0 +1,69 @@
+name: "event_processor"
+description: "Сервис для обработки событий от пулинга"
+singleton: true
+
+dependencies:
+  - "logger"
+  - "settings_manager"
+  - "action_hub"
+  - "datetime_formatter"
+  - "data_converter"
+  - "database_manager"
+  - "user_manager"
+  - "cache_manager"
+
+settings:
+  # Настройки обработки медиагрупп
+  media_group_timeout:
+    type: float
+    default: 0.5
+    description: "Таймаут ожидания медиагрупп в секундах"
+  
+  # Настройки фильтрации событий по времени
+  enable_time_comparison:
+    type: boolean
+    default: false
+    description: "Включить/выключить сравнение времени события при пуллинге. Если false, все события обрабатываются без проверки времени"
+  
+  startup_time_offset:
+    type: integer
+    default: 0
+    description: "Смещение времени события в секундах. Положительное = игнорировать события старше N секунд. Отрицательное = игнорировать события младше N секунд. 0 = обрабатывать события строго с момента запуска"
+
+actions:
+  process_event:
+    description: "Обработка события от пулинга"
+    access_rules: ["no_access"]
+    input:
+      data:
+        type: object
+        optional: false
+        description: "Сырое событие от пулинга"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+features:
+  - "Парсинг raw событий в стандартный формат"
+  - "Обработка медиагрупп (объединение событий)"
+  - "Передача обработанных событий через ActionHub"
+  - "Поддержка сообщений и callback_query"
+  - "Извлечение вложений из сообщений"
+  - "Обработка reply и forward сообщений"
+  - "Автоматическое добавление состояния пользователя в события"

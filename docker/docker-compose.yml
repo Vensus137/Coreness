@@ -1,59 +1,76 @@
 services:
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: coreness_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-coreness}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your_secure_password_here}
-      POSTGRES_DB: ${POSTGRES_DB:-coreness_db}
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: app
+    restart: always
+    working_dir: /workspace
+    # Graceful shutdown: даем приложению время на корректное завершение (15 секунд)
+    # Приложение имеет total_shutdown = 5 секунд, но добавляем запас для надежности
+    stop_grace_period: 15s
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./docker/init-pgvector.sql:/docker-entrypoint-initdb.d/init-pgvector.sql:ro
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - ..:/workspace
+      - ./supervisord.conf:/etc/supervisor/conf.d/supervisord.conf:ro
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-dev}
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    # Запуск через Supervisor для автоперезапуска процесса при падении
+    command: /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+    # depends_on убран из базового файла - зависимости определяются в файлах окружений (test/prod)
+
+  postgres:
+    image: pgvector/pgvector:pg18
+    container_name: postgres
+    restart: always
+    # НЕ указываем user: postgres - стандартный entrypoint сам управляет пользователем
+    # Он запускается от root, исправляет права директории (если нужно) и переключается на postgres
+    # Это позволяет автоматически инициализировать БД при первой установке
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-core_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-coreness1234}
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - ../data/postgresql:/var/lib/postgresql/data
+      # Скрипт инициализации для автоматической установки расширения pgvector
+      - ./init-pgvector.sql:/docker-entrypoint-initdb.d/01-init-pgvector.sql:ro
+      # Конфигурация PostgreSQL монтируется в окружениях (test/prod)
+    # Порты пробрасываются в файлах окружений (test/prod)
+    # Test: 5433:5432, Prod: 5432:5432
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-coreness}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - coreness_network
+    # Используем стандартный entrypoint PostgreSQL
+    # ВАЖНО: Для bind mount права директории на хосте нельзя изменить из контейнера
+    # Стандартный entrypoint запускается от root и может создать файлы с правильными правами внутри директории
+    # Но если директория на хосте принадлежит root и не пустая, могут быть проблемы
+    # РЕШЕНИЕ: Перед первым запуском на хосте выполните:
+    #   rm -rf <путь_к_проекту>/data/postgresql  # Удалить пустую директорию
+    #   # Или исправить права:
+    #   chown -R 999:999 <путь_к_проекту>/data/postgresql
+    #   chmod 700 <путь_к_проекту>/data/postgresql
+    # Стандартный entrypoint запускается от root, инициализирует БД если директория пустая, затем переключается на postgres
+    # Кастомные конфиги применяются через параметры командной строки postgres (если существуют)
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        # Исправляем права директории перед проверкой (на случай если они неправильные)
+        # Это нужно для того, чтобы стандартный entrypoint мог прочитать PG_VERSION
+        if [ -d /var/lib/postgresql/data ]; then
+          chown -R postgres:postgres /var/lib/postgresql/data 2>/dev/null || true
+          chmod 700 /var/lib/postgresql/data 2>/dev/null || true
+        fi
+        # Применяем кастомные конфиги только если они существуют
+        # Стандартный entrypoint сам проверит наличие PG_VERSION и инициализирует БД если нужно
+        if [ -f /etc/postgresql/postgresql.conf ] && [ -s /etc/postgresql/postgresql.conf ] && [ -f /etc/postgresql/pg_hba.conf ] && [ -s /etc/postgresql/pg_hba.conf ]; then
+          exec docker-entrypoint.sh postgres -c config_file=/etc/postgresql/postgresql.conf -c hba_file=/etc/postgresql/pg_hba.conf
+        elif [ -f /etc/postgresql/postgresql.conf ] && [ -s /etc/postgresql/postgresql.conf ]; then
+          exec docker-entrypoint.sh postgres -c config_file=/etc/postgresql/postgresql.conf
+        else
+          exec docker-entrypoint.sh postgres
+        fi
 
-  app:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-    container_name: coreness_app
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      # Database
-      DATABASE_URL: postgresql://${POSTGRES_USER:-coreness}:${POSTGRES_PASSWORD:-your_secure_password_here}@postgres:5432/${POSTGRES_DB:-coreness_db}
-      
-      # API Keys (загружаются из .env)
-      AI_API_KEY: ${AI_API_KEY}
-      GITHUB_TOKEN: ${GITHUB_TOKEN}
-      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
-      
-      # Application
-      ENVIRONMENT: ${ENVIRONMENT:-production}
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
-    volumes:
-      - ./config:/app/config:ro
-      - app_logs:/app/logs
-    networks:
-      - coreness_network
-    command: python main.py
-
-volumes:
-  postgres_data:
-    driver: local
-  app_logs:
-    driver: local
-
-networks:
-  coreness_network:
-    driver: bridge

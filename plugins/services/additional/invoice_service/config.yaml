@@ -1,0 +1,444 @@
+name: "invoice_service"
+description: "Сервис для работы с инвойсами (создание, управление, обработка платежей)"
+singleton: true
+
+dependencies:
+  - "logger"
+  - "settings_manager"
+  - "action_hub"
+  - "database_manager"
+  - "telegram_api"
+  - "datetime_formatter"
+
+actions:
+  create_invoice:
+    description: "Создание инвойса в БД и отправка/создание ссылки"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+          target_user_id:
+            type: integer
+            optional: true
+            min: 1
+            description: "ID пользователя для создания инвойса (опционально, по умолчанию user_id из события)"
+          chat_id:
+            type: integer
+            optional: true
+            description: "ID чата для отправки (обязательно для отправки, не нужен для ссылки)"
+          title:
+            type: string
+            optional: false
+            min_length: 1
+            description: "Название товара/услуги (обязательно)"
+          description:
+            type: string
+            optional: true
+            description: "Описание товара/услуги"
+          amount:
+            type: integer
+            optional: false
+            min: 1
+            description: "Количество звезд (обязательно, целое число)"
+          currency:
+            type: string
+            optional: true
+            description: "Валюта (по умолчанию XTR для звезд)"
+          as_link:
+            type: boolean
+            optional: true
+            description: "Создать как ссылку вместо отправки (по умолчанию false - отправка)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          invoice_id:
+            type: integer
+            description: "ID созданного инвойса"
+          invoice_message_id:
+            type: integer
+            optional: true
+            description: "ID отправленного сообщения с инвойсом (если as_link=false)"
+          invoice_link:
+            type: string
+            optional: true
+            description: "Ссылка на инвойс (если as_link=true)"
+
+  confirm_payment:
+    description: "Подтверждение платежа (ответ на pre_checkout_query с подтверждением)"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+          pre_checkout_query_id:
+            type: string
+            optional: false
+            min_length: 1
+            description: "ID запроса на подтверждение (обязательно)"
+          invoice_payload:
+            type: string
+            optional: true
+            min_length: 1
+            description: "ID инвойса из payload (опционально, для проверки статуса инвойса перед подтверждением)"
+          error_message:
+            type: string
+            optional: true
+            description: "Сообщение об ошибке при отклонении платежа (опционально, используется если инвойс отменен или уже оплачен)"
+    output:
+      result:
+        type: string
+        description: "Результат: success (платеж подтвержден), failed (платеж отклонен по бизнес-логике), error (техническая ошибка)"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки. Возможные значения: INVOICE_CANCELLED (при result=failed - инвойс отменен), INVOICE_ALREADY_PAID (при result=failed - инвойс уже оплачен)"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+  reject_payment:
+    description: "Отклонение платежа (ответ на pre_checkout_query с отклонением)"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+          pre_checkout_query_id:
+            type: string
+            optional: false
+            min_length: 1
+            description: "ID запроса на подтверждение (обязательно)"
+          error_message:
+            type: string
+            optional: true
+            description: "Сообщение об ошибке (опционально)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+  get_invoice:
+    description: "Получение информации об инвойсе"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          invoice_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID инвойса (обязательно)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          invoice:
+            type: object
+            description: "Данные инвойса"
+            properties:
+              invoice_id:
+                type: integer
+                description: "ID инвойса"
+              tenant_id:
+                type: integer
+                description: "ID тенанта"
+              user_id:
+                type: integer
+                optional: true
+                description: "ID пользователя"
+              title:
+                type: string
+                description: "Название товара/услуги"
+              description:
+                type: string
+                optional: true
+                description: "Описание"
+              amount:
+                type: integer
+                description: "Количество звезд"
+              link:
+                type: string
+                optional: true
+                description: "Ссылка на инвойс (если создан как ссылка)"
+              is_cancelled:
+                type: boolean
+                description: "Флаг отмены инвойса"
+              telegram_payment_charge_id:
+                type: string
+                optional: true
+                description: "ID платежа в Telegram (если оплачен)"
+              paid_at:
+                type: string
+                optional: true
+                description: "Дата оплаты (ISO формат)"
+              created_at:
+                type: string
+                description: "Дата создания (ISO формат)"
+
+  get_user_invoices:
+    description: "Получение всех инвойсов пользователя"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          target_user_id:
+            type: integer
+            optional: true
+            min: 1
+            description: "ID пользователя для получения инвойсов (опционально, по умолчанию user_id из события)"
+          include_cancelled:
+            type: boolean
+            optional: true
+            description: "Включать отмененные инвойсы (по умолчанию false)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          invoices:
+            type: array
+            description: "Массив инвойсов пользователя"
+            items:
+              type: object
+              properties:
+                invoice_id:
+                  type: integer
+                  description: "ID инвойса"
+                tenant_id:
+                  type: integer
+                  description: "ID тенанта"
+                user_id:
+                  type: integer
+                  optional: true
+                  description: "ID пользователя"
+                title:
+                  type: string
+                  description: "Название товара/услуги"
+                description:
+                  type: string
+                  optional: true
+                  description: "Описание"
+                amount:
+                  type: integer
+                  description: "Количество звезд"
+                link:
+                  type: string
+                  optional: true
+                  description: "Ссылка на инвойс"
+                is_cancelled:
+                  type: boolean
+                  description: "Флаг отмены инвойса"
+                telegram_payment_charge_id:
+                  type: string
+                  optional: true
+                  description: "ID платежа в Telegram"
+                paid_at:
+                  type: string
+                  optional: true
+                  description: "Дата оплаты (ISO формат)"
+                created_at:
+                  type: string
+                  description: "Дата создания (ISO формат)"
+
+  cancel_invoice:
+    description: "Отмена инвойса (установка флага is_cancelled)"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          invoice_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID инвойса (обязательно)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+  mark_invoice_as_paid:
+    description: "Отметить инвойс как оплаченный (обработка события payment_successful)"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          invoice_payload:
+            type: string
+            optional: false
+            min_length: 1
+            description: "ID инвойса из payload события (обязательно)"
+          telegram_payment_charge_id:
+            type: string
+            optional: false
+            min_length: 1
+            description: "ID платежа в Telegram (обязательно)"
+          paid_at:
+            type: string
+            optional: true
+            description: "Дата оплаты (опционально, по умолчанию текущая дата)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+features:
+  - "Создание инвойсов в БД с автоматической отправкой или созданием ссылки"
+  - "Подтверждение и отклонение платежей через Telegram API"
+  - "Обработка успешных платежей (отметка инвойсов как оплаченных)"
+  - "Получение информации об инвойсах и списка инвойсов пользователя"
+  - "Отмена инвойсов (только неоплаченных)"
+  - "Интеграция с Telegram Bot API для работы с инвойсами"
+  - "Валидация данных и проверка прав доступа по tenant_id"
+

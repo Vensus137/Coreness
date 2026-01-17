@@ -1,0 +1,97 @@
+name: "plugins_manager"
+description: "Менеджер утилит и сервисов с поддержкой зависимостей и DI"
+singleton: true
+dependencies:
+  - "logger"
+settings:
+  plugins_dir:
+    type: string
+    default: "plugins"
+    description: "Корневая папка с плагинами"
+  utilities_dir:
+    type: string
+    default: "utilities"
+    description: "Папка с утилитами внутри plugins"
+  services_dir:
+    type: string
+    default: "services"
+    description: "Папка с сервисами внутри plugins"
+methods:
+  get_plugin_info:
+    description: "Универсальный метод для получения информации о любом плагине (утилите или сервисе)"
+    input:
+      plugin_name:
+        type: string
+        description: "Имя плагина"
+    output:
+      type: dict
+      optional: true
+      description: "Информация о плагине или None"
+  get_plugin_type:
+    description: "Получить тип плагина (утилита или сервис)"
+    input:
+      plugin_name:
+        type: string
+        description: "Имя плагина"
+    output:
+      type: string
+      optional: true
+      description: "'utilities', 'services' или None"
+  get_all_plugins_info:
+    description: "Получить информацию о всех плагинах (утилиты + сервисы)"
+    input: {}
+    output:
+      type: dict
+      description: "Словарь {имя_плагина: информация_о_плагине}"
+  get_plugins_by_type:
+    description: "Получить все плагины определенного типа"
+    input:
+      plugin_type:
+        type: string
+        description: "'utilities' или 'services'"
+    output:
+      type: dict
+      description: "Словарь с плагинами указанного типа"
+  get_plugin_dependencies:
+    description: "Получить ВСЕ зависимости плагина (обязательные + опциональные)"
+    input:
+      plugin_name:
+        type: string
+        description: "Имя плагина"
+    output:
+      type: list
+      description: "Список всех зависимостей"
+  get_plugin_mandatory_dependencies:
+    description: "Получить только обязательные зависимости плагина"
+    input:
+      plugin_name:
+        type: string
+        description: "Имя плагина"
+    output:
+      type: list
+      description: "Список обязательных зависимостей"
+  get_plugin_optional_dependencies:
+    description: "Получить только опциональные зависимости плагина"
+    input:
+      plugin_name:
+        type: string
+        description: "Имя плагина"
+    output:
+      type: list
+      description: "Список опциональных зависимостей"
+  reload:
+    description: "Перезагрузить информацию о плагинах"
+    input: {}
+    output:
+      type: void
+      description: "Нет возвращаемого значения"
+features:
+  - "Рекурсивное сканирование и загрузка информации о всех плагинах (утилиты и сервисы)"
+  - "Автоматическое определение типа плагина по расположению в папке"
+  - "Гибкая структура папок - поддержка любой вложенности"
+  - "Построение графа зависимостей и проверка циклических зависимостей"
+  - "Топологическая сортировка для определения порядка инициализации утилит"
+  - "Поддержка системы DI с автоматическим разрешением зависимостей"
+  - "Кеширование информации о плагинах для быстрого доступа"
+  - "Разделение утилит (вспомогательные) и сервисов (асинхронные с методом run())"
+  - "Поддержка отключения плагинов через plugin_management в settings.yaml" 

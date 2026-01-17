@@ -1,0 +1,34 @@
+name: "id_generator"
+description: "Утилита для генерации детерминированных уникальных ID через IdSequence"
+singleton: true
+
+dependencies:
+  - "logger"
+  - "settings_manager"
+  - "database_manager"
+  - "cache_manager"
+
+settings:
+  cache_ttl:
+    type: integer
+    default: 600
+    description: "Время жизни кэша для ID (в секундах)"
+
+methods:
+  get_or_create_unique_id:
+    description: "Получение или создание уникального ID для seed (детерминированный - при одинаковых seed возвращает тот же ID). Если seed не указан, генерируется случайный UUID"
+    input:
+      seed:
+        type: string
+        optional: true
+        description: "Seed для генерации ID. При повторном запросе с тем же seed вернется тот же ID. Если не указан, генерируется случайный UUID"
+    output:
+      type: integer
+      optional: true
+      description: "Уникальный ID или None при ошибке"
+
+features:
+  - "Детерминированная генерация ID - при одинаковых seed возвращает тот же ID"
+  - "Кэширование через cache_manager"
+  - "Автоматическая генерация UUID если seed не указан"
+

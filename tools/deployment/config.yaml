@@ -1,0 +1,154 @@
+# Deployment System Configuration
+# Unified system for deployment management, server updates, and migrations
+
+# === SERVER UPDATE SETTINGS ===
+server_update:
+  # Repository for updates (single repository, different branches)
+  repository:
+    url: "https://github.com/Vensus137/Coreness"
+    branches:
+      test: "main"  # Branch for test environment
+      prod: "main"  # Branch for prod environment
+    token: "${GITHUB_TOKEN}"  # Token for cloning (resolved from environment variable)
+  
+  # Update process settings
+  settings:
+    backup_dir: ".core_update_backup"  # Directory for backups
+    non_critical_paths:  # Paths where update errors are not critical
+      - "tools"
+      - "tools/deployment"  # Protection from issues when updating the deployment manager itself
+
+  # File filtering settings (uses the same preset system as deployment)
+  deployment:
+    # Presets from deployment_presets (see below)
+    presets:
+      - "core_files"
+      - "exclusions"
+    
+    # Additional files to include (take priority over presets)
+    custom_include:
+      - "LICENSE"
+      - "config/tenant/tenant_1"
+      - "scripts/"
+    
+    # Additional files to exclude (take priority over presets)
+    custom_exclude:
+      - "config/settings.yaml"  # Don't update, configured manually on server
+      - "config/.version"       # Don't update, local file on server
+
+# === DEPLOYMENT REPOSITORIES (optional) ===
+# Used only for "Deploy to Repositories" option
+repositories:
+  repository_name:
+    name: "Your Repository Name"
+    url: "https://github.com/YourUsername/YourRepository"
+    description: "Your Repository Description"
+    token: "${GITHUB_TOKEN}"  # Token for repository access (resolved from environment variable)
+    # enabled: false  # Set to false to ignore repository (not shown in list and not deployed)
+    
+    deployment:
+      full_sync: false   # Set to true for repository synchronization (full cleanup and adding selected files)
+      create_tag: false  # Set to true to automatically create version tag after MR creation
+      presets: [] # List of presets from deployment_presets
+      custom_include: [] # Additional files to include (take priority over presets)
+      custom_exclude: [] # Additional files to exclude (take priority over presets)
+      # File replacements before deployment (optional)
+      # Format: "path_in_repository": "source_file_path"
+      # Examples:
+      # file_replacements:
+      #   "config/settings.yaml": "config/settings.default.yaml"
+      #   "config/tenant/tenant_1/tg_bot.yaml": "config/tenant/tenant_1/tg_bot.default.yaml"
+      file_replacements: {}
+
+# === DEPLOYMENT PRESETS ===
+deployment_presets:
+  core_files:
+    include:
+      - "app/"
+      - "tools/"
+      - "plugins/"
+      - "main.py"
+      - "requirements.txt"
+      - "docker/"
+    
+  documentation:
+    include:
+      - "docs/"
+      - "README.md"
+      - "README_EN.md"
+    
+  exclusions:
+    exclude:
+      - "resources/"
+      - "logs/"
+      - "data/"
+      - "**/tests/"
+
+# === GIT SETTINGS ===
+git_settings:
+  branch_prefix: "deploy/"
+  commit_message_template: "🚀 Deploy {version} - {date}"
+  mr_title_template: "🚀 Deploy {version} - {date}"
+  mr_description_template: |
+    Automated deployment of version {version}
+    
+    📋 **Changes:**
+    See [CHANGELOG.md]({changelog_url}) for detailed release notes
+    
+    🔧 **Repository:** {repo_name}
+    📅 **Date:** {date}
+  # Настройки пользователя Git для коммитов
+  user:
+    name: "Deploy Manager"
+    email: "deploy@example.com"
+  # Настройки провайдеров репозиториев
+  providers:
+    github:
+      api_url: "https://api.github.com"
+      api_version: "v3"
+
+# === CHANGELOG SETTINGS ===
+changelog_settings:
+  # Path to changelog file relative to project root
+  changelog_file: "docs/CHANGELOG.md"
+
+# === DEPLOYMENT SETTINGS ===
+deploy_settings:
+  create_mr: true
+  delay_between_deploys: 2
+  max_retries: 3
+  temp_directory: "E:/temp/deploy"
+  # Timeouts for various operations (in seconds)
+  timeouts:
+    docker_build: 600      # 10 minutes for Docker image build
+    docker_stop: 60        # 1 minute for container stop
+    docker_start: 120      # 2 minutes for container start
+    docker_rollback: 120   # 2 minutes for image rollback
+    api_request: 30        # 30 seconds for GitHub API requests
+    git_operation: 60      # 1 minute for Git operations
+    docker_info: 5         # 5 seconds for Docker daemon check
+
+# === DATABASE MIGRATION SETTINGS ===
+migration_settings:
+  migrations_dir: "tools/deployment/migrations"
+  require_confirmation: true
+  auto_backup: true
+
+# === DOCKER COMPOSE SETTINGS ===
+docker_compose:
+  global_config_dir: "~/.docker-compose"  # Global configuration directory
+  config_files:
+    test: "docker-compose.test.yml"
+    prod: "docker-compose.prod.yml"
+  override_files:
+    test: "docker-compose.override-test.yml"
+    prod: "docker-compose.override-prod.yml"
+  # Path to configuration file for dc command
+  dc_config_path: "~/.dc_config"
+  # Paths for dc command installation
+  dc_install:
+    root_path: "/usr/local/bin"  # Path for root user
+    user_path: "~/.local/bin"     # Path for regular users
+    shell_configs:               # Shell configuration files for PATH addition
+      - "~/.bashrc"
+      - "~/.profile"

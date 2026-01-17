@@ -1,0 +1,36 @@
+# ============================================
+# Default Scenarios
+# Purpose: universal scenarios for automatic processing
+# ============================================
+
+# Automatic deletion of command messages
+# Triggers automatically for all commands (starting with /)
+delete_command_message:
+  description: "Automatic deletion of original message for all commands"
+  
+  trigger:
+    - event_type: "message"
+      condition: "$event_text regex '^/'"
+  
+  step:
+    # Delete command message
+    - action: "delete_message"
+      params:
+        delete_message_id: "{message_id}"
+
+# Check that text is not a command
+# Called programmatically from other scenarios via execute_scenario
+check_message:
+  description: "Check that message text does not start with '/' (is not a command)"
+  
+  step:
+    # Check that text is not a command
+    - action: "validate"
+      params:
+        condition: '$event_text regex "^/.*"'
+      transition:
+        - action_result: "success"
+          transition_action: "abort"      # If it's a command - abort execution
+        - action_result: "failed"
+          transition_action: "continue"   # If not a command - continue execution
+

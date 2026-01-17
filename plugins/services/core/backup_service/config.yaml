@@ -1,0 +1,26 @@
+name: backup_service
+description: Сервис для автоматического создания бэкапов базы данных
+singleton: true
+type: service
+
+dependencies:
+  - logger
+  - settings_manager
+  - database_manager
+
+settings:
+  enabled:
+    type: boolean
+    default: true
+    description: "Включить автоматическое создание бэкапов"
+  
+  backup_interval:
+    type: integer
+    default: 86400
+    description: "Интервал создания бэкапов в секундах (по умолчанию 86400 = 24 часа). Бэкап создается при запуске сервиса, затем через указанный интервал"
+  
+  retention_count:
+    type: integer
+    default: 5
+    description: "Количество последних бэкапов для хранения. Старые бэкапы будут автоматически удаляться"
+

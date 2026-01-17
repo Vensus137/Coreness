@@ -1,0 +1,79 @@
+name: "condition_parser"
+description: "Универсальный парсер условий для сценариев с поддержкой всех операторов и AST компиляции"
+singleton: true
+dependencies:
+  - "logger"
+
+methods:
+  parse_condition_string:
+    description: "Парсинг строки условий с извлечением всех условий с == для дерева поиска"
+    input:
+      condition_string:
+        type: string
+        description: "Строка с условиями для парсинга"
+    output:
+      type: dict
+      description: "Словарь с результатами парсинга"
+
+  add_to_tree:
+    description: "Добавление элемента в дерево поиска"
+    input:
+      search_tree:
+        type: dict
+        description: "Дерево поиска для обновления"
+      parsed_condition:
+        type: dict
+        description: "Результат парсинга условий"
+      item_name:
+        type: string
+        description: "Название элемента (например, 'scenario_id')"
+      item_value:
+        type: any
+        description: "Значение элемента (например, 10)"
+    output:
+      type: boolean
+      description: "True если успешно добавлено"
+
+  check_match:
+    description: "Универсальная проверка соответствия данных условию"
+    input:
+      condition:
+        type: any
+        description: "Строка условий или распарсенное условие"
+      data:
+        type: dict
+        description: "Данные для проверки (например, event)"
+    output:
+      type: boolean
+      description: "True если данные соответствуют условию"
+
+  build_condition:
+    description: "Сборка условия из массива структур с простыми полями и кастомными условиями"
+    input:
+      configs:
+        type: list
+        description: |
+          Массив структур для преобразования в условие.
+          Каждая структура может содержать:
+          - Простые поля (например, event_type, user_state) - преобразуются в field == 'value'
+          - Поле 'condition' - кастомное условие, добавляется как есть
+          Все поля внутри структуры склеиваются через AND.
+          Структуры между собой склеиваются через OR.
+    output:
+      type: string
+      description: |
+        Единая строка условий.
+        Пример: "(event_type == 'message' and user_state == 'admin') or (event_type == 'callback' and condition_field)"
+        
+  search_in_tree:
+    description: "Поиск значений в дереве по данным события"
+    input:
+      search_tree:
+        type: dict
+        description: "Дерево поиска для поиска значений"
+      data:
+        type: dict
+        description: "Данные события для поиска"
+    output:
+      type: list
+      description: "Список найденных значений (например, scenario_id)"

@@ -1,0 +1,56 @@
+name: validator
+description: Сервис для валидации условий в сценариях
+singleton: true
+type: service
+
+dependencies:
+  - logger
+  - condition_parser
+  - action_hub
+  - action_validator
+
+actions:
+  validate:
+    description: Валидация условия с возвратом результата
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          condition:
+            type: string
+            optional: false
+            min_length: 1
+            description: Условие для валидации (поддерживает все операторы condition_parser)
+    output:
+      result:
+        type: string
+        description: "Результат: success, failed, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+    details: |
+      Поддерживаемые операторы: `==`, `!=`, `>`, `<`, `>=`, `<=`, `in`, `not in`, `~`, `!~`, `regex`, `is_null`, `not is_null`
+      
+      **Плейсхолдеры:**
+      - ✅ `condition: "{_cache.storage_values.tenant_owner|exists} == True and {_cache.storage_values.tenant_owner|length} > 0"`
+      - ✅ `condition: "{_cache.storage_values.tenant_id} == 137"`
+      - ✅ `condition: "{_cache.storage_values.tenant_id} > 100"`
+      
+      **Маркеры:**
+      - ✅ `condition: "$user_id > 100"`
+      - ✅ `condition: "$_cache.storage_values.tenant_owner not is_null"`
+      - ✅ `condition: "$event_type == 'message' and $user_id > 100"`

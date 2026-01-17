@@ -1,0 +1,77 @@
+name: "task_manager"
+description: "Универсальная утилита для управления фоновыми задачами с очередями и приоритетами"
+singleton: true
+
+dependencies:
+  - "logger"
+  - "settings_manager"
+
+settings:
+  # Дефолтная очередь для задач
+  default_queue:
+    type: string
+    default: "common"
+    description: "Дефолтная очередь для задач, если не указана очередь"
+  
+  wait_interval:
+    type: float
+    default: 1.0
+    description: "Интервал ожидания при переполненности очереди перед повторной попыткой выполнения задачи"
+  
+  # Настройки очередей
+  queues:
+    type: object
+    common:
+      max_concurrent: 10000
+      timeout: 600.0
+      retry_count: 0
+      retry_delay: 0.1
+      description: "Общая очередь для фоновых задач"
+    action:
+      max_concurrent: 1000
+      timeout: 120.0
+      retry_count: 0
+      retry_delay: 0.1
+      description: "Очередь для действий из сценариев"
+    embedding:
+      max_concurrent: 10
+      timeout: 300.0
+      retry_count: 0
+      retry_delay: 0.1
+      description: "Очередь для параллельной генерации embeddings"
+    description: "Настройки очередей для управления фоновыми задачами"
+
+methods:
+  submit_task:
+    description: "Отправляет задачу в соответствующую очередь для фонового выполнения"
+    input:
+      task_id:
+        type: string
+        description: "Уникальный идентификатор задачи"
+      coro:
+        type: callable
+        description: "Корутина для выполнения"
+      queue_name:
+        type: string
+        optional: true
+        description: "Название очереди (common, action, embedding). Если не указано - используется дефолтная очередь common"
+      fire_and_forget:
+        type: boolean
+        optional: true
+        default: false
+        description: "Если true - задача добавляется в очередь без ожидания результата. Если false - возвращается Future для await"
+    output:
+      type: object
+      description: "Dict с результатом выполнения: {'result': 'success'} или {'result': 'error', 'error': '...'}"
+  get_stats:
+    description: "Возвращает статистику работы TaskManager"
+    input: {}
+    output:
+      type: object
+      description: "Объект со статистикой: активные процессоры, размеры очередей, лимиты, счетчики задач"
+
+features:
+  - "Три очереди: common (общая для фоновых задач), action (для действий из сценариев) и embedding (для параллельной генерации embeddings)"
+  - "Распараллеливание задач через очереди с лимитами выполнения (max_concurrent)"
+  - "Настраиваемые таймауты для каждой очереди (600 секунд = 10 минут)"
+  - "Автоматическое управление жизненным циклом очередей"
