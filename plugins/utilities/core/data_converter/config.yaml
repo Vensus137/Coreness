@@ -1,0 +1,89 @@
+name: "data_converter"
+description: "Универсальный конвертер объектов в словари с поддержкой ORM и JSON"
+singleton: true
+
+dependencies:
+  - "logger"
+  - "settings_manager"
+  - "datetime_formatter"
+
+settings:
+  auto_detect_json:
+    type: boolean
+    default: true
+    description: "Автоматически определять JSON поля"
+  strict_json_validation:
+    type: boolean
+    default: false
+    description: "Строгая валидация JSON (возвращать ошибку при невалидном JSON)"
+  enable_cyclic_reference_detection:
+    type: boolean
+    default: true
+    description: "Включить обнаружение циклических ссылок"
+  max_recursion_depth:
+    type: integer
+    default: 100
+    description: "Максимальная глубина рекурсии для предотвращения переполнения стека"
+  safe_mode:
+    type: boolean
+    default: true
+    description: "Безопасный режим - пропускать проблемные объекты вместо ошибок"
+
+methods:
+  to_dict:
+    description: "Конвертирует ORM объект в словарь с автоматическим декодированием JSON"
+    input:
+      orm_object:
+        type: object
+        description: "SQLAlchemy ORM объект"
+      json_fields:
+        type: list
+        optional: true
+        description: "Список полей для принудительного декодирования"
+    output:
+      type: dict
+      description: "Словарь с данными ORM объекта"
+  to_dict_list:
+    description: "Конвертирует список ORM объектов в список словарей"
+    input:
+      orm_objects:
+        type: list
+        description: "Список SQLAlchemy ORM объектов"
+      json_fields:
+        type: list
+        optional: true
+        description: "Список полей для принудительного декодирования"
+    output:
+      type: list
+      description: "Список словарей с данными ORM объектов"
+  to_safe_dict:
+    description: "Конвертирует любой объект в безопасный словарь/список/значение"
+    input:
+      obj:
+        type: any
+        description: "Объект для конвертации (dict, list, datetime, или любой другой тип)"
+    output:
+      type: any
+      description: "Безопасный объект, готовый для JSON сериализации"
+  is_json_field:
+    description: "Проверяет, является ли значение JSON-строкой"
+    input:
+      value:
+        type: any
+        description: "Значение для проверки"
+    output:
+      type: bool
+      description: "True если значение является валидным JSON"
+
+features:
+  - "Автоматическое декодирование JSON полей в ORM объектах"
+  - "Принудительное декодирование по списку полей"
+  - "Автоопределение JSON строк"
+  - "Конвертация списков ORM объектов"
+  - "Безопасная конвертация datetime объектов в ISO строки"
+  - "Обработка вложенных структур (словари, списки, кортежи)"
+  - "Обнаружение и предотвращение циклических ссылок"
+  - "Конвертация объектов с атрибутами (Telegram объекты)"
+  - "Обработка множеств и других коллекций"
+  - "Безопасная обработка несериализуемых объектов"
+  - "Безопасная обработка ошибок" 

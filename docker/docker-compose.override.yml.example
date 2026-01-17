@@ -1,0 +1,46 @@
+# Локальные настройки для docker-compose
+# Скопируйте этот файл в docker-compose.override.yml и настройте под ваш сервер
+# Этот файл НЕ коммитится в репозиторий (добавлен в .gitignore)
+#
+# Использование:
+#   1. Скопируйте: cp docker-compose.override.yml.example docker-compose.override.yml
+#   2. Настройте дополнительные параметры (environment, volumes и т.д.)
+#
+# Примечание: docker-compose автоматически применяет этот файл при работе с docker-compose.yml
+#
+# ⚠️ ВАЖНО: Ресурсы (cpus, memory) настраиваются через конфиг ~/.dc_config:
+#   - Используйте команду: dc resources set [service] --cpus 2 --memory 2G
+#   - Или отредактируйте ~/.dc_config вручную
+#   - Ресурсы автоматически генерируются в этот файл, не редактируйте их вручную!
+
+services:
+  # Пример: дополнительные environment variables
+  # app:
+  #   environment:
+  #     - DEBUG=true
+  #     - LOG_LEVEL=debug
+  
+  # Пример: дополнительные volumes
+  # app:
+  #   volumes:
+  #     - /host/path:/container/path:ro
+  
+  # Пример: настройки для дополнительных сервисов (например, PostgreSQL)
+  # postgres:
+  #   image: postgres:15
+  #   environment:
+  #     - POSTGRES_DB=mydb
+  #     - POSTGRES_USER=user
+  #     - POSTGRES_PASSWORD=password
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '1'
+  #         memory: '1G'
+  
+  # Пример: volumes для дополнительных сервисов
+  # volumes:
+  #   postgres_data:
+

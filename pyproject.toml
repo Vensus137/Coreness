@@ -1,0 +1,70 @@
+[tool.ruff]
+line-length = 200
+target-version = "py311"
+exclude = [
+    "dev",  # Development folder, skip checks
+    # Exclude Python system paths and environments
+    "**/AppData/**",
+    "**/Python*/**",
+    "**/site-packages/**",
+    "**/venv/**",
+    "**/.venv/**",
+    "**/env/**",
+    "**/.env/**",
+    "**/node_modules/**",
+    "**/__pycache__/**",
+    "**/.pytest_cache/**",
+    "**/.ruff_cache/**",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (import sorting)
+    "C",   # flake8-comprehensions
+    "B",   # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "E203",  # whitespace before ':'
+    "W293",  # blank line contains whitespace (formatting for readability)
+    "W291",  # trailing whitespace (formatting for comment alignment)
+    "W292",  # no newline at end of file (not critical)
+    "F541",  # f-string without placeholders (useful for future extension)
+    "C901",  # function is too complex (not critical, may be justified)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # unused imports
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "plugins", "tools"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15  # Function complexity limit (default is 10)
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "plugins", "tools/deployment/tests"]  # Search for tests in tests/, plugins/ and tools/deployment/tests/
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+pythonpath = ["."]  # Add project root to sys.path for all tests
+markers = [
+    "unit: Unit tests - isolated module tests",
+    "integration: Integration tests - component interaction tests",
+    "asyncio: Asynchronous tests",
+]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "-p", "no:cacheprovider",  # Disable pytest cache completely
+]

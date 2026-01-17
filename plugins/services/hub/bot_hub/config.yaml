@@ -1,0 +1,784 @@
+name: "bot_hub"
+description: "Центральный сервис для управления всеми ботами"
+singleton: true
+
+dependencies:
+  - "logger"
+  - "settings_manager"
+  - "action_hub"
+  - "telegram_polling"
+  - "telegram_api"
+  - "database_manager"
+  - "cache_manager"
+
+optional_dependencies:
+  - "http_server"
+
+settings:
+  default_buttons_per_row:
+    type: integer
+    default: 2
+    description: "Количество кнопок в строке по умолчанию для действия build_keyboard"
+  
+  cache_ttl:
+    type: integer
+    default: 315360000
+    description: "TTL для кэша ботов (10 лет в секундах). Вечный кэш, инвалидируется явно"
+  
+  error_cache_ttl:
+    type: integer
+    default: 300
+    description: "TTL для кэширования ошибок (5 минут в секундах). Используется для предотвращения повторных запросов при известных ошибках"
+  
+  use_webhooks:
+    type: boolean
+    default: false
+    description: "Использовать вебхуки вместо пулинга (глобально для всех ботов). Требует настройки external_url в http_server и включенного http_server"
+  
+  webhook_endpoint:
+    type: string
+    default: "/webhooks/telegram"
+    description: "Путь эндпоинта для Telegram вебхуков. Используется при регистрации эндпоинта и установке вебхука"
+
+actions:
+  get_bot_status:
+    description: "Получение статуса пулинга и активности бота"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          is_polling:
+            type: boolean
+            description: "Активен ли пулинг: true - активен, false - не активен"
+          is_active:
+            type: boolean
+            description: "Активен ли бот из настроек БД: true - активен, false - не активен"
+
+  start_bot:
+    description: "Запуск бота"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+
+  stop_bot:
+    description: "Остановка бота"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+
+  stop_all_bots:
+    description: "Остановка всех ботов"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties: {}
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+
+  sync_bot_config:
+    description: "Синхронизация конфигурации бота: создание/обновление бота + запуск пулинга. Если bot_token не передан, используется токен из БД (приоритет конфига)"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+          bot_token:
+            type: string
+            optional: true
+            min_length: 1
+            description: "Токен бота (опционально, если не передан - используется из БД)"
+          is_active:
+            type: boolean
+            optional: false
+            description: "Активен ли бот"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          bot_id:
+            type: integer
+            description: "ID бота"
+          action:
+            type: string
+            description: "Действие: created или updated"
+
+  sync_bot_commands:
+    description: "Синхронизация команд бота: сохранение в БД → применение в Telegram"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+          command_list:
+            type: array
+            optional: false
+            description: "Список команд для применения"
+            items:
+              type: object
+              properties:
+                command:
+                  type: string
+                  optional: false
+                  min_length: 1
+                  description: "Название команды"
+                description:
+                  type: string
+                  optional: false
+                  description: "Описание команды"
+                scope:
+                  type: string
+                  optional: false
+                  enum: ["default", "all_private_chats", "all_group_chats", "chat", "chat_member"]
+                  description: "Область действия команды (default, all_private_chats, all_group_chats, chat, chat_member)"
+                action_type:
+                  type: string
+                  optional: false
+                  enum: ["register", "clear"]
+                  description: "Тип действия (register, clear)"
+                chat_id:
+                  type: integer
+                  optional: true
+                  min: 1
+                  description: "ID чата (для scope chat/chat_member)"
+                user_id:
+                  type: integer
+                  optional: true
+                  min: 1
+                  description: "ID пользователя (для scope chat_member)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+
+  set_bot_token:
+    description: "Установка токена бота. Бот должен быть создан через синхронизацию конфигурации (sync_bot_config). Токен будет проверен автоматически при запуске пулинга"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+          bot_token:
+            type: "string|None"
+            optional: true
+            description: "Токен бота (опционально, если не передан - поле не обновляется, если передан null - удаляется)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+
+  sync_bot:
+    description: "Синхронизация бота: конфигурация + команды (обертка над sync_bot_config + sync_bot_commands)"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+          bot_token:
+            type: string
+            optional: false
+            min_length: 1
+            description: "Токен бота"
+          is_active:
+            type: boolean
+            optional: true
+            description: "Активен ли бот (по умолчанию true)"
+          bot_commands:
+            type: array
+            optional: true
+            description: "Список команд для применения (опционально)"
+            items:
+              type: object
+              properties:
+                command:
+                  type: string
+                  optional: false
+                  min_length: 1
+                  description: "Название команды"
+                description:
+                  type: string
+                  optional: false
+                  description: "Описание команды"
+                scope:
+                  type: string
+                  optional: false
+                  enum: ["default", "chat", "chat_member"]
+                  description: "Область действия команды"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          bot_id:
+            type: integer
+            description: "ID бота"
+          action:
+            type: string
+            description: "Действие: created или updated"
+
+  send_message:
+    description: "Отправка сообщения ботом"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+          target_chat_id:
+            type: integer|array|string
+            optional: true
+            description: "ID чата или массив ID чатов для отправки (по умолчанию берется chat_id из события)"
+          text:
+            type: string
+            optional: true
+            description: "Текст сообщения (может быть пустым, если есть вложение)"
+          parse_mode:
+            type: string
+            optional: true
+            enum: ["HTML", "Markdown", "MarkdownV2"]
+            description: "Режим парсинга (HTML, Markdown, MarkdownV2)"
+          message_edit:
+            type: integer|boolean|string
+            optional: true
+            description: "Редактирование сообщения: integer (ID сообщения) или true/false. При редактировании работа происходит только с первым чатом из списка (по умолчанию редактирует текущее сообщение из события)"
+          message_reply:
+            type: integer
+            optional: true
+            min: 1
+            description: "ID сообщения для ответа"
+          inline:
+            type: array
+            optional: true
+            description: "Inline клавиатура (массив строк с кнопками). Можно указать только одну клавиатуру (inline или reply) - это ограничение Telegram API. Если указаны обе клавиатуры, используется inline (имеет приоритет)"
+          reply:
+            type: array
+            optional: true
+            description: "Reply клавиатура (массив строк с кнопками). Можно указать только одну клавиатуру (inline или reply) - это ограничение Telegram API. Если указаны обе клавиатуры, используется inline (имеет приоритет)"
+          attachment:
+            type: array
+            optional: true
+            description: "Вложения (файлы, фото, видео и т.д.)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          last_message_id:
+            type: integer
+            replaceable: true
+            description: "ID последнего отправленного сообщения (при отправке в несколько чатов возвращается ID первого отправленного)"
+
+  build_keyboard:
+    description: "Построение клавиатуры из массива ID с использованием шаблонов"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          items:
+            type: array
+            optional: false
+            description: "Массив ID для генерации кнопок (например, [1, 2, 3] или tenant_ids из get_tenants_list)"
+          keyboard_type:
+            type: string
+            optional: false
+            enum: ["inline", "reply"]
+            description: "Тип клавиатуры: 'inline' или 'reply'"
+          text_template:
+            type: string
+            optional: false
+            min_length: 1
+            description: "Шаблон текста кнопки с плейсхолдером $value$ (например, 'Tenant $value$' или 'Пользователь #$value$'). Используется синтаксис $value$ вместо {value} чтобы избежать конфликта с системой плейсхолдеров"
+          callback_template:
+            type: string
+            optional: true
+            min_length: 1
+            description: "Шаблон callback_data для inline клавиатуры с плейсхолдером $value$ (обязателен для inline, например, 'select_tenant_$value$'). Используется синтаксис $value$ вместо {value} чтобы избежать конфликта с системой плейсхолдеров"
+          buttons_per_row:
+            type: integer
+            optional: true
+            min: 1
+            max: 8
+            description: "Количество кнопок в строке (по умолчанию 1, например, 2 для двух кнопок в ряд)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          keyboard:
+            type: array
+            description: "Готовая клавиатура в формате массива строк (можно использовать напрямую в параметре inline или reply действия send_message)"
+          keyboard_type:
+            type: string
+            description: "Тип клавиатуры: 'inline' или 'reply'"
+          rows_count:
+            type: integer
+            description: "Количество строк в клавиатуре"
+          buttons_count:
+            type: integer
+            description: "Общее количество кнопок в клавиатуре"
+
+  delete_message:
+    description: "Удаление сообщения ботом"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+          delete_message_id:
+            type: integer
+            optional: true
+            min: 1
+            description: "ID сообщения для удаления. Если не указан, используется message_id из контекста события. Chat ID по умолчанию берется из события (chat_id), если не указан явно"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+
+  answer_callback_query:
+    description: "Ответ на callback query (всплывающее уведомление или простое уведомление при нажатии на inline-кнопку)"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+          callback_query_id:
+            type: string
+            optional: false
+            min_length: 1
+            description: "ID callback query (можно использовать плейсхолдер {callback_id} из события)"
+          text:
+            type: string
+            optional: true
+            max_length: 200
+            description: "Текст уведомления (до 200 символов). Если не указан, показывается простое уведомление без текста"
+          show_alert:
+            type: boolean
+            optional: true
+            description: "Показать всплывающее окно (alert). По умолчанию false - простое уведомление вверху экрана. true - модальное окно с текстом"
+          cache_time:
+            type: integer
+            optional: true
+            min: 0
+            max: 3600
+            description: "Время кэширования ответа в секундах (0-3600). По умолчанию 0"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+
+  get_telegram_bot_info:
+    description: "Получение информации о боте через Telegram API"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          bot_token:
+            type: string
+            optional: false
+            min_length: 1
+            description: "Токен бота"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          telegram_bot_id:
+            type: integer
+            description: "ID бота в Telegram"
+          username:
+            type: string
+            description: "Username бота"
+          first_name:
+            type: string
+            description: "Имя бота"
+          is_bot:
+            type: boolean
+            description: "Флаг, что это бот"
+          can_join_groups:
+            type: boolean
+            description: "Может ли бот присоединяться к группам"
+          can_read_all_group_messages:
+            type: boolean
+            description: "Может ли бот читать все сообщения в группах"
+          supports_inline_queries:
+            type: boolean
+            description: "Поддерживает ли бот inline запросы"
+
+  get_bot_info:
+    description: "Получение информации о боте из базы данных (с кэшированием)"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+          force_refresh:
+            type: boolean
+            optional: true
+            description: "Принудительное обновление из БД (игнорирует кэш)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          bot_id:
+            type: integer
+            description: "ID бота"
+          telegram_bot_id:
+            type: integer
+            description: "ID бота в Telegram"
+          tenant_id:
+            type: integer
+            description: "ID тенанта"
+          bot_token:
+            type: string
+            description: "Токен бота"
+          username:
+            type: string
+            description: "Username бота"
+          first_name:
+            type: string
+            description: "Имя бота"
+          is_active:
+            type: boolean
+            description: "Активен ли бот"
+          bot_command:
+            type: array
+            description: "Команды бота"
+            items:
+              type: object
+              properties:
+                command:
+                  type: string
+                  description: "Название команды"
+                description:
+                  type: string
+                  description: "Описание команды"
+                scope:
+                  type: string
+                  description: "Область действия команды"
+                action_type:
+                  type: string
+                  description: "Тип действия (register, clear)"
+
+features:
+  - "Центральное управление всеми ботами"
+  - "Интеграция с утилитой telegram_polling"
+  - "Интеграция с утилитой telegram_api"
+  - "Управление жизненным циклом ботов"
+  - "Управление командами ботов"
+  - "Отправка и удаление сообщений"
+  - "Внутренний сбор и кэширование информации о ботах"
+  - "Модульная архитектура с разделением действий"
+  - "Расширяемая архитектура для добавления новых утилит"

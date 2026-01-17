@@ -31,7 +31,7 @@ WORKDIR /workspace
 RUN pip install PyYAML==6.0.1 SQLAlchemy==2.0.25 python-dotenv==1.0.0
 
 # Шаг 2: Утилиты
-RUN pip install unidecode emoji psutil>=5.9.0
+RUN pip install unidecode emoji psutil>=5.9.0 python-dateutil>=2.8.0
 
 # Шаг 3: Сетевые библиотеки
 RUN pip install requests>=2.31.0 aiohttp>=3.8.0

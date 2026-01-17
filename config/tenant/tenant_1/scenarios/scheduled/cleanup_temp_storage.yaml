@@ -1,0 +1,20 @@
+# ============================================
+# Scheduled: Temporary Storage Groups Cleanup
+# Purpose: automatic cleanup of temporary groups temp_* from Tenant Storage of current tenant
+# ============================================
+
+cleanup_temp_storage:
+  description: "Cleanup of temporary groups temp_* from Tenant Storage of current tenant"
+  
+  # Run every day at 4:00 AM
+  schedule: "0 4 * * *"
+  
+  step:
+    # Delete all groups starting with "temp_" by pattern
+    - action: "delete_storage"
+      params:
+        group_key_pattern: "temp_%"
+
+    - action: "delete_user_storage"
+      params:
+        key_pattern: "temp_%"

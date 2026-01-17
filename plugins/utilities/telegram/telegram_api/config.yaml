@@ -1,0 +1,506 @@
+name: "telegram_api"
+description: "Утилита для работы с Telegram Bot API"
+singleton: true
+
+dependencies:
+  - "logger"
+  - "settings_manager"
+
+settings:
+  # Rate limiting настройки
+  bot_bucket_size:
+    type: integer
+    default: 20
+    description: "Максимальное количество токенов для бота (размер bucket)"
+  bot_tokens_per_minute:
+    type: integer
+    default: 1800
+    description: "Скорость восстановления токенов бота (токенов в минуту)"
+  chat_bucket_size:
+    type: integer
+    default: 20
+    description: "Максимальное количество токенов для чата (размер bucket)"
+  chat_tokens_per_minute:
+    type: integer
+    default: 20
+    description: "Скорость восстановления токенов чата (токенов в минуту)"
+
+  # HTTP клиент
+  request_timeout:
+    type: integer
+    default: 30
+    description: "Таймаут HTTP запросов в секундах"
+  connection_pool_limit:
+    type: integer
+    default: 100
+    description: "Общий лимит соединений в пуле"
+  connection_pool_limit_per_host:
+    type: integer
+    default: 50
+    description: "Лимит соединений на хост (api.telegram.org)"
+  dns_cache_ttl:
+    type: integer
+    default: 300
+    description: "TTL DNS кэша в секундах"
+  keepalive_timeout:
+    type: integer
+    default: 30
+    description: "Keep-alive таймаут в секундах"
+  connect_timeout:
+    type: integer
+    default: 10
+    description: "Таймаут подключения в секундах"
+  sock_read_timeout:
+    type: integer
+    default: 30
+    description: "Таймаут чтения данных в секундах"
+
+methods:
+  get_bot_info:
+    description: "Получение информации о боте через Telegram API метод getMe"
+    input:
+      bot_token:
+        type: string
+        description: "Токен бота"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          telegram_bot_id:
+            type: integer
+            description: "ID бота в Telegram"
+          username:
+            type: string
+            description: "Username бота"
+          first_name:
+            type: string
+            description: "Имя бота"
+          is_bot:
+            type: boolean
+            description: "Флаг, что это бот"
+          can_join_groups:
+            type: boolean
+            description: "Может ли бот присоединяться к группам"
+          can_read_all_group_messages:
+            type: boolean
+            description: "Может ли бот читать все сообщения в группах"
+          supports_inline_queries:
+            type: boolean
+            description: "Поддерживает ли бот inline запросы"
+
+  sync_bot_commands:
+    description: "Синхронизация команд бота: применение команд в Telegram"
+    input:
+      bot_token:
+        type: string
+        description: "Токен бота"
+      bot_id:
+        type: integer
+        description: "ID бота (для единообразия API)"
+      command_list:
+        type: array
+        description: "Список команд для применения"
+        items:
+          type: object
+          properties:
+            command:
+              type: string
+              description: "Название команды"
+            description:
+              type: string
+              description: "Описание команды"
+            scope:
+              type: string
+              description: "Область действия команды (default, chat, chat_member)"
+            action_type:
+              type: string
+              description: "Тип действия (register, clear)"
+            chat_id:
+              type: integer
+              optional: true
+              description: "ID чата (для scope chat/chat_member)"
+            user_id:
+              type: integer
+              optional: true
+              description: "ID пользователя (для scope chat_member)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+
+  send_message:
+    description: "Отправка сообщения с поддержкой вложений и клавиатур"
+    input:
+      bot_token:
+        type: string
+        description: "Токен бота"
+      bot_id:
+        type: integer
+        description: "ID бота (для единообразия API)"
+      data:
+        type: object
+        description: "Данные сообщения"
+        properties:
+          chat_id:
+            type: integer
+            optional: true
+            description: "ID чата из события (fallback для target_chat_id)"
+          message_id:
+            type: integer
+            optional: true
+            description: "ID сообщения из события"
+          target_chat_id:
+            type: integer|array
+            optional: true
+            description: "ID чата или массив ID чатов для отправки (по умолчанию берется chat_id из события)"
+          text:
+            type: string
+            description: "Текст сообщения (может быть пустым, если есть вложение)"
+          inline:
+            type: array
+            optional: true
+            description: "Inline клавиатура"
+          reply:
+            type: array
+            optional: true
+            description: "Reply клавиатура"
+          message_edit:
+            type: integer|boolean
+            optional: true
+            description: "Редактирование сообщения: integer (ID сообщения) или true/false (по умолчанию редактирует текущее сообщение из события)"
+          message_reply:
+            type: integer
+            optional: true
+            description: "ID сообщения для ответа"
+          parse_mode:
+            type: string
+            optional: true
+            description: "Режим парсинга (HTML, Markdown)"
+          attachment:
+            type: array
+            optional: true
+            description: "Вложения"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          last_message_id:
+            type: integer
+            description: "ID последнего отправленного сообщения (при отправке в несколько чатов возвращается ID первого отправленного)"
+
+  delete_message:
+    description: "Удаление сообщения"
+    input:
+      bot_token:
+        type: string
+        description: "Токен бота"
+      bot_id:
+        type: integer
+        description: "ID бота (для единообразия API)"
+      data:
+        type: object
+        description: "Данные для удаления"
+        properties:
+          chat_id:
+            type: integer
+            description: "ID чата"
+          delete_message_id:
+            type: integer
+            optional: true
+            description: "ID сообщения для удаления (приоритетное поле)"
+          message_id:
+            type: integer
+            optional: true
+            description: "ID сообщения для удаления (резервное поле)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+
+  answer_callback_query:
+    description: "Ответ на callback query (всплывающее уведомление или простое уведомление)"
+    input:
+      bot_token:
+        type: string
+        description: "Токен бота"
+      bot_id:
+        type: integer
+        description: "ID бота (для единообразия API)"
+      data:
+        type: object
+        description: "Данные для ответа на callback query"
+        properties:
+          callback_query_id:
+            type: string
+            description: "ID callback query (обязательно)"
+          text:
+            type: string
+            optional: true
+            description: "Текст уведомления (до 200 символов). Если не указан, показывается простое уведомление без текста"
+          show_alert:
+            type: boolean
+            optional: true
+            description: "Показать всплывающее окно (alert). По умолчанию false - простое уведомление вверху экрана"
+          cache_time:
+            type: integer
+            optional: true
+            description: "Время кэширования ответа в секундах (0-3600). По умолчанию 0"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+
+  send_invoice:
+    description: "Отправка инвойса через Telegram API"
+    input:
+      bot_token:
+        type: string
+        description: "Токен бота"
+      bot_id:
+        type: integer
+        description: "ID бота (для единообразия API)"
+      data:
+        type: object
+        description: "Данные инвойса"
+        properties:
+          chat_id:
+            type: integer
+            description: "ID чата для отправки"
+          title:
+            type: string
+            description: "Название товара/услуги"
+          description:
+            type: string
+            optional: true
+            description: "Описание товара/услуги"
+          payload:
+            type: string
+            description: "ID инвойса (invoice_payload)"
+          amount:
+            type: integer
+            description: "Количество звезд (целое число)"
+          currency:
+            type: string
+            optional: true
+            description: "Валюта (по умолчанию XTR для звезд)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          invoice_message_id:
+            type: integer
+            description: "ID отправленного сообщения с инвойсом"
+
+  create_invoice_link:
+    description: "Создание ссылки на инвойс через Telegram API"
+    input:
+      bot_token:
+        type: string
+        description: "Токен бота"
+      bot_id:
+        type: integer
+        description: "ID бота (для единообразия API)"
+      data:
+        type: object
+        description: "Данные инвойса"
+        properties:
+          title:
+            type: string
+            description: "Название товара/услуги"
+          description:
+            type: string
+            optional: true
+            description: "Описание товара/услуги"
+          payload:
+            type: string
+            description: "ID инвойса (invoice_payload)"
+          amount:
+            type: integer
+            description: "Количество звезд (целое число)"
+          currency:
+            type: string
+            optional: true
+            description: "Валюта (по умолчанию XTR для звезд)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          invoice_link:
+            type: string
+            description: "Ссылка на инвойс"
+
+  answer_pre_checkout_query:
+    description: "Ответ на запрос подтверждения оплаты через Telegram API"
+    input:
+      bot_token:
+        type: string
+        description: "Токен бота"
+      bot_id:
+        type: integer
+        description: "ID бота (для единообразия API)"
+      data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          pre_checkout_query_id:
+            type: string
+            description: "ID запроса на подтверждение"
+          ok:
+            type: boolean
+            description: "true для подтверждения, false для отклонения"
+          error_message:
+            type: string
+            optional: true
+            description: "Сообщение об ошибке (только если ok=false)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+
+features:
+  - "Rate limiting для предотвращения спама"
+  - "Обработка ошибок"
+  - "Получение информации о боте через getMe"
+  - "Управление командами ботов"
+  - "Отправка и редактирование сообщений"
+  - "Поддержка вложений и медиа групп"
+  - "Поддержка inline и reply клавиатур"
+  - "Поддержка scope для команд (default, chat, chat_member)"
+  - "Работа с инвойсами (отправка, создание ссылок, подтверждение оплаты)"
+  - "Оптимизированный HTTP клиент с пулом соединений"

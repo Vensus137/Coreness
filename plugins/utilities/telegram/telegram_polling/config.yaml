@@ -1,0 +1,154 @@
+name: "telegram_polling"
+description: "Утилита для пулинга множественных Telegram ботов"
+singleton: true
+
+dependencies:
+  - "logger"
+  - "settings_manager"
+  - "action_hub"
+  - "datetime_formatter"
+
+settings:
+  # Пулинг настройки (стандартные для Telegram Bot API)
+  polling_timeout:
+    type: integer
+    default: 20
+    description: "Таймаут long polling в секундах (стандартный для Telegram Bot API)"
+  
+  polling_relax:
+    type: float
+    default: 0.1
+    description: "Задержка между запросами в секундах (стандартная для Telegram Bot API)"
+  
+  polling_limit:
+    type: integer
+    default: 100
+    description: "Максимальное количество обновлений за запрос (стандартное для Telegram Bot API)"
+  
+  polling_start_delay:
+    type: float
+    default: 0.1
+    description: "Задержка перед запуском пулинга в секундах (для предотвращения конфликтов)"
+  
+  # Фильтрация обновлений
+  # ВАЖНО: Эти настройки будут ЖЕСТКО установлены через setWebhook с пустым URL
+  # перед запуском пулинга. Это необходимо, т.к. Telegram кэширует allowed_updates
+  # из предыдущих вебхуков и может игнорировать параметры в getUpdates.
+  allowed_updates:
+    type: array
+    default: ["message", "callback_query", "pre_checkout_query"]
+    description: "Типы обновлений для получения от Telegram API. Будут установлены через setWebhook перед запуском пулинга"
+  
+  # Retry настройки
+  retry_delay:
+    type: integer
+    default: 5
+    description: "Задержка между повторными попытками в секундах"
+
+  retry_after_rate_limit:
+    type: integer
+    default: 30
+    description: "Время ожидания при rate limit (если retry_after не указан в ответе)"
+  
+  max_retries:
+    type: integer
+    default: 3
+    description: "Максимальное количество повторных попыток"
+  
+  # Настройки критических ошибок
+  max_critical_errors:
+    type: integer
+    default: 3
+    description: "Максимальное количество критических ошибок подряд перед отключением пулинга"
+  
+  critical_error_codes:
+    type: array
+    default: [401, 403, 404]
+    description: "Коды ошибок Telegram API, считающиеся критическими (401=Unauthorized, 403=Forbidden, 404=Not Found - бот не найден или неверный токен)"
+  
+  # HTTP клиент настройки
+  request_timeout:
+    type: integer
+    default: 35
+    description: "Таймаут HTTP запросов в секундах"
+  
+  # Таймауты остановки пулинга
+  stop_polling_timeout:
+    type: float
+    default: 2.0
+    description: "Таймаут ожидания завершения основного цикла пулинга в секундах"
+  
+  stop_polling_manager_timeout:
+    type: float
+    default: 3.0
+    description: "Таймаут ожидания остановки пулинга в PollingManager в секундах"
+  
+  session_close_timeout:
+    type: float
+    default: 0.5
+    description: "Таймаут закрытия HTTP сессии в секундах"
+
+methods:
+  start_bot_polling:
+    description: "Запуск пулинга для конкретного бота (автоматически останавливает существующий)"
+    input:
+      bot_id:
+        type: integer
+        description: "ID бота"
+      token:
+        type: string
+        description: "Токен бота"
+      event_callback:
+        type: callable
+        description: "Callback функция для обработки событий"
+    output:
+      type: boolean
+      description: "Результат запуска пулинга"
+
+  stop_bot_polling:
+    description: "Остановка пулинга для конкретного бота"
+    input:
+      bot_id:
+        type: integer
+        description: "ID бота"
+    output:
+      type: boolean
+      description: "Результат остановки пулинга"
+
+  stop_all_polling:
+    description: "Остановка пулинга всех ботов"
+    input: {}
+    output:
+      type: boolean
+      description: "Результат остановки пулинга"
+
+  start_all_polling:
+    description: "Запуск пулинга для списка ботов"
+    input:
+      bots_list:
+        type: array
+        description: "Список ботов для запуска"
+        items:
+          type: object
+          properties:
+            bot_id:
+              type: integer
+              description: "ID бота"
+            bot_token:
+              type: string
+              description: "Токен бота"
+            is_active:
+              type: boolean
+              description: "Активен ли бот"
+    output:
+      type: integer
+      description: "Количество успешно запущенных ботов"
+
+features:
+  - "Пулинг множественных Telegram ботов"
+  - "API фильтрация обновлений (allowed_updates)"
+  - "Настройки стандартные для Telegram Bot API (timeout=20, relax=0.1, limit=100)"
+  - "Rate limiting и retry логика"
+  - "Автоматическое отключение при критических ошибках (401, 403)"
+  - "Graceful shutdown для каждого бота"
+  - "Внутренние методы для использования в сервисах"

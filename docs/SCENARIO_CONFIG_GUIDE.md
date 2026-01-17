@@ -1024,6 +1024,19 @@ params:
   price: "{amount|*0.9|format:currency}"
 ```
 
+**Литеральные значения в кавычках:**
+```yaml
+params:
+  text: "{'hello'|upper}"                      # HELLO (без передачи через словарь)
+  duration: "{'1d 2w'|seconds}"                # 1296000 (литеральное время)
+  calculation: "{'100'|+50}"                   # 150 (литеральная арифметика)
+  date_shift: "{'2024-12-25'|shift:+1 day}"   # 2024-12-26 (литеральная дата)
+  # Двойные кавычки для строк с одинарными кавычками
+  text: "{"it's working"}"                     # it's working
+  # Экранированные кавычки
+  text: "{'it\'s working'}"                    # it's working
+```
+
 **Вложенные плейсхолдеры:**
 ```yaml
 params:
@@ -1220,13 +1233,22 @@ file_info:
 <tr><td><code>format:time_full</code></td><td>Формат времени с секундами</td><td><code>{timestamp|format:time_full}</code></td><td><code>14:30:45</code></td></tr>
 <tr><td><code>format:datetime</code></td><td>Полный формат</td><td><code>{timestamp|format:datetime}</code></td><td><code>25.12.2024 14:30</code></td></tr>
 <tr><td><code>format:datetime_full</code></td><td>Полный формат с секундами</td><td><code>{timestamp|format:datetime_full}</code></td><td><code>25.12.2024 14:30:45</code></td></tr>
-<tr><td><code>format:date_postgres</code></td><td>Формат даты для PostgreSQL</td><td><code>{timestamp|format:date_postgres}</code></td><td><code>2024-12-25</code></td></tr>
-<tr><td><code>format:datetime_postgres</code></td><td>Формат даты и времени для PostgreSQL</td><td><code>{timestamp|format:datetime_postgres}</code></td><td><code>2024-12-25 14:30:45</code></td></tr>
+<tr><td><code>format:pg_date</code></td><td>Формат даты для PostgreSQL (YYYY-MM-DD)</td><td><code>{timestamp|format:pg_date}</code></td><td><code>2024-12-25</code></td></tr>
+<tr><td><code>format:pg_datetime</code></td><td>Формат даты и времени для PostgreSQL (YYYY-MM-DD HH:MM:SS)</td><td><code>{timestamp|format:pg_datetime}</code></td><td><code>2024-12-25 14:30:45</code></td></tr>
+<tr><td><code>seconds</code></td><td>Преобразование временных строк в секунды (поддержка формата: Xw Yd Zh Km Ms)</td><td><code>{duration|seconds}</code></td><td><code>9000</code> (если duration="2h 30m")</td></tr>
+<tr><td><code>shift:±интервал</code></td><td>Сдвиг даты на интервал (PostgreSQL style: +1 day, -2 hours, +1 year 2 months). Поддержка всех форматов дат, корректная обработка месяцев/годов</td><td><code>{created|shift:+1 day}</code></td><td><code>2024-12-26</code> (если created="2024-12-25")</td></tr>
+<tr><td colspan="4"><strong>Приведение к началу периода</strong></td></tr>
+<tr><td><code>to_date</code></td><td>Приведение даты к началу дня (00:00:00), возвращает ISO формат</td><td><code>{created|to_date}</code></td><td><code>2024-12-25 00:00:00</code></td></tr>
+<tr><td><code>to_hour</code></td><td>Приведение даты к началу часа (минуты и секунды = 0), возвращает ISO формат</td><td><code>{created|to_hour}</code></td><td><code>2024-12-25 15:00:00</code> (если created="2024-12-25 15:30:45")</td></tr>
+<tr><td><code>to_minute</code></td><td>Приведение даты к началу минуты (секунды = 0), возвращает ISO формат</td><td><code>{created|to_minute}</code></td><td><code>2024-12-25 15:30:00</code> (если created="2024-12-25 15:30:45")</td></tr>
+<tr><td><code>to_second</code></td><td>Приведение даты к началу секунды (микросекунды = 0), возвращает ISO формат</td><td><code>{created|to_second}</code></td><td><code>2024-12-25 15:30:45</code></td></tr>
+<tr><td><code>to_week</code></td><td>Приведение даты к началу недели (понедельник 00:00:00), возвращает ISO формат</td><td><code>{created|to_week}</code></td><td><code>2024-12-23 00:00:00</code> (если created="2024-12-25 15:30:45")</td></tr>
+<tr><td><code>to_month</code></td><td>Приведение даты к началу месяца (1 число, 00:00:00), возвращает ISO формат</td><td><code>{created|to_month}</code></td><td><code>2024-12-01 00:00:00</code> (если created="2024-12-25 15:30:45")</td></tr>
+<tr><td><code>to_year</code></td><td>Приведение даты к началу года (1 января, 00:00:00), возвращает ISO формат</td><td><code>{created|to_year}</code></td><td><code>2024-01-01 00:00:00</code> (если created="2024-12-25 15:30:45")</td></tr>
 <tr><td><code>format:currency</code></td><td>Форматирование валюты</td><td><code>{amount|format:currency}</code></td><td><code>1000.00 ₽</code></td></tr>
 <tr><td><code>format:percent</code></td><td>Форматирование процентов</td><td><code>{value|format:percent}</code></td><td><code>25.5%</code></td></tr>
 <tr><td><code>format:number</code></td><td>Форматирование чисел</td><td><code>{value|format:number}</code></td><td><code>1234.56</code></td></tr>
 <tr><td><code>format:timestamp</code></td><td>Преобразование в timestamp</td><td><code>{date|format:timestamp}</code></td><td><code>1703512200</code></td></tr>
-<tr><td><code>time</code></td><td>Преобразование временных строк в секунды (поддержка формата: Xw Yd Zh Km Ms)</td><td><code>{duration|time}</code></td><td><code>9000</code> (если duration="2h 30m")</td></tr>
 <tr><td colspan="4"><strong>Условные</strong></td></tr>
 <tr><td><code>equals:value</code></td><td>Проверка равенства (строковое сравнение)</td><td><code>{status|equals:active}</code></td><td><code>true</code> или <code>false</code></td></tr>
 <tr><td><code>in_list:items</code></td><td>Проверка вхождения в список</td><td><code>{role|in_list:admin,moderator}</code></td><td><code>true</code> или <code>false</code></td></tr>
@@ -1264,10 +1286,20 @@ params:
   name: "{user.profile.name|fallback:Неизвестный}"
   
   # Временные значения
-  duration_seconds: "{duration|time}"
-  duration_minutes: "{duration|time|/60}"
-  duration_hours: "{duration|time|/3600}"
-  formatted_time: "{duration|time|format:number}"
+  duration_seconds: "{duration|seconds}"
+  duration_minutes: "{duration|seconds|/60}"
+  duration_hours: "{duration|seconds|/3600}"
+  formatted_time: "{duration|seconds|format:number}"
+  
+  # Сдвиг дат
+  tomorrow: "{created|shift:+1 day}"
+  next_month: "{created|shift:+1 month|format:date}"
+  complex_shift: "{created|shift:+1 year 2 months|format:datetime}"
+  
+  # Приведение к началу периода
+  start_of_day: "{created|to_date}"
+  start_of_week: "{created|to_week}"
+  formatted_month_start: "{created|to_month|format:date}"
   
   # Boolean поля (различаем True/False/None)
   is_active: "{is_active|equals:True|value:✅ Включен|fallback:{is_active|equals:False|value:❌ Выключен|fallback:❓ Неизвестно}}"

@@ -1,0 +1,46 @@
+services:
+  app-test:
+    extends:
+      file: docker-compose.yml
+      service: app
+    image: app-test:latest
+    container_name: app-test
+    environment:
+      - ENVIRONMENT=test
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    # Для test: код через volume (для разработки), данные и конфиги тоже через volumes
+    volumes:
+      - ..:/workspace  # Весь проект (для разработки)
+      - ./supervisord.conf:/etc/supervisor/conf.d/supervisord.conf:ro
+      # Данные и конфиги монтируются через общий volume выше, но можно переопределить отдельно
+      # - ../data:/workspace/data:rw
+      # - ../config:/workspace/config:rw
+      # - ../logs:/workspace/logs:rw
+    # Проброс порта для вебхуков (GitHub и Telegram) - test окружение
+    ports:
+      - "8443:8443"  # HTTPS сервер для вебхуков (test) - порт 8443 разрешен Telegram
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+
+  postgres-test:
+    extends:
+      file: docker-compose.yml
+      service: postgres
+    container_name: postgres-test
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_TEST:-core_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_TEST:-coreness1234}
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      # Переопределяем volumes для монтирования test конфига
+      - ../data/postgresql:/var/lib/postgresql/data
+      # Скрипт инициализации для автоматической установки расширения pgvector
+      - ./init-pgvector.sql:/docker-entrypoint-initdb.d/01-init-pgvector.sql:ro
+      - ./postgresql.test.conf:/etc/postgresql/postgresql.conf:ro
+      - ./pg_hba.test.conf:/etc/postgresql/pg_hba.conf:ro
+    ports:
+      - "5433:5432"  # Test окружение использует порт 5433
+

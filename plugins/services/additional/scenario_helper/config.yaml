@@ -1,0 +1,525 @@
+name: "scenario_helper"
+description: "Вспомогательные утилиты для управления выполнением сценариев"
+singleton: true
+
+dependencies:
+  - "logger"
+  - "settings_manager"
+  - "action_hub"
+  - "id_generator"
+
+settings:
+  cache_ttl:
+    type: integer
+    default: 600
+    description: "Время жизни кэша для генератора ID в секундах (10 минут). Используется для явного указания TTL при сохранении в cache_manager"
+
+actions:
+  sleep:
+    description: "Задержка выполнения на указанное количество секунд"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          seconds:
+            type: "float"
+            optional: false
+            min: 0.0
+            description: "Количество секунд задержки (можно использовать дробные значения, например 0.5 или 22.5)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+  generate_int:
+    description: "Генерация случайного целого числа в заданном диапазоне"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          min:
+            type: integer
+            optional: false
+            description: "Минимальное значение (включительно)"
+          max:
+            type: integer
+            optional: false
+            description: "Максимальное значение (включительно)"
+          seed:
+            type: any
+            optional: true
+            description: "Seed для детерминированной генерации (опционально, может быть числом, строкой или другим типом)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          random_value:
+            type: integer
+            replaceable: true
+            description: "Сгенерированное случайное число"
+          random_seed:
+            type: string
+            optional: true
+            description: "Использованный seed (если был передан, сохраняется как есть)"
+
+  generate_array:
+    description: "Генерация массива случайных чисел в заданном диапазоне (по умолчанию без повторений)"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          min:
+            type: integer
+            optional: false
+            description: "Минимальное значение (включительно)"
+          max:
+            type: integer
+            optional: false
+            description: "Максимальное значение (включительно)"
+          count:
+            type: integer
+            optional: false
+            min: 1
+            description: "Количество чисел для генерации"
+          seed:
+            type: any
+            optional: true
+            description: "Seed для детерминированной генерации (опционально, может быть числом, строкой или другим типом)"
+          allow_duplicates:
+            type: boolean
+            optional: true
+            description: "Разрешить повторения в массиве (по умолчанию false - без повторений)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          random_list:
+            type: array
+            replaceable: true
+            description: "Массив сгенерированных чисел"
+            items:
+              type: integer
+          random_seed:
+            type: string
+            optional: true
+            description: "Использованный seed (если был передан, сохраняется как есть)"
+
+  choose_from_array:
+    description: "Выбор случайных элементов из массива без повторений"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          array:
+            type: array
+            optional: false
+            description: "Исходный массив для выбора элементов"
+          count:
+            type: integer
+            optional: false
+            min: 1
+            description: "Количество элементов для выбора (без повторений)"
+          seed:
+            type: any
+            optional: true
+            description: "Seed для детерминированной генерации (опционально, может быть числом, строкой или другим типом)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          random_list:
+            type: array
+            replaceable: true
+            description: "Массив выбранных элементов (без повторений)"
+          random_seed:
+            type: string
+            optional: true
+            description: "Использованный seed (если был передан, сохраняется как есть)"
+
+  modify_array:
+    description: "Модификация массива: добавление, удаление элементов или очистка"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          operation:
+            type: string
+            optional: false
+            enum: ["add", "remove", "clear"]
+            description: "Операция: 'add' (добавить элемент), 'remove' (удалить элемент), 'clear' (очистить массив)"
+          array:
+            type: array
+            optional: false
+            description: "Исходный массив для модификации"
+          value:
+            type: any
+            optional: true
+            description: "Значение для добавления или удаления (обязательно для операций 'add' и 'remove')"
+          skip_duplicates:
+            type: boolean
+            optional: true
+            description: "Пропускать дубликаты при добавлении (по умолчанию true - не добавлять если элемент уже есть)"
+    output:
+      result:
+        type: string
+        description: "Результат: success (успешно), not_found (элемент не найден при операции remove), error (ошибка)"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          modified_array:
+            type: array
+            replaceable: true
+            description: "Модифицированный массив"
+
+  check_value_in_array:
+    description: "Проверка наличия значения в массиве"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          array:
+            type: array
+            optional: false
+            description: "Массив для проверки"
+          value:
+            type: any
+            optional: false
+            description: "Значение для поиска в массиве"
+    output:
+      result:
+        type: string
+        description: "Результат: success (найдено), not_found (не найдено), error (ошибка)"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          response_index:
+            type: integer
+            replaceable: true
+            description: "Порядковый номер (индекс) первого вхождения значения в массиве (только при result: success)"
+
+  generate_unique_id:
+    description: "Генерация уникального ID через автоинкремент в БД (детерминированная генерация - при одинаковых seed возвращает тот же ID). Если seed не указан, генерируется случайный UUID"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          seed:
+            type: string
+            optional: true
+            min_length: 1
+            description: "Seed для генерации ID. При повторном запросе с тем же seed вернется тот же ID. Если не указан, генерируется случайный UUID"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          unique_id:
+            type: integer
+            replaceable: true
+            description: "Уникальный ID (гарантированно уникальный, при одинаковых входных данных возвращается тот же ID)"
+
+  set_cache:
+    description: "Установка временных данных в кэш сценария. Все переданные параметры возвращаются в response_data и автоматически попадают в плоский _cache по умолчанию."
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          cache:
+            type: object
+            optional: false
+            description: "Объект с данными для установки в кэш. Все переданные параметры будут доступны в последующих шагах сценария через {_cache.ключ} (плоский доступ по умолчанию)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        description: "Все переданные параметры из объекта cache возвращаются в response_data и автоматически попадают в плоский _cache по умолчанию."
+        properties:
+          "*":
+            type: any
+            description: "Динамические ключи из переданного объекта cache. Все ключи доступны через {_cache.имя_ключа} (плоский доступ по умолчанию)"
+    details: |
+      **Пример использования:**
+      
+      ```yaml
+      step:
+        - action: "set_cache"
+          params:
+            cache:
+              selected_user: "@username"
+              reason: "Случайный выбор"
+              metadata:
+                timestamp: "2024-01-15"
+                source: "ai_router"
+        
+        - action: "send_message"
+          params:
+            text: |
+              Пользователь: {_cache.selected_user}
+              Причина: {_cache.reason}
+              Время: {_cache.metadata.timestamp}
+              Источник: {_cache.metadata.source}
+      ```
+      
+      **Важно:**
+      - Данные должны быть переданы в ключе `cache` в params
+      - Это позволяет явно указать, что именно нужно кэшировать
+      - Весь контекст сценария (user_id, chat_id, bot_id и др.) не попадет в кэш
+      
+      **Доступ к данным:**
+      - Все переданные параметры доступны через плейсхолдеры `{_cache.ключ}` (плоский доступ по умолчанию)
+      - Поддерживаются вложенные структуры: `{_cache.metadata.timestamp}`
+      - Данные автоматически очищаются после завершения выполнения сценария
+
+  format_data_to_text:
+    description: "Форматирование структурированных данных (JSON/YAML) в текстовый формат для промптов и сообщений"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          format_type:
+            type: string
+            optional: false
+            enum: ["list", "structured"]
+            description: "Тип форматирования: 'list' (простой список с шаблоном через $), 'structured' (структурированный формат с заголовками и вложенными блоками)"
+          input_data:
+            type: any
+            optional: false
+            description: "Массив объектов для форматирования"
+          title:
+            type: string
+            optional: true
+            description: "Заголовок для списка (опционально)"
+          item_template:
+            type: string
+            optional: true
+            min_length: 1
+            description: "Шаблон элемента для формата 'list' через $ (например: '- \"$id\" - $description'). Обязателен при format_type: 'list'"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          formatted_text:
+            type: string
+            replaceable: true
+            description: "Отформатированный текст"
+    details: |
+      **Форматы:**
+      
+      - **`list`** — простой список с шаблоном через `$`
+      - **`structured`** — структурированный формат: `name — description`, блок `Параметры:` с деталями
+      
+      **Примеры:**
+      
+      ```yaml
+      # Формат list
+      - action: "format_data_to_text"
+        params:
+          format_type: "list"
+          title: "Доступные намерения:"
+          item_template: '- "$id" - $description'
+          input_data: "{storage_values.ai_router.intents}"
+      # Результат в _cache.format_data_to_text.formatted_text:
+      # Доступные намерения:
+      # - "random_user" - Выбрать случайного пользователя
+      
+      # Формат structured
+      - action: "format_data_to_text"
+        params:
+          format_type: "structured"
+          title: "Доступные действия:"
+          input_data: "{storage_values.ai_router.actions}"
+      # Результат в _cache.format_data_to_text.formatted_text:
+      # Доступные действия:
+      # call_random_user — Выбрать N пользователей из группы
+      #   Параметры:
+      #   - count (integer) — Количество пользователей. По умолчанию: 1
+      ```
+      
+      **Важно:**
+      - Шаблон для `list` использует `$` вместо `{}` для избежания конфликта с плейсхолдерами
+      - Результат сохраняется в `_cache.format_data_to_text.formatted_text` (по умолчанию)
+      - Если указан `_namespace` в params, результат будет в `_cache.{_namespace}.formatted_text`
+
+features:
+  - "Задержка выполнения на указанное количество секунд или миллисекунд"
+  - "Генерация случайных целых чисел в заданном диапазоне"
+  - "Генерация массивов случайных чисел (по умолчанию без повторений)"
+  - "Опция allow_duplicates для генерации с повторениями"
+  - "Выбор случайных элементов из массива без повторений"
+  - "Модификация массивов: добавление, удаление элементов или очистка"
+  - "Проверка наличия значения в массиве с возвратом индекса (result: success/not_found)"
+  - "Поддержка seed для детерминированной генерации"
+  - "Генерация уникального ID через автоинкремент в БД (детерминированная генерация - при одинаковых входных данных возвращает тот же ID)"
+  - "Установка временных данных в кэш сценария (автоматическая очистка после завершения)"
+  - "Форматирование структурированных данных (JSON/YAML) в текстовый формат для промптов и сообщений"
+  - "Доступно для использования в сценариях"
+

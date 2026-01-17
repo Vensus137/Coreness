@@ -1,0 +1,183 @@
+name: "ai_client"
+description: "Утилита для работы с AI API (Polza.ai, OpenRouter и др.)"
+singleton: true
+dependencies:
+  - "logger"
+  - "settings_manager"
+  - "data_converter"
+
+settings:
+  api_key:
+    type: string
+    default: "${AI_API_KEY}"
+    description: "AI API ключ (Polza.ai, OpenRouter и др.)"
+  base_url:
+    type: string
+    default: "https://api.polza.ai/v1"
+    description: "Базовый URL AI API (по умолчанию Polza.ai)"
+  default_model:
+    type: string
+    default: "google/gemini-2.5-flash"
+    description: "Модель по умолчанию"
+  max_tokens:
+    type: integer
+    default: 200
+    description: "Максимальное количество токенов"
+  temperature:
+    type: float
+    default: 0.7
+    description: "Температура генерации"
+  default_embedding_model:
+    type: string
+    default: "text-embedding-3-small"
+    description: "Модель по умолчанию для генерации embeddings"
+  default_embedding_dimensions:
+    type: integer
+    default: 1024
+    description: "Размерность embedding по умолчанию (поддерживается только для OpenAI text-embedding-3-small и text-embedding-3-large)"
+    
+methods:
+  completion:
+    description: "AI completion через AI API (Polza.ai, OpenRouter и др.)"
+    input:
+      prompt:
+        type: string
+        description: "Текст запроса пользователя"
+      system_prompt:
+        type: string
+        optional: true
+        description: "Системный промпт для контекста"
+      model:
+        type: string
+        optional: true
+        description: "Модель AI (по умолчанию из настроек)"
+      max_tokens:
+        type: integer
+        optional: true
+        description: "Максимальное количество токенов (по умолчанию из настроек)"
+      temperature:
+        type: float
+        optional: true
+        description: "Температура генерации (по умолчанию из настроек)"
+      context:
+        type: string
+        optional: true
+        description: "Кастомный контекст (добавляется в финальное user сообщение вместе с knowledge и prompt чанками из rag_chunks)"
+      json_mode:
+        type: string
+        optional: true
+        description: "Режим JSON для структурированного ответа: 'json_object' или 'json_schema'"
+      json_schema:
+        type: object
+        optional: true
+        description: "JSON схема для режима json_schema (обязательна при json_mode='json_schema')"
+      tools:
+        type: array
+        optional: true
+        description: "Список доступных функций для вызова моделью (tool calling)"
+      tool_choice:
+        type: string
+        optional: true
+        description: "Управление выбором инструментов: 'none', 'auto', 'required' или объект с конкретной функцией"
+      api_key:
+        type: string
+        optional: true
+        description: "API ключ для переопределения (опционально, используется токен тенанта или дефолтный из настроек)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          response_completion:
+            type: string
+            description: "Completion ответ от ИИ"
+          prompt_tokens:
+            type: integer
+            description: "Токены на вход (prompt + context)"
+          completion_tokens:
+            type: integer
+            description: "Токены на выход (сгенерированный ответ)"
+          total_tokens:
+            type: integer
+            description: "Общее количество токенов (prompt + completion)"
+          model:
+            type: string
+            description: "Использованная модель"
+          response_dict:
+            type: object
+            optional: true
+            description: "Распарсенный словарь из JSON ответа (только при использовании json_mode)"
+          tool_calls:
+            type: array
+            optional: true
+            description: "Список вызовов функций, которые модель решила выполнить (только при использовании tools)"
+  
+  embedding:
+    description: "Генерация embedding для текста через AI API (Polza.ai, OpenRouter и др.)"
+    input:
+      text:
+        type: string
+        description: "Текст для генерации embedding"
+      model:
+        type: string
+        optional: true
+        description: "Модель для генерации embedding (по умолчанию из настроек default_embedding_model)"
+      dimensions:
+        type: integer
+        optional: true
+        description: "Размерность embedding (по умолчанию из настроек default_embedding_dimensions). Поддерживается только для OpenAI text-embedding-3-small и text-embedding-3-large. Для других моделей (Cohere, HuggingFace и др.) размерность фиксирована и параметр игнорируется"
+      api_key:
+        type: string
+        optional: true
+        description: "API ключ для переопределения (опционально)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          embedding:
+            type: array
+            description: "Вектор embedding (список чисел)"
+            items:
+              type: number
+          model:
+            type: string
+            description: "Использованная модель"
+          dimensions:
+            type: integer
+            description: "Размерность embedding"
+          total_tokens:
+            type: integer
+            description: "Общее количество токенов"

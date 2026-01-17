@@ -1,51 +1,36 @@
-# Глобальные настройки системы
+# Global System Settings
 
-# === УПРАВЛЕНИЕ ПЛАГИНАМИ ===
+# === PLUGIN MANAGEMENT ===
 
 plugin_management:
-  # Управление сервисами (основа запуска приложения)
+  # Service management (application startup foundation)
   services:
-    default_enabled: true     # Сервисы по умолчанию выключены
+    default_enabled: true     # Services enabled by default
     disabled_services: []
     enabled_services: []
   
-  # Управление утилитами (тонкая настройка вспомогательных компонентов)
+  # Utility management (fine-tuning of auxiliary components)
   utilities:
-    default_enabled: true     # Утилиты по умолчанию включены (инициализируются только при необходимости)
-    disabled_utilities: []    # Список отключенных утилит
-    enabled_utilities: []     # Список принудительно включенных утилит
+    default_enabled: true     # Utilities enabled by default (initialized only when needed)
+    disabled_utilities: []    # List of disabled utilities
+    enabled_utilities: []     # List of force-enabled utilities
 
-# === ГЛОБАЛЬНЫЕ НАСТРОЙКИ ===
+# === GLOBAL SETTINGS ===
 
 global:
-  file_base_path: "resources"           # Базовая директория для всех файлов
-  backup_dir: "data/backups"            # Базовая директория для всех бэкапов БД
-  tenants_config_path: "config/tenant"  # Путь к конфигурации тенантов
-  max_system_tenant_id: 100             # Максимальный ID системного тенанта
+  file_base_path: "resources"           # Base directory for all files
+  backup_dir: "data/backups"            # Base directory for all database backups
+  tenants_config_path: "config/tenant"  # Path to tenant configurations
+  max_system_tenant_id: 100             # Maximum system tenant ID
   
-  # Настройки graceful shutdown
+  # Graceful shutdown settings
   shutdown:
-    di_container_timeout: 5.0      # Время на shutdown DI-контейнера (всех плагинов)
-    plugin_timeout: 3.0             # Стандартное время на shutdown каждого плагина
-    background_tasks_timeout: 2.0   # Время на завершение фоновых задач приложения
+    di_container_timeout: 5.0      # Timeout for DI container shutdown (all plugins)
+    plugin_timeout: 3.0             # Standard timeout for each plugin shutdown
+    background_tasks_timeout: 2.0   # Timeout for application background tasks completion
 
-# === НАСТРОЙКИ СЕРВИСОВ ===
+# === SERVICE SETTINGS ===
 
 logger:
-  console_enabled: true
   file_enabled: true
-
-event_processor:
-  enable_time_comparison: false
-
-bot_hub:
-  use_webhooks: false
-
-tenant_hub:
-  use_webhooks: false
-
-http_api_service:
-  enabled: false
-
-backup_service:
-  enabled: true
+  console_enabled: true

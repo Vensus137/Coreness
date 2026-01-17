@@ -1,0 +1,449 @@
+name: "user_hub"
+description: "Центральный сервис для управления состояниями пользователей"
+singleton: true
+
+dependencies:
+  - "logger"
+  - "settings_manager"
+  - "action_hub"
+  - "user_manager"
+  - "database_manager"
+
+settings:
+  storage_max_records:
+    type: integer
+    default: 100
+    description: "Максимальное количество записей storage, возвращаемых при получении данных. Ограничение на выгрузку огромных storage. По умолчанию 100 записей."
+
+actions:
+  set_user_state:
+    description: "Установка состояния пользователя"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          user_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID пользователя Telegram"
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+          state:
+            type: string
+            optional: true
+            description: "Состояние пользователя (None или пустая строка для сброса)"
+          expires_in_seconds:
+            type: integer
+            optional: true
+            min: 0
+            description: "Время истечения в секундах (None или 0 = навсегда, устанавливается 3000 год)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          user_state:
+            type: string
+            optional: true
+            description: "Состояние пользователя или None если истекло/не установлено"
+          user_state_expired_at:
+            type: string
+            optional: true
+            description: "Время истечения состояния (ISO) или None если не установлено"
+
+  get_user_state:
+    description: "Получение состояния пользователя с проверкой истечения"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          user_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID пользователя Telegram"
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        properties:
+          user_state:
+            type: string
+            optional: true
+            replaceable: true
+            description: "Состояние пользователя или None если истекло/не установлено"
+          user_state_expired_at:
+            type: string
+            optional: true
+            description: "Время истечения состояния (ISO) или None если не установлено"
+
+  clear_user_state:
+    description: "Очистка состояния пользователя"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          user_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID пользователя Telegram"
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+
+  get_user_storage:
+    description: "Получение значений storage для пользователя. Поддерживает получение всех значений, конкретного значения (key) или поиск по паттерну (key_pattern)"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+          user_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID пользователя Telegram"
+          key:
+            type: string
+            optional: true
+            description: "Ключ для получения конкретного значения (точное совпадение, приоритет над key_pattern)"
+          key_pattern:
+            type: string
+            optional: true
+            min_length: 1
+            description: "Паттерн для поиска ключей (ILIKE, используется если key не указан)"
+          format:
+            type: boolean
+            optional: true
+            description: "Если true, возвращает дополнительное поле formatted_text с данными в формате YAML"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error, not_found"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          user_storage_values:
+            type: any
+            replaceable: true
+            description: "Запрошенные данные. Если указан key - возвращается прямое значение (примитив или объект как есть). Если ничего не указано - возвращается полная структура {key: value}"
+          formatted_text:
+            type: string
+            optional: true
+            description: "Отформатированный текст в формате YAML (возвращается только если format=true)"
+
+  set_user_storage:
+    description: "Установка значений storage для пользователя. Поддерживает смешанный подход: полная структура через values или частичная через key/value"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        description: "Параметры для установки значений. Приоритет: key -> value -> values"
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+          user_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID пользователя Telegram"
+          key:
+            type: string
+            optional: true
+            description: "Ключ значения (с поддержкой плейсхолдеров). Если указан, используется смешанный подход"
+          value:
+            type: any
+            optional: true
+            description: "Значение для установки. Используется вместе с key"
+          values:
+            type: object
+            optional: true
+            description: "Полная структура для установки {key: value}. Используется только если не указан key"
+          format:
+            type: boolean
+            optional: true
+            description: "Если true, возвращает дополнительное поле formatted_text с данными в формате YAML"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          user_storage_values:
+            type: any
+            replaceable: true
+            description: "Установленные данные. Если установлено одно значение (key + value) - возвращается прямое значение (примитив или объект как есть). Если установлена структура (values без key) - возвращается структура {key: value}"
+          formatted_text:
+            type: string
+            optional: true
+            description: "Отформатированный текст в формате YAML (возвращается только если format=true)"
+
+  delete_user_storage:
+    description: "Удаление значений из storage пользователя"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+          user_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID пользователя Telegram"
+          key:
+            type: string
+            optional: true
+            description: "Ключ для удаления конкретного значения (точное совпадение, приоритет над key_pattern). Если не указаны key и key_pattern - удаляются все записи пользователя"
+          key_pattern:
+            type: string
+            optional: true
+            min_length: 1
+            description: "Паттерн для поиска ключей для удаления (ILIKE, используется если key не указан). Если не указаны key и key_pattern - удаляются все записи пользователя"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error, not_found"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+
+  get_tenant_users:
+    description: "Получение списка всех user_id для указанного тенанта"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            description: "ID тенанта"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          user_ids:
+            type: array
+            replaceable: true
+            description: "Массив ID пользователей Telegram"
+            items:
+              type: integer
+          user_count:
+            type: integer
+            description: "Количество пользователей"
+
+  get_users_by_storage_value:
+    description: "Поиск пользователей по ключу и значению в storage. Позволяет найти всех пользователей, у которых в storage есть определенный ключ с определенным значением (например, найти всех пользователей с подключенной подпиской)"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+          key:
+            type: string
+            optional: false
+            min_length: 1
+            description: "Ключ для поиска в storage"
+          value:
+            type: "string|integer|float|boolean|array|object"
+            optional: false
+            description: "Значение для поиска (может быть простым типом или JSON объектом)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+      response_data:
+        type: object
+        properties:
+          user_ids:
+            type: array
+            replaceable: true
+            description: "Массив ID пользователей Telegram, у которых storage[key] == value"
+            items:
+              type: integer
+          user_count:
+            type: integer
+            description: "Количество найденных пользователей"
+
+features:
+  - "Центральное управление состояниями пользователей"
+  - "Интеграция с утилитой user_manager"
+  - "Установка состояний с поддержкой истечения"
+  - "Получение состояний с автоматической проверкой истечения"
+  - "Очистка состояний пользователей"
+  - "Поддержка состояний навсегда (3000 год)"
+  - "Автоматическая очистка истекших состояний"
+  - "Хранилище key-value данных пользователя (привязано к тенанту)"
+  - "Поддержка простых типов и сложных структур (массивы, JSON объекты)"
+  - "Форматирование данных в YAML для удобного отображения"

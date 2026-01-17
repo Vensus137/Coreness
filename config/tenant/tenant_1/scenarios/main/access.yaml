@@ -1,0 +1,106 @@
+# ============================================
+# Access Management
+# Purpose: checking user access rights to various system functions
+# ============================================
+
+# ============================================
+# BLOCK 1: Basic Access Check
+# ============================================
+
+# Access check scenario (called programmatically)
+access_check:
+  description: "Проверка доступа пользователя к Master боту"
+  
+  step:
+    # Get user settings from storage of tenant_1 (Master tenant)
+    - action: "get_storage"
+      params:
+        group_key: "users"
+        key: "{user_id}"
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario" # Validation error or user not found
+          transition_value: "default_error"
+
+    # Save data to cache
+    - action: "set_cache"
+      params:
+        cache:
+          tenant_owner: "{_cache.storage_values.tenant_owner|fallback:[]}"
+          access: "{_cache.storage_values.access|fallback:False}"
+          admin: "{_cache.storage_values.admin|fallback:False}"
+        _namespace: "user"
+    
+    # Check that user has access (field access = true)
+    - action: "validate"
+      params:
+        condition: "{_cache.user.access} == True"
+      transition:
+        - action_result: "success"
+          transition_action: "continue"        # Access granted - continue execution
+        - action_result: "failed"
+          transition_action: "jump_to_scenario" # Access denied
+          transition_value: "access_denied"
+        - action_result: "error"
+          transition_action: "jump_to_scenario" # Validation error or user not found
+          transition_value: "default_error"
+
+# Access denied scenario
+access_denied:
+  description: "Access denied notification"
+  
+  step:
+    - action: "send_message"
+      params:
+        text: |
+          ❌ <b>Доступ ограничен</b>
+          
+          К сожалению, у вас нет прав для использования этой функции.
+        message_edit: false
+      transition:
+        - action_result: "any"
+          transition_action: "abort"  # Always abort scenario execution
+
+# ============================================
+# BLOCK 2: Administrative Access Check
+# ============================================
+
+# Administrator access check scenario
+access_check_admin:
+  description: "Checking administrator access to administrative functions"
+  
+  step:
+    # Check access
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+    
+    # Check that user is an administrator (field admin = true)
+    - action: "validate"
+      params:
+        condition: "{_cache.user.admin} == True"
+      transition:
+        - action_result: "success"
+          transition_action: "continue"        # Access granted - continue execution
+        - action_result: "failed"
+          transition_action: "jump_to_scenario" # Access denied
+          transition_value: "access_denied_admin"
+        - action_result: "error"
+          transition_action: "jump_to_scenario" # Validation error or user not found
+          transition_value: "default_error"
+
+# Access denied scenario for administrator
+access_denied_admin:
+  description: "Administrator access denied notification"
+  
+  step:
+    - action: "send_message"
+      params:
+        text: |
+          ❌ <b>Доступ ограничен</b>
+          
+          Эта функция доступна только администратору системы.
+        message_edit: false
+      transition:
+        - action_result: "any"
+          transition_action: "abort"  # Always abort scenario execution

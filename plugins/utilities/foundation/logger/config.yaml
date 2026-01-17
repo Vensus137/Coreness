@@ -1,0 +1,65 @@
+name: "logger"
+description: "Системный логгер для проекта. Используется для централизованного логирования событий и ошибок."
+singleton: true
+
+settings:
+  level:
+    type: string
+    default: DEBUG
+    description: "Уровень логирования для файла и консоли (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
+
+  file_enabled:
+    type: boolean
+    default: true
+    description: "Писать логи в файл"
+
+  console_enabled:
+    type: boolean
+    default: true
+    description: "Писать логи в консоль"
+
+  file_path:
+    type: string
+    default: "logs/core.log"
+    description: "Путь к файлу логов"
+
+  max_file_size_mb:
+    type: integer
+    default: 10
+    description: "Максимальный размер одного файла лога (МБ)"
+
+  backup_count:
+    type: integer
+    default: 3
+    description: "Количество файлов ротации - уменьшено для экономии места"
+
+  buffer_size:
+    type: integer
+    default: 8192
+    description: "Размер буфера для файлового логирования (байт). 0 = без буферизации"
+
+  timezone:
+    type: string
+    default: "Europe/Moscow"
+    description: "Временная зона для отображения времени в логах (например, Europe/Moscow, UTC)"
+
+methods:
+  setup_logger:
+    description: "Настроить и вернуть основной логгер для проекта"
+    input:
+      name:
+        type: string
+        description: "Имя логгера (обычно имя модуля)"
+    output:
+      type: Logger
+      description: "Объект логгера, готовый к использованию"
+      
+  get_logger:
+    description: "Получить логгер по имени (или создать, если не существует)"
+    input:
+      name:
+        type: string
+        description: "Имя логгер (обычно имя модуля)"
+    output:
+      type: Logger
+      description: "Объект логгера" 

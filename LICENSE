@@ -1,45 +1,19 @@
-ПРОПРИЕТАРНАЯ ЛИЦЕНЗИЯ - ЗАКРЫТОЕ ПРОГРАММНОЕ ОБЕСПЕЧЕНИЕ
-Coreness - Платформа для автоматизации и AI-решений
+MIT License
 
-© 2026, Coreness. Все права защищены.
+Copyright (c) 2026 Coreness
 
-ВНИМАНИЕ: Данное программное обеспечение является ПРОПРИЕТАРНЫМ и КОНФИДЕНЦИАЛЬНЫМ.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-ЗАПРЕЩЕНО:
-- Любое копирование, распространение или передача третьим лицам
-- Любое использование без письменного разрешения владельца
-- Любое модификация, декомпиляция или обратная инженерия
-- Любое коммерческое использование или получение прибыли
-- Публикация исходного кода или его фрагментов
-- Создание производных работ на основе данного кода
-- Использование в открытых или публичных проектах
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-НАРУШЕНИЕ ЛИЦЕНЗИИ:
-Любое нарушение данных условий ведет к немедленному прекращению лицензии и может повлечь за собой правовые последствия.
-
-КОНТАКТЫ:
-Для получения разрешений на использование обращайтесь к владельцу лицензии.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-PROPRIETARY SOFTWARE LICENSE - CLOSED SOURCE SOFTWARE
-Coreness - Automation and AI Solutions Platform
+Copyright (c) 2026 Coreness
 
-Copyright (c) 2026, Coreness. All rights reserved.
+Данная лицензия разрешает лицам, получившим копию данного программного обеспечения и сопутствующей документации (далее — Программное обеспечение), безвозмездно использовать Программное обеспечение без ограничений, включая неограниченное право на использование, копирование, изменение, слияние, публикацию, распространение, сублицензирование и/или продажу копий Программного обеспечения, а также лицам, которым предоставляется данное Программное обеспечение, при соблюдении следующих условий:
 
-WARNING: This software is PROPRIETARY and CONFIDENTIAL.
+Указанное выше уведомление об авторском праве и данные условия должны быть включены во все копии или значимые части данного Программного обеспечения.
 
-PROHIBITED:
-- Any copying, distribution or transfer to third parties
-- Any use without written permission from the owner
-- Any modification, decompilation or reverse engineering
-- Any commercial use or profit generation
-- Publication of source code or its fragments
-- Creation of derivative works based on this code
-- Use in open or public projects
-
-LICENSE VIOLATION:
-Any violation of these terms results in immediate license termination and may result in legal consequences.
-
-CONTACT:
-For usage permissions, contact the license owner. 
+ДАННОЕ ПРОГРАММНОЕ ОБЕСПЕЧЕНИЕ ПРЕДОСТАВЛЯЕТСЯ «КАК ЕСТЬ», БЕЗ КАКИХ-ЛИБО ГАРАНТИЙ, ЯВНО ВЫРАЖЕННЫХ ИЛИ ПОДРАЗУМЕВАЕМЫХ, ВКЛЮЧАЯ ГАРАНТИИ ТОВАРНОЙ ПРИГОДНОСТИ, СООТВЕТСТВИЯ ПО ЕГО КОНКРЕТНОМУ НАЗНАЧЕНИЮ И ОТСУТСТВИЯ НАРУШЕНИЙ, НО НЕ ОГРАНИЧИВАЯСЬ ИМИ. НИ В КАКОМ СЛУЧАЕ АВТОРЫ ИЛИ ПРАВООБЛАДАТЕЛИ НЕ НЕСУТ ОТВЕТСТВЕННОСТИ ПО КАКИМ-ЛИБО ИСКАМ, ЗА УЩЕРБ ИЛИ ПО ИНЫМ ТРЕБОВАНИЯМ, В ТОМ ЧИСЛЕ, ПРИ ДЕЙСТВИИ КОНТРАКТА, ДЕЛИКТЕ ИЛИ ИНОЙ СИТУАЦИИ, ВОЗНИКШИМ ИЗ-ЗА ИСПОЛЬЗОВАНИЯ ПРОГРАММНОГО ОБЕСПЕЧЕНИЯ ИЛИ ИНЫХ ДЕЙСТВИЙ С ПРОГРАММНЫМ ОБЕСПЕЧЕНИЕМ.

@@ -1,0 +1,177 @@
+name: "action_hub"
+description: "Центральный хаб действий для маршрутизации к сервисам"
+singleton: true
+dependencies:
+  - "logger"
+  - "settings_manager"
+  - "task_manager"
+  - "action_validator"
+
+settings:
+  # Группы для системы доступа
+  groups:
+    system:
+      tenant_id: [1, 2]
+
+    no_access:
+      tenant_id: []
+      
+  # Правила доступа к действиям
+  access_rules:
+
+    system_access:
+      allowed_groups: ["system"]
+
+    no_access:
+      allowed_groups: ["no_access"]
+
+    # Проверка подмены данных - защита от подмены полей
+    data_integrity:
+      allowed_groups: ["system"]              # Кому доступны изменения полей
+      check_fields: ["bot_id", "tenant_id"]   # Поля для проверки на подмену
+
+methods:
+  # Registry сервисов
+  register:
+    description: "Регистрация сервиса"
+    input:
+      service_name:
+        type: string
+        description: "Имя сервиса (tenant_hub, api_service, etc.)"
+      service_instance:
+        type: object
+        description: "Экземпляр сервиса"
+    output:
+      type: boolean
+      description: "True если регистрация успешна"
+
+  get_action_config:
+    description: "Получение полной конфигурации действия"
+    input:
+      action_name:
+        type: string
+        description: "Имя действия для получения конфигурации"
+    output:
+      type: object
+      optional: true
+      description: "Полная конфигурация действия из маппинга или None если действие не найдено"
+
+  # Универсальные действия
+  execute_action:
+    description: "Выполнение действия через соответствующий сервис"
+    input:
+      action_name:
+        type: string
+        description: "Имя действия (tenant_reload, etc.)"
+      data:
+        type: object
+        description: "Параметры действия (словарь с данными)"
+      queue_name:
+        type: string
+        optional: true
+        description: "Очередь для выполнения (common, action). По умолчанию: common"
+      fire_and_forget:
+        type: boolean
+        optional: true
+        default: false
+        description: "Если true - задача выполнится в фоне без ожидания результата. Возвращает {'result': 'success'}"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error, timeout, not_found"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа (если есть)"
+
+  execute_action_secure:
+    description: "Безопасное выполнение действия с проверкой tenant_access (для сценариев)"
+    input:
+      action_name:
+        type: string
+        description: "Имя действия (tenant_reload, etc.)"
+      data:
+        type: object
+        description: "Параметры действия (словарь с данными)"
+      queue_name:
+        type: string
+        optional: true
+        description: "Очередь для выполнения (common, action). По умолчанию: action"
+      fire_and_forget:
+        type: boolean
+        optional: true
+        default: false
+        description: "Если true - задача выполнится в фоне без ожидания результата. Возвращает {'result': 'success'}"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error, timeout, not_found"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Данные ответа (если есть)"
+
+actions:
+  # Специальные действия ActionHub
+  get_available_actions:
+    description: "Получение всех доступных действий с их метаданными"
+    input: {}
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки (например, ошибки валидации полей)"
+      response_data:
+        type: object
+        description: "Словарь всех доступных действий с метаданными"
+
+features:
+  - "Маршрутизация действий к соответствующим сервисам"
+  - "Registry для хранения ссылок на сервисы"
+  - "API-подобный интерфейс для выполнения действий"
+  - "Автоматическое построение маппинга действий из конфигураций"
+  - "Синхронные ответы на все действия"
+  - "Система правил доступа с проверкой групп тенантов"
+  - "Защита от подмены данных в действиях"
