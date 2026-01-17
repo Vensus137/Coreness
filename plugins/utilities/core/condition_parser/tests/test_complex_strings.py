@@ -10,8 +10,7 @@ class TestComplexStrings:
     @pytest.mark.asyncio
     async def test_string_with_hyphens(self, parser):
         """Проверка строки с дефисами (токен OpenRouter)"""
-        # Пример: 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
-        token = "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"
+        token = "sk-or-v1-1a2b3c4d5e6f7g8h9i0j"
         result = await parser.check_match(f'{token} == "{token}"', {})
         assert result is True
 
