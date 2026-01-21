@@ -1,0 +1,96 @@
+# Mailing
+# Hidden command /mail - not shown in command list
+
+# Command /mail - navigate to mailing menu
+mail:
+  description: "Hidden command for message mailing"
+  
+  trigger:
+    - event_type: "message"
+      event_text: "/mail"
+
+  step:
+    # Administrator access check
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check_admin"
+
+    # Navigate to mailing menu
+    - action: "execute_scenario"
+      params:
+        scenario: "mailing_menu"
+
+# Mailing menu with message preview and recipients list
+mailing_menu:
+  description: "Mailing menu with message preview and recipients list"
+
+  step:
+    # Get mailing group from storage
+    - action: "get_storage"
+      params:
+        group_key: "mailing"
+    
+    # Send mailing text (as it will be sent)
+    - action: "send_message"
+      params:
+        text: "{_cache.storage_values.text}"
+        attachment: "{_cache.storage_values.attachment|fallback:}"
+        message_edit: false
+    
+    # Send recipients information and keyboard
+    - action: "send_message"
+      params:
+        text: |
+          <b>Получатели:</b>
+          {_cache.storage_values.recipients|list}
+          
+          <b>Всего получателей:</b> <code>{_cache.storage_values.recipients|length}</code>
+        inline:
+          - [{"✅ Отправить": "mailing_send"}]
+          - [{"🔙 Назад": "start"}]
+        message_edit: false
+
+# Send mailing
+mailing_send:
+  description: "Send mailing to all recipients"
+  
+  trigger:
+    - event_type: "callback"
+      callback_data: "mailing_send"
+
+  step:
+    # Administrator access check
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check_admin"
+    
+    # Get mailing group from storage
+    - action: "get_storage"
+      params:
+        group_key: "mailing"
+    
+    # Send notification about mailing start
+    - action: "send_message"
+      params:
+        text: |
+          ⏳ Отправка рассылки...
+          
+          Получателей: <code>{_cache.storage_values.recipients|length}</code>
+        message_edit: false
+    
+    # Send message to all recipients
+    - action: "send_message"
+      params:
+        target_chat_id: "{_cache.storage_values.recipients}"
+        text: "{_cache.storage_values.text}"
+        attachment: "{_cache.storage_values.attachment|fallback:}"
+        message_edit: false
+    
+    # Success notification
+    - action: "send_message"
+      params:
+        text: |
+          ✅ Рассылка отправлена успешно!
+          
+          Получателей: <code>{_cache.storage_values.recipients|length}</code>
+        message_edit: false
