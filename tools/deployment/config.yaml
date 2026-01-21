@@ -110,7 +110,7 @@ git_settings:
 # === CHANGELOG SETTINGS ===
 changelog_settings:
   # Path to changelog file relative to project root
-  changelog_file: "docs/CHANGELOG.md"
+  changelog_file: "docs/en/CHANGELOG.md"
 
 # === DEPLOYMENT SETTINGS ===
 deploy_settings:

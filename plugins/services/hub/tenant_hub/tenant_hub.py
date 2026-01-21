@@ -1,6 +1,6 @@
 """
-Tenant Hub - сервис для управления конфигурациями тенантов
-Координатор загрузки данных тенантов через специализированные сервисы
+Tenant Hub - service for managing tenant configurations
+Coordinator for loading tenant data through specialized services
 """
 
 from typing import Any, Dict
@@ -17,9 +17,9 @@ from .utils.tenant_parser import TenantParser
 
 class TenantHub:
     """
-    Сервис для управления конфигурациями тенантов
-    - Координирует загрузку данных тенантов
-    - Делегирует загрузку конкретных частей специализированным сервисам
+    Service for managing tenant configurations
+    - Coordinates tenant data loading
+    - Delegates loading of specific parts to specialized services
     """
     
     def __init__(self, **kwargs):
@@ -32,40 +32,40 @@ class TenantHub:
         self.datetime_formatter = kwargs['datetime_formatter']
         self.http_server = kwargs.get('http_server')
         
-        # Получаем максимальный ID системного тенанта из глобальных настроек
+        # Get max system tenant ID from global settings
         global_settings = self.settings_manager.get_global_settings()
         self.max_system_tenant_id = global_settings.get('max_system_tenant_id', 100)
         
-        # Настройки вебхуков
+        # Webhook settings
         plugin_settings = self.settings_manager.get_plugin_settings('tenant_hub')
         use_webhooks_setting = plugin_settings.get('use_webhooks', False)
         
-        # Автоматически переключаем на пулинг, если вебхуки недоступны
+        # Automatically switch to polling if webhooks unavailable
         self.use_webhooks = use_webhooks_setting and self.http_server is not None
         
         if use_webhooks_setting and not self.use_webhooks:
-            self.logger.warning("Вебхуки GitHub включены в настройках, но http_server недоступен - автоматически используется пулинг")
+            self.logger.warning("GitHub webhooks enabled in settings, but http_server unavailable - automatically using polling")
         
         self.github_webhook_secret = plugin_settings.get('github_webhook_secret', '')
         self.github_webhook_endpoint = plugin_settings.get('github_webhook_endpoint', '/webhooks/github')
         
-        # Регистрируем эндпоинт для GitHub вебхука (если вебхуки включены и доступны)
+        # Register GitHub webhook endpoint (if webhooks enabled and available)
         if self.use_webhooks:
             self._register_github_webhook_endpoint()
         
-        # Создаем менеджер данных тенанта
+        # Create tenant data manager
         self.tenant_data_manager = TenantDataManager(self.database_manager, self.logger)
         
-        # Создаем кэш тенанта
+        # Create tenant cache
         self.tenant_cache = TenantCache(self.database_manager, self.logger, self.datetime_formatter, kwargs['cache_manager'], self.settings_manager)
         
-        # Создаем папку для тенантов (один раз при инициализации)
+        # Create tenants folder (once on initialization)
         self._ensure_tenants_directory_exists()
         
-        # Создаем подмодули
+        # Create submodules
         self.tenant_parser = TenantParser(self.logger, self.settings_manager, self.condition_parser)
         
-        # Создаем менеджер хранилища тенанта
+        # Create tenant storage manager
         self.storage_manager = StorageManager(
             self.database_manager,
             self.logger,
@@ -75,7 +75,7 @@ class TenantHub:
         self.github_sync = GitHubSyncBase(self.logger, self.settings_manager)
         self.smart_github_sync = SmartGitHubSync(self.logger, self.settings_manager)
         
-        # Создаем исполнитель синхронизации блоков
+        # Create block sync executor
         self.block_sync_executor = BlockSyncExecutor(
             self.logger,
             self.tenant_parser,
@@ -86,7 +86,7 @@ class TenantHub:
             self.storage_manager
         )
         
-        # Создаем оркестратор синхронизации
+        # Create sync orchestrator
         self.sync_orchestrator = SyncOrchestrator(
             self.logger,
             self.smart_github_sync,
@@ -96,11 +96,11 @@ class TenantHub:
             self.task_manager
         )
         
-        # Регистрируем себя в ActionHub
+        # Register ourselves in ActionHub
         self.action_hub.register('tenant_hub', self)
     
     def _ensure_tenants_directory_exists(self):
-        """Создает папку для тенантов если её нет"""
+        """Create tenants folder if it doesn't exist"""
         try:
             from pathlib import Path
             global_settings = self.settings_manager.get_global_settings()
@@ -110,83 +110,83 @@ class TenantHub:
             
             if not self.tenants_path.exists():
                 self.tenants_path.mkdir(parents=True, exist_ok=True)
-                self.logger.info(f"Создана папка тенантов: {self.tenants_path}")
+                self.logger.info(f"Created tenants folder: {self.tenants_path}")
                 
         except Exception as e:
-            self.logger.error(f"Ошибка создания папки тенантов: {e}")
+            self.logger.error(f"Error creating tenants folder: {e}")
     
     async def run(self):
-        """Основной цикл работы сервиса с регулярной синхронизацией в фоне"""
+        """Main service loop with regular background synchronization"""
         try:
             import asyncio
             
-            # Получаем настройки синхронизации
+            # Get sync settings
             plugin_settings = self.settings_manager.get_plugin_settings("tenant_hub")
             sync_interval = plugin_settings.get('sync_interval', 60)
             
-            # Первая синхронизация при запуске (выполняем напрямую, не через очередь)
-            # Синхронизируем все тенанты (системные локально + публичные из GitHub)
-            self.logger.info("Первоначальная синхронизация всех тенантов...")
+            # First sync on startup (execute directly, not through queue)
+            # Sync all tenants (system locally + public from GitHub)
+            self.logger.info("Initial synchronization of all tenants...")
             await self.sync_all_tenants({})
             
-            # Если вебхуки включены - эндпоинт уже зарегистрирован при инициализации
-            # Сервер запустится через http_api_service (если доступен)
+            # If webhooks enabled - endpoint already registered on initialization
+            # Server will start through http_api_service (if available)
             if self.use_webhooks:
                 if self.http_server:
-                    self.logger.info("Вебхуки включены, эндпоинт зарегистрирован, сервер запустится через http_api_service")
-                    # Сервис завершается - HTTP сервер работает в фоне, события обрабатываются через вебхуки
+                    self.logger.info("Webhooks enabled, endpoint registered, server will start through http_api_service")
+                    # Service exits - HTTP server runs in background, events processed through webhooks
                     return
                 else:
-                    self.logger.warning("Вебхуки включены, но http_server недоступен - используется пулинг как fallback")
+                    self.logger.warning("Webhooks enabled, but http_server unavailable - using polling as fallback")
             
-            # Если вебхуки выключены - работаем как раньше (пулинг)
-            # Если интервал = 0, автосинхронизация отключена
+            # If webhooks disabled - work as before (polling)
+            # If interval = 0, auto-sync disabled
             if sync_interval <= 0:
-                self.logger.info("Автоматическая синхронизация отключена (sync_interval = 0)")
+                self.logger.info("Automatic synchronization disabled (sync_interval = 0)")
                 return
             
-            # Цикл регулярной синхронизации - отправляем задачи в фоне
-            self.logger.info(f"Запущен цикл фонового обновления (интервал: {sync_interval} сек)")
+            # Regular sync loop - send tasks in background
+            self.logger.info(f"Background update loop started (interval: {sync_interval} sec)")
             
             while True:
                 await asyncio.sleep(sync_interval)
                 
-                # Последовательная проверка и обновление публичных тенантов без фоновой задачи
+                # Sequential check and update of public tenants without background task
                 try:
                     await self.sync_orchestrator.sync_public_tenants()
                 except Exception as e:
-                    self.logger.error(f"Ошибка фоновой синхронизации публичных тенантов: {e}")
+                    self.logger.error(f"Error in background sync of public tenants: {e}")
                     
         except asyncio.CancelledError:
-            self.logger.info("Цикл синхронизации прерван")
+            self.logger.info("Sync loop interrupted")
             raise
         except Exception as e:
-            self.logger.error(f"Ошибка в основном цикле: {e}")
+            self.logger.error(f"Error in main loop: {e}")
             raise
     
-    # === Методы управления вебхуками ===
+    # === Webhook management methods ===
     
     def _register_github_webhook_endpoint(self):
-        """Регистрация эндпоинта для GitHub вебхука (вызывается при инициализации)"""
+        """Register endpoint for GitHub webhook (called on initialization)"""
         try:
             from .handlers.github_webhook import GitHubWebhookHandler
             
             if not self.http_server:
-                self.logger.warning("http_server не найден, не удалось зарегистрировать эндпоинт GitHub вебхука")
+                self.logger.warning("http_server not found, failed to register GitHub webhook endpoint")
                 return
             
-            # Проверяем наличие секрета
+            # Check secret presence
             if not self.github_webhook_secret:
-                self.logger.warning("GitHub webhook secret не установлен, вебхуки могут быть небезопасны")
+                self.logger.warning("GitHub webhook secret not set, webhooks may be insecure")
             
-            # Создаем обработчик
+            # Create handler
             handler_instance = GitHubWebhookHandler(
                 self.action_hub,
                 self.github_webhook_secret,
                 self.logger
             )
             
-            # Регистрируем эндпоинт (синхронно, при инициализации)
+            # Register endpoint (synchronously, on initialization)
             success = self.http_server.register_endpoint(
                 'POST',
                 self.github_webhook_endpoint,
@@ -194,83 +194,83 @@ class TenantHub:
             )
             
             if success:
-                self.logger.info(f"Эндпоинт GitHub вебхука зарегистрирован на {self.github_webhook_endpoint}")
+                self.logger.info(f"GitHub webhook endpoint registered on {self.github_webhook_endpoint}")
             else:
-                self.logger.error("Не удалось зарегистрировать эндпоинт GitHub вебхука")
+                self.logger.error("Failed to register GitHub webhook endpoint")
                 
         except Exception as e:
-            self.logger.error(f"Ошибка регистрации эндпоинта GitHub вебхука: {e}")
+            self.logger.error(f"Error registering GitHub webhook endpoint: {e}")
             
-    # === Actions для ActionHub ===
+    # === Actions for ActionHub ===
     
     async def sync_tenant(self, data: Dict[str, Any], pull_from_github: bool = True) -> Dict[str, Any]:
         """
-        Синхронизация конфигурации тенанта с базой данных
-        По умолчанию обновляет данные из GitHub перед синхронизацией
-        Делегирует выполнение оркестратору синхронизации
+        Sync tenant configuration with database
+        By default updates data from GitHub before sync
+        Delegates execution to sync orchestrator
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             
-            # Используем оркестратор для синхронизации тенанта (оба блока)
+            # Use orchestrator to sync tenant (both blocks)
             return await self.sync_orchestrator.sync_tenant(tenant_id, pull_from_github)
                 
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации тенанта: {e}")
+            self.logger.error(f"Error syncing tenant: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_all_tenants(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Синхронизация всех тенантов: системных (локально) + публичных (из GitHub)
-        Делегирует выполнение оркестратору синхронизации
+        Sync all tenants: system (locally) + public (from GitHub)
+        Delegates execution to sync orchestrator
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             return await self.sync_orchestrator.sync_all_tenants()
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации всех тенантов: {e}")
+            self.logger.error(f"Error syncing all tenants: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_tenant_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Синхронизация данных тенанта: создание/обновление тенанта"""
+        """Sync tenant data: create/update tenant"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
-            # Используем TenantDataManager для синхронизации данных тенанта
-            # Передаем data напрямую, так как он уже содержит все данные тенанта
+            # Validation is done centrally in ActionRegistry
+            # Use TenantDataManager to sync tenant data
+            # Pass data directly, as it already contains all tenant data
             return await self.tenant_data_manager.sync_tenant_data(data)
                 
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации данных тенанта: {e}")
+            self.logger.error(f"Error syncing tenant data: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_tenant_scenarios(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Синхронизация сценариев тенанта: pull из GitHub + парсинг + синхронизация
+        Sync tenant scenarios: pull from GitHub + parsing + sync
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             
-            # Единая точка входа: синхронизируем только сценарии
+            # Single entry point: sync only scenarios
             return await self.block_sync_executor.sync_blocks(
                 tenant_id,
                 {"bot": False, "scenarios": True, "storage": False, "config": False},
@@ -278,24 +278,24 @@ class TenantHub:
             )
                 
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации сценариев: {e}")
+            self.logger.error(f"Error syncing scenarios: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_tenant_bot(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Синхронизация бота тенанта: pull из GitHub + парсинг + синхронизация
+        Sync tenant bot: pull from GitHub + parsing + sync
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             
-            # Единая точка входа: синхронизируем только бота
+            # Single entry point: sync only bot
             return await self.block_sync_executor.sync_blocks(
                 tenant_id,
                 {"bot": True, "scenarios": False, "storage": False, "config": False},
@@ -303,24 +303,24 @@ class TenantHub:
             )
                 
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации бота: {e}")
+            self.logger.error(f"Error syncing bot: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_tenant_storage(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Синхронизация storage тенанта: pull из GitHub + парсинг + синхронизация
+        Sync tenant storage: pull from GitHub + parsing + sync
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             
-            # Единая точка входа: синхронизируем только storage
+            # Single entry point: sync only storage
             return await self.block_sync_executor.sync_blocks(
                 tenant_id,
                 {"bot": False, "scenarios": False, "storage": True, "config": False},
@@ -328,24 +328,24 @@ class TenantHub:
             )
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка синхронизации storage: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error syncing storage: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_tenant_config(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Синхронизация конфига тенанта: pull из GitHub + парсинг + синхронизация
+        Sync tenant config: pull from GitHub + parsing + sync
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             
-            # Единая точка входа: синхронизируем только конфиг
+            # Single entry point: sync only config
             return await self.block_sync_executor.sync_blocks(
                 tenant_id,
                 {"bot": False, "scenarios": False, "storage": False, "config": True},
@@ -353,22 +353,22 @@ class TenantHub:
             )
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка синхронизации конфига: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error syncing config: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
             
     async def sync_tenants_from_files(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Синхронизация тенантов из списка измененных файлов (универсальный метод для вебхуков и пуллинга)
-        Принимает список файлов в формате [{"filename": "path"}, ...] или ["path1", "path2", ...]
+        Sync tenants from list of changed files (universal method for webhooks and polling)
+        Accepts file list in format [{"filename": "path"}, ...] or ["path1", "path2", ...]
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             files = data.get('files', [])
             
             if not files:
@@ -376,52 +376,52 @@ class TenantHub:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Список файлов пуст"
+                        "message": "File list is empty"
                     }
                 }
             
-            # Преобразуем формат в универсальный (если нужно)
+            # Convert format to universal (if needed)
             normalized_files = []
             for file_item in files:
                 if isinstance(file_item, str):
-                    # Формат из вебхука: ["path1", "path2"]
+                    # Format from webhook: ["path1", "path2"]
                     normalized_files.append({"filename": file_item})
                 elif isinstance(file_item, dict):
-                    # Формат из Compare API: [{"filename": "path"}, ...]
+                    # Format from Compare API: [{"filename": "path"}, ...]
                     normalized_files.append(file_item)
             
-            # Используем существующую логику из smart_sync для парсинга
+            # Use existing logic from smart_sync for parsing
             changed_tenants = self.smart_github_sync._extract_tenant_changes_with_protection(normalized_files)
             
             if not changed_tenants:
-                self.logger.info("Нет измененных тенантов в списке файлов")
+                self.logger.info("No changed tenants in file list")
                 return {"result": "success", "response_data": {"synced_tenants": 0}}
             
-            # Синхронизируем каждый измененный тенант
-            self.logger.info(f"Обнаружены изменения в {len(changed_tenants)} тенантах")
+            # Sync each changed tenant
+            self.logger.info(f"Changes detected in {len(changed_tenants)} tenants")
             synced_count = 0
             errors = []
             
             for tenant_id, blocks in changed_tenants.items():
                 try:
                     blocks_str = f"(bot: {'+' if blocks.get('bot') else '-'}, scenarios: {'+' if blocks.get('scenarios') else '-'}, storage: {'+' if blocks.get('storage') else '-'}, config: {'+' if blocks.get('config') else '-'})"
-                    self.logger.info(f"[Tenant-{tenant_id}] Синхронизация по вебхуку {blocks_str}")
+                    self.logger.info(f"[Tenant-{tenant_id}] Sync via webhook {blocks_str}")
                     
-                    # Используем существующий метод синхронизации блоков
+                    # Use existing block sync method
                     result = await self.block_sync_executor.sync_blocks(
                         tenant_id,
                         blocks,
-                        pull_from_github=True  # Всегда обновляем из GitHub при вебхуке
+                        pull_from_github=True  # Always update from GitHub on webhook
                     )
                     
                     if result.get('result') == 'success':
                         synced_count += 1
                     else:
                         error_obj = result.get('error', {})
-                        errors.append(f"Tenant-{tenant_id}: {error_obj.get('message', 'Неизвестная ошибка')}")
+                        errors.append(f"Tenant-{tenant_id}: {error_obj.get('message', 'Unknown error')}")
                         
                 except Exception as e:
-                    self.logger.error(f"[Tenant-{tenant_id}] Ошибка синхронизации по вебхуку: {e}")
+                    self.logger.error(f"[Tenant-{tenant_id}] Error syncing via webhook: {e}")
                     errors.append(f"Tenant-{tenant_id}: {str(e)}")
             
             if errors:
@@ -443,26 +443,26 @@ class TenantHub:
             }
             
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации тенантов из файлов: {e}")
+            self.logger.error(f"Error syncing tenants from files: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def get_tenant_status(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Получение статуса тенанта:
-        - bot_is_active, bot_is_polling, bot_is_webhook_active, bot_is_working (через bot_hub)
-        - last_updated_at, last_failed_at, last_error (из TenantCache)
+        Get tenant status:
+        - bot_is_active, bot_is_polling, bot_is_webhook_active, bot_is_working (via bot_hub)
+        - last_updated_at, last_failed_at, last_error (from TenantCache)
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             
-            # Получаем bot_id для тенанта
+            # Get bot_id for tenant
             bot_id = await self.tenant_cache.get_bot_id_by_tenant_id(tenant_id)
             
             if not bot_id:
@@ -470,17 +470,17 @@ class TenantHub:
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Бот для тенанта {tenant_id} не найден"
+                        "message": f"Bot for tenant {tenant_id} not found"
                     }
                 }
             
-            # Получаем статус бота через bot_hub
+            # Get bot status via bot_hub
             bot_status = await self.action_hub.execute_action('get_bot_status', {'bot_id': bot_id})
             
             if bot_status.get('result') != 'success':
                 return bot_status
             
-            # Переименовываем поля для понятности и дополняем метаданными кэша
+            # Rename fields for clarity and add cache metadata
             response_data = bot_status.get('response_data', {})
             cache_meta = await self.tenant_cache.get_tenant_cache(tenant_id)
 
@@ -498,20 +498,20 @@ class TenantHub:
             }
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения статуса тенанта: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting tenant status: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def get_storage(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Получение значений storage для тенанта"""
+        """Get storage values for tenant"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
-            # Преобразуем числа в строки для group_key и key (если переданы числа)
+            # Validation is done centrally in ActionRegistry
+            # Convert numbers to strings for group_key and key (if numbers passed)
             group_key = data.get('group_key')
             if group_key is not None and not isinstance(group_key, str):
                 group_key = str(group_key)
@@ -529,30 +529,30 @@ class TenantHub:
                 format_yaml=data.get('format', False)
             )
         except Exception as e:
-            self.logger.error(f"Ошибка получения storage: {e}")
+            self.logger.error(f"Error getting storage: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
 
     async def set_storage(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Установка значений storage для тенанта
-        Поддерживает смешанный подход с приоритетом: group_key -> key -> value -> values
+        Set storage values for tenant
+        Supports mixed approach with priority: group_key -> key -> value -> values
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             group_key = data.get('group_key')
-            # Преобразуем число в строку для group_key (если передано число)
+            # Convert number to string for group_key (if number passed)
             if group_key is not None and not isinstance(group_key, str):
                 group_key = str(group_key)
             
             key = data.get('key')
-            # Преобразуем число в строку для key (если передано число)
+            # Convert number to string for key (if number passed)
             if key is not None and not isinstance(key, str):
                 key = str(key)
             
@@ -568,20 +568,20 @@ class TenantHub:
                 format_yaml=data.get('format', False)
             )
         except Exception as e:
-            self.logger.error(f"Ошибка установки storage: {e}")
+            self.logger.error(f"Error setting storage: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def delete_storage(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Удаление значений или групп из storage"""
+        """Delete values or groups from storage"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
-            # Преобразуем числа в строки для group_key и key (если переданы числа)
+            # Validation is done centrally in ActionRegistry
+            # Convert numbers to strings for group_key and key (if numbers passed)
             group_key = data.get('group_key')
             if group_key is not None and not isinstance(group_key, str):
                 group_key = str(group_key)
@@ -598,36 +598,36 @@ class TenantHub:
                 key_pattern=data.get('key_pattern')
             )
         except Exception as e:
-            self.logger.error(f"Ошибка удаления storage: {e}")
+            self.logger.error(f"Error deleting storage: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def get_storage_groups(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Получение списка уникальных ключей групп для тенанта"""
+        """Get list of unique group keys for tenant"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             return await self.storage_manager.get_storage_groups(data.get('tenant_id'))
         except Exception as e:
-            self.logger.error(f"Ошибка получения списка групп storage: {e}")
+            self.logger.error(f"Error getting storage groups list: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def get_tenants_list(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Получение списка всех ID тенантов с разделением на публичные и системные
+        Get list of all tenant IDs with separation into public and system
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             master_repo = self.database_manager.get_master_repository()
             all_tenant_ids = await master_repo.get_all_tenant_ids()
             
@@ -636,14 +636,14 @@ class TenantHub:
                     "result": "error",
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": "Не удалось получить список тенантов из базы данных"
+                        "message": "Failed to get tenant list from database"
                     }
                 }
             
-            # Сортируем все ID по возрастанию
+            # Sort all IDs in ascending order
             all_tenant_ids = sorted(all_tenant_ids)
             
-            # Разделяем на публичные (ID > max_system_tenant_id) и системные (ID <= max_system_tenant_id)
+            # Separate into public (ID > max_system_tenant_id) and system (ID <= max_system_tenant_id)
             public_tenant_ids = sorted([tid for tid in all_tenant_ids if tid > self.max_system_tenant_id])
             system_tenant_ids = sorted([tid for tid in all_tenant_ids if tid <= self.max_system_tenant_id])
             
@@ -658,7 +658,7 @@ class TenantHub:
             }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка получения списка тенантов: {e}")
+            self.logger.error(f"Error getting tenant list: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -669,15 +669,15 @@ class TenantHub:
     
     async def update_tenant_config(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Обновление конфига тенанта
-        Обновляет только переданные поля, остальные не трогает
+        Update tenant config
+        Updates only provided fields, leaves others untouched
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             ai_token = data.get('ai_token')
             
-            # Проверяем, что тенант существует
+            # Check that tenant exists
             master_repo = self.database_manager.get_master_repository()
             tenant_data = await master_repo.get_tenant_by_id(tenant_id)
             if not tenant_data:
@@ -685,17 +685,17 @@ class TenantHub:
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Тенант {tenant_id} не найден"
+                        "message": f"Tenant {tenant_id} not found"
                     }
                 }
             
-            # Подготавливаем данные для обновления (только переданные поля)
-            # Если поле явно передано (даже если None) - обновляем его
+            # Prepare data for update (only provided fields)
+            # If field explicitly provided (even if None) - update it
             update_data = {}
             updated_fields = []
             
             if 'ai_token' in data:
-                update_data['ai_token'] = ai_token  # Может быть None для удаления
+                update_data['ai_token'] = ai_token  # Can be None for deletion
                 updated_fields.append('ai_token')
             
             if not update_data:
@@ -703,36 +703,36 @@ class TenantHub:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Нет полей для обновления"
+                        "message": "No fields to update"
                     }
                 }
             
-            # Обновляем БД
+            # Update DB
             update_success = await master_repo.update_tenant(tenant_id, update_data)
             if not update_success:
                 return {
                     "result": "error",
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": f"Не удалось обновить тенанта {tenant_id}"
+                        "message": f"Failed to update tenant {tenant_id}"
                     }
                 }
             
-            # Обновляем кэш конфига из БД (чтобы все сервисы сразу получили актуальные данные)
+            # Update config cache from DB (so all services immediately get current data)
             await self.tenant_cache.update_tenant_config_cache(tenant_id)
             
-            self.logger.info(f"[Tenant-{tenant_id}] Обновлен конфиг тенанта: {', '.join(updated_fields)}")
+            self.logger.info(f"[Tenant-{tenant_id}] Tenant config updated: {', '.join(updated_fields)}")
             
             return {
                 "result": "success"
             }
             
         except Exception as e:
-            self.logger.error(f"Ошибка обновления атрибутов тенанта: {e}")
+            self.logger.error(f"Error updating tenant attributes: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }

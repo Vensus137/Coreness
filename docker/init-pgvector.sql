@@ -1,8 +1,8 @@
--- Автоматическая установка расширения pgvector при создании базы данных
--- Этот скрипт выполняется автоматически при первой инициализации PostgreSQL
--- через механизм /docker-entrypoint-initdb.d/
+-- Automatic installation of pgvector extension when creating database
+-- This script runs automatically on first PostgreSQL initialization
+-- through /docker-entrypoint-initdb.d/ mechanism
 
--- Устанавливаем расширение pgvector в базу данных core_db
--- IF NOT EXISTS предотвращает ошибку, если расширение уже установлено
+-- Install pgvector extension in core_db database
+-- IF NOT EXISTS prevents error if extension is already installed
 CREATE EXTENSION IF NOT EXISTS vector;
 

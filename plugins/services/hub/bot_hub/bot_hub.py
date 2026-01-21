@@ -1,5 +1,5 @@
 """
-Bot Hub Service - центральный сервис для управления всеми ботами
+Bot Hub Service - central service for managing all bots
 """
 
 from typing import Any, Dict
@@ -12,8 +12,8 @@ from .modules.webhook_manager import WebhookManager
 
 class BotHubService:
     """
-    Центральный сервис для управления всеми ботами
-    Интегрирует различные утилиты для полного управления ботами
+    Central service for managing all bots
+    Integrates various utilities for complete bot management
     """
     
     def __init__(self, **kwargs):
@@ -24,155 +24,155 @@ class BotHubService:
         self.database_manager = kwargs['database_manager']
         self.http_server = kwargs.get('http_server')
         self.cache_manager = kwargs['cache_manager']
-        # Получаем настройки
+        # Get settings
         self.settings = self.settings_manager.get_plugin_settings('bot_hub')
         
-        # Регистрируем себя в ActionHub
+        # Register ourselves in ActionHub
         self.action_hub = kwargs['action_hub']
         self.action_hub.register('bot_hub', self)
         
-        # Инициализируем подмодули
+        # Initialize submodules
         self.webhook_manager = WebhookManager(self.cache_manager, self.logger, self.settings_manager, self.http_server)
         self.bot_info_manager = BotInfoManager(self.database_manager, self.action_hub, self.telegram_api, self.telegram_polling, self.logger, self.cache_manager, self.settings_manager, self.webhook_manager)
         
-        # Инициализируем действия
+        # Initialize actions
         self.bot_actions = BotActions(self.bot_info_manager, self.telegram_polling, self.telegram_api, self.webhook_manager, self.settings_manager, self.logger)
         self.message_actions = MessageActions(self.bot_info_manager, self.telegram_api, self.logger, self.settings)
         
-        # Регистрируем эндпоинт для вебхуков (если включены и доступны)
-        # Флаг use_webhooks автоматически переключается в BotActions при инициализации
+        # Register webhook endpoint (if enabled and available)
+        # use_webhooks flag automatically switches in BotActions on initialization
         use_webhooks_setting = self.settings.get('use_webhooks', False)
         
         if use_webhooks_setting and self.http_server:
             self._register_telegram_webhook_endpoint()
-            # SSL сертификат автоматически генерируется при инициализации http_server, если external_url задан
+            # SSL certificate automatically generated on http_server initialization if external_url is set
         
-        # Состояние сервиса
+        # Service state
         self.is_running = False
     
     async def run(self):
-        """Основной цикл работы сервиса"""
+        """Main service loop"""
         try:
             self.is_running = True
-            self.logger.info("Запущен")
+            self.logger.info("Started")
             
-            # Загружаем кэш всех ботов при запуске
+            # Load cache of all bots on startup
             await self.bot_info_manager.load_all_bots_cache()
             
-            # Пулинг запускается через Tenant Hub при синхронизации
+            # Polling starts through Tenant Hub on sync
             
         except Exception as e:
-            self.logger.error(f"Ошибка в основном цикле: {e}")
+            self.logger.error(f"Error in main loop: {e}")
         finally:
             self.is_running = False
     
-    # === Actions для ActionHub ===
+    # === Actions for ActionHub ===
     
     async def start_bot(self, data: dict) -> Dict[str, Any]:
-        """Запуск бота"""
+        """Start bot"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             return await self.bot_actions.start_bot(data)
         except Exception as e:
-            self.logger.error(f"Ошибка запуска бота: {e}")
+            self.logger.error(f"Error starting bot: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def stop_bot(self, data: dict) -> Dict[str, Any]:
-        """Остановка бота"""
+        """Stop bot"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             return await self.bot_actions.stop_bot(data)
         except Exception as e:
-            self.logger.error(f"Ошибка остановки бота: {e}")
+            self.logger.error(f"Error stopping bot: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def stop_all_bots(self, data: dict) -> Dict[str, Any]:
-        """Остановка всех ботов"""
+        """Stop all bots"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             return await self.bot_actions.stop_all_bots(data)
         except Exception as e:
-            self.logger.error(f"Ошибка остановки всех ботов: {e}")
+            self.logger.error(f"Error stopping all bots: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_bot_config(self, data: dict) -> Dict[str, Any]:
-        """Синхронизация конфигурации бота: создание/обновление бота + запуск пулинга"""
+        """Sync bot configuration: create/update bot + start polling"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             return await self.bot_actions.sync_bot_config(data)
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации конфигурации бота: {e}")
+            self.logger.error(f"Error syncing bot configuration: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_bot_commands(self, data: dict) -> Dict[str, Any]:
-        """Синхронизация команд бота"""
+        """Sync bot commands"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             return await self.bot_actions.sync_bot_commands(data)
         except Exception as e:
             bot_id = data.get('bot_id', 'unknown')
-            self.logger.error(f"[Bot-{bot_id}] Ошибка синхронизации команд бота: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error syncing bot commands: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def set_bot_token(self, data: dict) -> Dict[str, Any]:
-        """Установка токена бота через мастер-бота"""
+        """Set bot token through master bot"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             return await self.bot_actions.set_bot_token(data)
         except Exception as e:
-            self.logger.error(f"Ошибка установки токена бота: {e}")
+            self.logger.error(f"Error setting bot token: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_bot(self, data: dict) -> Dict[str, Any]:
         """
-        Синхронизация бота: конфигурация + команды (обертка над sync_bot_config + sync_bot_commands)
+        Sync bot: configuration + commands (wrapper over sync_bot_config + sync_bot_commands)
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
-            # 1. Синхронизация конфигурации бота
+            # Validation is done centrally in ActionRegistry
+            # 1. Sync bot configuration
             sync_config_result = await self.sync_bot_config(data)
             if sync_config_result.get('result') != 'success':
                 return sync_config_result
             
             bot_id = sync_config_result.get('response_data', {}).get('bot_id')
             
-            # 2. Если есть команды, синхронизируем их
+            # 2. If commands exist, sync them
             if data.get('bot_commands'):
                 sync_commands_result = await self.sync_bot_commands({
                     'bot_id': bot_id,
@@ -180,165 +180,165 @@ class BotHubService:
                 })
                 
                 if sync_commands_result.get('result') != 'success':
-                    error_msg = sync_commands_result.get('error', 'Неизвестная ошибка')
+                    error_msg = sync_commands_result.get('error', 'Unknown error')
                     if isinstance(error_msg, dict):
-                        error_msg = error_msg.get('message', 'Неизвестная ошибка')
-                    self.logger.warning(f"[Bot-{bot_id}] Ошибка синхронизации команд: {error_msg}")
-                    # Не возвращаем ошибку, т.к. конфигурация уже обновлена
+                        error_msg = error_msg.get('message', 'Unknown error')
+                    self.logger.warning(f"[Bot-{bot_id}] Error syncing commands: {error_msg}")
+                    # Don't return error, as configuration already updated
             
             return sync_config_result
                 
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации бота: {e}")
+            self.logger.error(f"Error syncing bot: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def send_message(self, data: dict) -> Dict[str, Any]:
-        """Отправка сообщения боту"""
+        """Send message to bot"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             return await self.message_actions.send_message(data)
         except Exception as e:
-            self.logger.error(f"Ошибка отправки сообщения: {e}")
+            self.logger.error(f"Error sending message: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def delete_message(self, data: dict) -> Dict[str, Any]:
-        """Удаление сообщения бота"""
+        """Delete bot message"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             return await self.message_actions.delete_message(data)
         except Exception as e:
-            self.logger.error(f"Ошибка удаления сообщения: {e}")
+            self.logger.error(f"Error deleting message: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def build_keyboard(self, data: dict) -> Dict[str, Any]:
-        """Построение клавиатуры из массива ID с использованием шаблонов"""
+        """Build keyboard from array of IDs using templates"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             return await self.message_actions.build_keyboard(data)
         except Exception as e:
-            self.logger.error(f"Ошибка построения клавиатуры: {e}")
+            self.logger.error(f"Error building keyboard: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def answer_callback_query(self, data: dict) -> Dict[str, Any]:
-        """Ответ на callback query (всплывающее уведомление или простое уведомление)"""
+        """Answer callback query (popup notification or simple notification)"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             return await self.message_actions.answer_callback_query(data)
         except Exception as e:
-            self.logger.error(f"Ошибка ответа на callback query: {e}")
+            self.logger.error(f"Error answering callback query: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def get_telegram_bot_info(self, data: dict) -> Dict[str, Any]:
-        """Получение информации о боте через Telegram API (с кэшированием)"""
+        """Get bot information through Telegram API (with caching)"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             bot_token = data.get('bot_token', 'unknown')
             return await self.bot_info_manager.get_telegram_bot_info_by_token(bot_token)
         except Exception as e:
             bot_token = data.get('bot_token', '')
-            # Форматируем токен для логов: первые 15 символов
+            # Format token for logs: first 15 characters
             if bot_token:
                 token_info = f"[Bot-Token: {bot_token[:15]}...]"
             else:
                 token_info = "[Bot-Token: unknown]"
-            self.logger.error(f"{token_info} Ошибка получения информации о боте: {e}")
+            self.logger.error(f"{token_info} Error getting bot information: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def get_bot_status(self, data: dict) -> Dict[str, Any]:
-        """Получение статуса пулинга бота"""
+        """Get bot polling status"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             return await self.bot_info_manager.get_bot_status(data)
         except Exception as e:
-            self.logger.error(f"Ошибка получения статуса бота: {e}")
+            self.logger.error(f"Error getting bot status: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def get_bot_info(self, data: dict) -> Dict[str, Any]:
-        """Получение информации о боте из базы данных (с кэшированием)"""
+        """Get bot information from database (with caching)"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             bot_id = data.get('bot_id')
             force_refresh = data.get('force_refresh', False)
             
-            # Получаем информацию о боте из БД (с кэшированием)
-            # BotInfoManager.get_bot_info() уже возвращает универсальную структуру
+            # Get bot information from DB (with caching)
+            # BotInfoManager.get_bot_info() already returns universal structure
             return await self.bot_info_manager.get_bot_info(bot_id, force_refresh)
             
         except Exception as e:
             bot_id = data.get('bot_id', 'unknown')
-            self.logger.error(f"[Bot-{bot_id}] Ошибка получения информации о боте: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error getting bot information: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
-    # === Методы управления вебхуками ===
+    # === Webhook management methods ===
     
     def _register_telegram_webhook_endpoint(self):
-        """Регистрация эндпоинта для Telegram вебхука (вызывается при инициализации)"""
+        """Register endpoint for Telegram webhook (called on initialization)"""
         try:
             from .handlers.telegram_webhook import TelegramWebhookHandler
             
             if not self.http_server:
-                self.logger.error("http_server не найден, не удалось зарегистрировать эндпоинт Telegram вебхука")
+                self.logger.error("http_server not found, failed to register Telegram webhook endpoint")
                 return
             
-            # Получаем путь эндпоинта из настроек
+            # Get endpoint path from settings
             webhook_endpoint = self.settings.get('webhook_endpoint', '/webhooks/telegram')
             
-            # Создаем обработчик
+            # Create handler
             handler_instance = TelegramWebhookHandler(
                 self.webhook_manager,
                 self.action_hub,
                 self.logger
             )
             
-            # Регистрируем эндпоинт (синхронно, при инициализации)
+            # Register endpoint (synchronously, on initialization)
             success = self.http_server.register_endpoint(
                 'POST',
                 webhook_endpoint,
@@ -346,10 +346,10 @@ class BotHubService:
             )
             
             if success:
-                self.logger.info(f"Эндпоинт Telegram вебхука зарегистрирован на {webhook_endpoint}")
+                self.logger.info(f"Telegram webhook endpoint registered on {webhook_endpoint}")
             else:
-                self.logger.error(f"Не удалось зарегистрировать эндпоинт Telegram вебхука на {webhook_endpoint}")
+                self.logger.error(f"Failed to register Telegram webhook endpoint on {webhook_endpoint}")
                 
         except Exception as e:
-            self.logger.error(f"Ошибка регистрации эндпоинта Telegram вебхука: {e}")
+            self.logger.error(f"Error registering Telegram webhook endpoint: {e}")
     

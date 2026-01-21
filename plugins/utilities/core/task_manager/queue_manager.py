@@ -5,27 +5,27 @@ from .types import QueueConfig
 
 
 class QueueManager:
-    """Управление очередями и лимитами"""
+    """Queue and limit management"""
     
     def __init__(self, **kwargs):
         self.logger = kwargs['logger']
         self.settings_manager = kwargs['settings_manager']
         
-        # Получаем настройки очередей
+        # Get queue settings
         settings = self.settings_manager.get_plugin_settings('task_manager') if self.settings_manager else {}
         queues_settings = settings.get('queues', {})
         self.queue_configs = self._load_queue_configs(queues_settings)
         
-        # Настройки от TaskManager
+        # Settings from TaskManager
         self.wait_interval = kwargs.get('wait_interval', 1.0)
         
-        # Семафоры для контроля ресурсов
+        # Semaphores for resource control
         self.semaphores = {
             queue_name: asyncio.Semaphore(config.max_concurrent)
             for queue_name, config in self.queue_configs.items()
         }
         
-        # Очереди задач
+        # Task queues
         self.task_queues = {
             queue_name: asyncio.Queue()
             for queue_name in self.queue_configs.keys()
@@ -33,10 +33,10 @@ class QueueManager:
         
     
     def _load_queue_configs(self, queues_settings: Dict[str, Any]) -> Dict[str, QueueConfig]:
-        """Загружает конфигурацию очередей"""
+        """Loads queue configurations"""
         configs = {}
         
-        # Пропускаем служебные поля (type, description)
+        # Skip service fields (type, description)
         for queue_name, queue_settings in queues_settings.items():
             if queue_name in ['type', 'description']:
                 continue
@@ -52,16 +52,16 @@ class QueueManager:
         
         return configs
     
-    # Публичные методы для работы с очередями
+    # Public methods for working with queues
     def get_available_queues(self) -> List[str]:
-        """Возвращает список доступных очередей"""
+        """Returns list of available queues"""
         return list(self.queue_configs.keys())
     
     def is_queue_valid(self, queue_name: str) -> bool:
-        """Проверяет, существует ли очередь"""
+        """Checks if queue exists"""
         return queue_name in self.queue_configs
     
     def get_queue_config(self, queue_name: str) -> QueueConfig:
-        """Получает конфигурацию очереди"""
+        """Gets queue configuration"""
         return self.queue_configs[queue_name]
     

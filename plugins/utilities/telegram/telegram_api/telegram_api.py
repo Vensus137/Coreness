@@ -1,5 +1,5 @@
 """
-TelegramAPI - утилита для работы с Telegram Bot API
+TelegramAPI - utility for working with Telegram Bot API
 """
 
 import asyncio
@@ -9,13 +9,13 @@ import aiohttp
 
 
 class TelegramAPI:
-    """Утилита для работы с Telegram Bot API"""
+    """Utility for working with Telegram Bot API"""
     
     def __init__(self, **kwargs):
         self.logger = kwargs['logger']
         self.settings_manager = kwargs['settings_manager']
         
-        # Настройки
+        # Settings
         settings = self.settings_manager.get_plugin_settings("telegram_api")
         self.request_timeout = settings.get('request_timeout', 30)
         self.connection_pool_limit = settings.get('connection_pool_limit', 100)
@@ -25,15 +25,15 @@ class TelegramAPI:
         self.connect_timeout = settings.get('connect_timeout', 10)
         self.sock_read_timeout = settings.get('sock_read_timeout', 30)
         
-        # Получаем shutdown_timeout из глобальных настроек
+        # Get shutdown_timeout from global settings
         global_settings = self.settings_manager.get_global_settings()
         shutdown_settings = global_settings.get('shutdown', {})
         self.shutdown_timeout = shutdown_settings.get('plugin_timeout', 3.0)
         
-        # HTTP клиент
+        # HTTP client
         self.session: Optional[aiohttp.ClientSession] = None
         
-        # Компоненты
+        # Components
         from .actions.bot_info_action import BotInfoAction
         from .actions.callback_action import CallbackAction
         from .actions.command_action import CommandAction
@@ -44,18 +44,18 @@ class TelegramAPI:
         from .utils.attachment_handler import AttachmentHandler
         from .utils.button_mapper import ButtonMapper
         
-        # Инициализируем сервис сразу
+        # Initialize service immediately
         self._initialize_service()
         
-        # Создаем компоненты после инициализации
+        # Create components after initialization
         self.rate_limiter = RateLimiter(settings, **kwargs)
         self.api_client = APIClient(self.session, self.rate_limiter, **kwargs)
         
-        # Создаем утилиты
+        # Create utilities
         self.button_mapper = ButtonMapper(**kwargs)
         self.attachment_handler = AttachmentHandler(api_client=self.api_client, **kwargs)
         
-        # Создаем actions
+        # Create actions
         self.command_action = CommandAction(self.api_client, **kwargs)
         self.message_action = MessageAction(
             api_client=self.api_client,
@@ -68,16 +68,16 @@ class TelegramAPI:
         self.callback_action = CallbackAction(self.api_client, **kwargs)
     
     def _initialize_service(self):
-        """Приватная инициализация сервиса"""
+        """Private service initialization"""
         try:
-            # Создаем HTTP сессию с оптимизированным пулом соединений
+            # Create HTTP session with optimized connection pool
             connector = aiohttp.TCPConnector(
-                limit=self.connection_pool_limit,              # Общий лимит соединений
-                limit_per_host=self.connection_pool_limit_per_host,  # Лимит на api.telegram.org
-                ttl_dns_cache=self.dns_cache_ttl,              # Кэш DNS
-                use_dns_cache=True,                            # Включить DNS кэш
-                keepalive_timeout=self.keepalive_timeout,       # Keep-alive таймаут
-                enable_cleanup_closed=True                     # Автоочистка закрытых соединений
+                limit=self.connection_pool_limit,              # Total connection limit
+                limit_per_host=self.connection_pool_limit_per_host,  # Limit for api.telegram.org
+                ttl_dns_cache=self.dns_cache_ttl,              # DNS cache
+                use_dns_cache=True,                            # Enable DNS cache
+                keepalive_timeout=self.keepalive_timeout,      # Keep-alive timeout
+                enable_cleanup_closed=True                     # Auto-cleanup closed connections
             )
             
             self.session = aiohttp.ClientSession(
@@ -94,10 +94,10 @@ class TelegramAPI:
             )
             
         except Exception as e:
-            self.logger.error(f"Ошибка инициализации: {e}")
-            # Закрываем сессию если она была создана
+            self.logger.error(f"Initialization error: {e}")
+            # Close session if it was created
             if hasattr(self, 'session') and self.session:
-                # Закрываем сессию синхронно
+                # Close session synchronously
                 try:
                     import asyncio
                     loop = asyncio.get_event_loop()
@@ -106,43 +106,43 @@ class TelegramAPI:
                     else:
                         loop.run_until_complete(self.session.close())
                 except Exception:
-                    pass  # Игнорируем ошибки при закрытии в случае ошибки инициализации
+                    pass  # Ignore errors when closing in case of initialization error
             raise
     
     def cleanup(self):
-        """Синхронная очистка ресурсов"""
+        """Synchronous resource cleanup"""
         try:
             if self.session:
-                # Закрываем сессию синхронно
+                # Close session synchronously
                 import asyncio
                 try:
-                    # Пытаемся закрыть сессию в существующем event loop
+                    # Try to close session in existing event loop
                     loop = asyncio.get_event_loop()
                     if loop.is_running():
-                        # Если loop запущен, создаем задачу для закрытия
+                        # If loop is running, create task for closing
                         loop.create_task(self.session.close())
                     else:
-                        # Если loop не запущен, запускаем его для закрытия
+                        # If loop is not running, run it for closing
                         loop.run_until_complete(self.session.close())
                 except RuntimeError:
-                    # Если нет event loop, создаем новый
+                    # If no event loop, create new one
                     asyncio.run(self.session.close())
                 except Exception as e:
-                    self.logger.warning(f"Ошибка закрытия сессии: {e}")
+                    self.logger.warning(f"Error closing session: {e}")
                 
                 self.session = None
 
             self.rate_limiter.cleanup()
 
-            self.logger.info("TelegramAPI утилита очищена")
+            self.logger.info("TelegramAPI utility cleaned up")
             return True
 
         except Exception as e:
-            self.logger.error(f"Ошибка очистки: {e}")
+            self.logger.error(f"Cleanup error: {e}")
             return False
     
     def shutdown(self):
-        """Синхронный graceful shutdown утилиты"""
+        """Synchronous graceful shutdown of utility"""
         if not self.session or self.session.closed:
             return
 
@@ -151,37 +151,37 @@ class TelegramAPI:
             try:
                 await asyncio.wait_for(self.session.close(), timeout=self.shutdown_timeout)
             except asyncio.TimeoutError:
-                # В случае таймаута закрываем коннектор принудительно
+                # On timeout close connector forcibly
                 if hasattr(self.session, '_connector'):
                     self.session._connector.close()
             except Exception:
-                # На всякий случай закрываем коннектор при любых неожиданных ошибках
+                # Just in case close connector on any unexpected errors
                 if hasattr(self.session, '_connector'):
                     self.session._connector.close()
 
         try:
-            # Если event loop уже запущен (pytest-asyncio, продовый рантайм) —
-            # просто ставим задачу на закрытие в существующий цикл
+            # If event loop is already running (pytest-asyncio, production runtime) —
+            # just create task for closing in existing loop
             loop = asyncio.get_running_loop()
             loop.create_task(_close())
         except RuntimeError:
-            # Нет активного цикла — можно безопасно заблокироваться
+            # No active loop — can safely block
             asyncio.run(_close())
 
         self.session = None
 
-    # === Методы для работы с командами ===
+    # === Methods for working with commands ===
     
     async def sync_bot_commands(self, bot_token: str, bot_id: int, command_list: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Синхронизация команд бота: применение команд в Telegram"""
+        """Sync bot commands: apply commands in Telegram"""
         try:
-            # Делегируем выполнение в command_action
+            # Delegate execution to command_action
             result = await self.command_action.sync_bot_commands(bot_token, bot_id, command_list)
             
             return result
 
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка синхронизации команд: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error syncing commands: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -190,30 +190,30 @@ class TelegramAPI:
                 }
             }
     
-    # === Методы для работы с информацией о боте ===
+    # === Methods for working with bot information ===
     
     def _format_token_for_logs(self, bot_token: str) -> str:
         """
-        Форматирование токена для логов: первые 15 символов
-        Формат токена: {bot_id}:{secret}, где bot_id можно извлечь из начала
+        Format token for logs: first 15 characters
+        Token format: {bot_id}:{secret}, where bot_id can be extracted from the beginning
         """
         if not bot_token:
             return "[Bot-Token: unknown]"
         
-        # Берем первые 15 символов (обычно это bot_id + часть секрета)
+        # Take first 15 characters (usually bot_id + part of secret)
         return f"[Bot-Token: {bot_token[:15]}...]"
     
     async def get_bot_info(self, bot_token: str) -> Dict[str, Any]:
-        """Получение информации о боте через Telegram API"""
+        """Get bot information via Telegram API"""
         try:
-            # Делегируем выполнение в bot_info_action
+            # Delegate execution to bot_info_action
             result = await self.bot_info_action.get_bot_info(bot_token)
             
             return result
             
         except Exception as e:
             token_info = self._format_token_for_logs(bot_token)
-            self.logger.error(f"{token_info} Ошибка получения информации о боте: {e}")
+            self.logger.error(f"{token_info} Error getting bot information: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -222,18 +222,18 @@ class TelegramAPI:
                 }
             }
     
-    # === Методы для работы с сообщениями ===
+    # === Methods for working with messages ===
     
     async def send_message(self, bot_token: str, bot_id: int, data: dict) -> Dict[str, Any]:
-        """Отправка сообщения через API"""
+        """Send message via API"""
         try:
-            # Делегируем выполнение в message_action
+            # Delegate execution to message_action
             result = await self.message_action.send_message(bot_token, bot_id, data)
 
             return result
 
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка отправки сообщения: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error sending message: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -243,15 +243,15 @@ class TelegramAPI:
             }
 
     async def delete_message(self, bot_token: str, bot_id: int, data: dict) -> Dict[str, Any]:
-        """Удаление сообщения через API"""
+        """Delete message via API"""
         try:
-            # Делегируем выполнение в message_action
+            # Delegate execution to message_action
             result = await self.message_action.delete_message(bot_token, bot_id, data)
 
             return result
 
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка удаления сообщения: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error deleting message: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -260,18 +260,18 @@ class TelegramAPI:
                 }
             }
     
-    # === Методы для работы с callback query ===
+    # === Methods for working with callback query ===
     
     async def answer_callback_query(self, bot_token: str, bot_id: int, data: dict) -> Dict[str, Any]:
-        """Ответ на callback query через API"""
+        """Answer callback query via API"""
         try:
-            # Делегируем выполнение в callback_action
+            # Delegate execution to callback_action
             result = await self.callback_action.answer_callback_query(bot_token, bot_id, data)
 
             return result
 
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка ответа на callback query: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error answering callback query: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -280,18 +280,18 @@ class TelegramAPI:
                 }
             }
     
-    # === Методы для работы с инвойсами ===
+    # === Methods for working with invoices ===
     
     async def send_invoice(self, bot_token: str, bot_id: int, data: dict) -> Dict[str, Any]:
-        """Отправка инвойса через API"""
+        """Send invoice via API"""
         try:
-            # Делегируем выполнение в invoice_action
+            # Delegate execution to invoice_action
             result = await self.invoice_action.send_invoice(bot_token, bot_id, data)
             
             return result
             
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка отправки инвойса: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error sending invoice: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -301,15 +301,15 @@ class TelegramAPI:
             }
     
     async def create_invoice_link(self, bot_token: str, bot_id: int, data: dict) -> Dict[str, Any]:
-        """Создание ссылки на инвойс через API"""
+        """Create invoice link via API"""
         try:
-            # Делегируем выполнение в invoice_action
+            # Delegate execution to invoice_action
             result = await self.invoice_action.create_invoice_link(bot_token, bot_id, data)
             
             return result
             
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка создания ссылки на инвойс: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error creating invoice link: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -319,15 +319,15 @@ class TelegramAPI:
             }
     
     async def answer_pre_checkout_query(self, bot_token: str, bot_id: int, data: dict) -> Dict[str, Any]:
-        """Ответ на запрос подтверждения оплаты через API"""
+        """Answer payment confirmation request via API"""
         try:
-            # Делегируем выполнение в invoice_action
+            # Delegate execution to invoice_action
             result = await self.invoice_action.answer_pre_checkout_query(bot_token, bot_id, data)
             
             return result
             
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка ответа на pre_checkout_query: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error answering pre_checkout_query: {e}")
             return {
                 "result": "error",
                 "error": {

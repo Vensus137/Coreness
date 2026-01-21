@@ -1,8 +1,8 @@
 """
-Модуль для управления scheduled сценариями
-- Кэширование метаданных scheduled сценариев
-- Фоновый цикл проверки и запуска
-- Обновление метаданных после выполнения
+Module for managing scheduled scenarios
+- Cache scheduled scenario metadata
+- Background loop for checking and launching
+- Update metadata after execution
 """
 
 import asyncio
@@ -12,10 +12,10 @@ from typing import Any, Dict, Optional
 
 class ScheduledScenarioManager:
     """
-    Менеджер для управления scheduled сценариями
-    - Кэширует метаданные scheduled сценариев
-    - Проверяет расписание и запускает сценарии
-    - Обновляет метаданные после выполнения
+    Manager for scheduled scenarios
+    - Cache scheduled scenario metadata
+    - Check schedule and launch scenarios
+    - Update metadata after execution
     """
     
     def __init__(self, scenario_engine, data_loader, scheduler, logger, datetime_formatter, database_manager, task_manager, cache_manager):
@@ -29,54 +29,54 @@ class ScheduledScenarioManager:
         self.data_loader = data_loader
         self.scheduler = scheduler
         
-        # Кэш метаданных scheduled сценариев
+        # Cache of scheduled scenario metadata
         # {scenario_id: {'cron': str, 'last_run': datetime | None, 'next_run': datetime, 'tenant_id': int, 'scenario_name': str, 'is_running': bool}}
         self._scheduled_metadata: Dict[int, Dict[str, Any]] = {}
         
-        # Состояние сервиса
+        # Service state
         self.is_running = False
         self._scheduler_task: Optional[asyncio.Task] = None
     
     async def run(self):
-        """Основной цикл работы менеджера scheduled сценариев"""
+        """Main loop for scheduled scenario manager"""
         try:
             self.is_running = True
             
-            # Загружаем все scheduled сценарии при старте
+            # Load all scheduled scenarios on startup
             await self.load_all_scheduled_scenarios()
             
-            # Запускаем фоновый цикл проверки scheduled сценариев
+            # Start background loop for checking scheduled scenarios
             self._scheduler_task = asyncio.create_task(self._run_scheduler_loop())
             await self._scheduler_task
             
         except asyncio.CancelledError:
-            self.logger.info("ScheduledScenarioManager остановлен")
+            self.logger.info("ScheduledScenarioManager stopped")
         except Exception as e:
-            self.logger.error(f"Ошибка в основном цикле ScheduledScenarioManager: {e}")
+            self.logger.error(f"Error in ScheduledScenarioManager main loop: {e}")
         finally:
             self.is_running = False
     
     def shutdown(self):
-        """Синхронный graceful shutdown менеджера"""
+        """Synchronous graceful shutdown of manager"""
         if not self.is_running:
             return
         
-        self.logger.info("Останавливаем ScheduledScenarioManager...")
+        self.logger.info("Stopping ScheduledScenarioManager...")
         self.is_running = False
         
-        # Отменяем фоновый цикл если он запущен
+        # Cancel background loop if running
         if self._scheduler_task and not self._scheduler_task.done():
             self._scheduler_task.cancel()
         
-        self.logger.info("ScheduledScenarioManager остановлен")
+        self.logger.info("ScheduledScenarioManager stopped")
     
     async def load_all_scheduled_scenarios(self):
-        """Загрузка всех scheduled сценариев при старте сервиса"""
+        """Load all scheduled scenarios on service startup"""
         try:
-            # Загружаем все scheduled сценарии (без фильтра по tenant)
+            # Load all scheduled scenarios (no tenant filter)
             scheduled_scenarios = await self.data_loader.load_scheduled_scenarios()
             
-            # Обрабатываем загруженные сценарии напрямую
+            # Process loaded scenarios directly
             loaded_count = 0
             tenants_count = set()
             
@@ -88,19 +88,19 @@ class ScheduledScenarioManager:
                 
                 tenants_count.add(tenant_id)
                 
-                # Вычисляем next_run
+                # Calculate next_run
                 if last_run:
                     next_run = await self.scheduler.get_next_run_time(cron, last_run)
                 else:
-                    # Если не было запусков - от текущего локального времени
+                    # If no runs yet - from current local time
                     now = await self.datetime_formatter.now_local()
                     next_run = await self.scheduler.get_next_run_time(cron, now)
                 
                 if next_run is None:
-                    self.logger.warning(f"Не удалось вычислить next_run для сценария {scenario_id} с cron '{cron}'")
+                    self.logger.warning(f"Failed to calculate next_run for scenario {scenario_id} with cron '{cron}'")
                     continue
                 
-                # Обновляем кэш (bot_id получаем при запуске из БД)
+                # Update cache (bot_id obtained from DB on launch)
                 self._scheduled_metadata[scenario_id] = {
                     'cron': cron,
                     'last_run': last_run,
@@ -112,22 +112,22 @@ class ScheduledScenarioManager:
                 loaded_count += 1
             
             if loaded_count > 0:
-                self.logger.info(f"Загружено ({loaded_count} scheduled сценариев) для ({len(tenants_count)} tenant'ов)")
+                self.logger.info(f"Loaded ({loaded_count} scheduled scenarios) for ({len(tenants_count)} tenants)")
             
         except Exception as e:
-            self.logger.error(f"Ошибка загрузки всех scheduled сценариев при старте: {e}")
+            self.logger.error(f"Error loading all scheduled scenarios on startup: {e}")
     
     async def reload_scheduled_metadata(self, tenant_id: int) -> bool:
         """
-        Перезагрузка метаданных scheduled сценариев для tenant
+        Reload scheduled scenario metadata for tenant
         """
         try:
-            # Удаляем все старые scenario_id для этого tenant_id из кэша
+            # Remove all old scenario_id for this tenant_id from cache
             for sid in list(self._scheduled_metadata.keys()):
                 if self._scheduled_metadata[sid]['tenant_id'] == tenant_id:
                     del self._scheduled_metadata[sid]
             
-            # Загружаем все scheduled сценарии из БД для tenant
+            # Load all scheduled scenarios from DB for tenant
             scheduled_scenarios = await self.data_loader.load_scheduled_scenarios(tenant_id)
             
             loaded_count = 0
@@ -136,19 +136,19 @@ class ScheduledScenarioManager:
                 cron = scenario['schedule']
                 last_run = scenario.get('last_scheduled_run')
                 
-                # Вычисляем next_run
+                # Calculate next_run
                 if last_run:
                     next_run = await self.scheduler.get_next_run_time(cron, last_run)
                 else:
-                    # Если не было запусков - от текущего локального времени
+                    # If no runs yet - from current local time
                     now = await self.datetime_formatter.now_local()
                     next_run = await self.scheduler.get_next_run_time(cron, now)
                 
                 if next_run is None:
-                    self.logger.warning(f"Не удалось вычислить next_run для сценария {scenario_id} с cron '{cron}'")
+                    self.logger.warning(f"Failed to calculate next_run for scenario {scenario_id} with cron '{cron}'")
                     continue
                 
-                # Обновляем кэш (bot_id получаем при запуске из БД)
+                # Update cache (bot_id obtained from DB on launch)
                 self._scheduled_metadata[scenario_id] = {
                     'cron': cron,
                     'last_run': last_run,
@@ -159,63 +159,63 @@ class ScheduledScenarioManager:
                 }
                 loaded_count += 1
             
-            self.logger.info(f"[Tenant-{tenant_id}] Загружено ({loaded_count} scheduled сценариев)")
+            self.logger.info(f"[Tenant-{tenant_id}] Loaded ({loaded_count} scheduled scenarios)")
             return True
             
         except Exception as e:
-            self.logger.error(f"Ошибка перезагрузки scheduled метаданных для tenant {tenant_id}: {e}")
+            self.logger.error(f"Error reloading scheduled metadata for tenant {tenant_id}: {e}")
             return False
     
     async def _run_scheduler_loop(self):
-        """Фоновый цикл проверки scheduled сценариев"""
+        """Background loop for checking scheduled scenarios"""
         while True:
             try:
                 await self._check_scheduled_scenarios()
                 
-                # Ждем до начала следующей минуты
+                # Wait until start of next minute
                 now = await self.datetime_formatter.now_local()
                 seconds_to_wait = 60 - now.second
                 await asyncio.sleep(seconds_to_wait)
                 
             except asyncio.CancelledError:
-                self.logger.info("Scheduler loop остановлен")
+                self.logger.info("Scheduler loop stopped")
                 break
             except Exception as e:
-                self.logger.error(f"Ошибка в scheduler loop: {e}")
+                self.logger.error(f"Error in scheduler loop: {e}")
                 await asyncio.sleep(60)
     
     async def _check_scheduled_scenarios(self):
-        """Проверка и запуск scheduled сценариев"""
+        """Check and launch scheduled scenarios"""
         try:
-            # Получаем текущее локальное время
+            # Get current local time
             now = await self.datetime_formatter.now_local()
             
-            # Округляем до начала минуты для точности
+            # Round to start of minute for accuracy
             now = now.replace(second=0, microsecond=0)
             
-            # Фильтруем сценарии которые нужно запустить
+            # Filter scenarios that need to be launched
             scenarios_to_run = []
             
             for scenario_id, metadata in self._scheduled_metadata.items():
-                # Проверяем по next_run (быстрее чем проверять cron каждый раз)
-                # И проверяем что сценарий не выполняется уже
+                # Check by next_run (faster than checking cron every time)
+                # And check that scenario is not already running
                 if metadata['next_run'] <= now and not metadata.get('is_running', False):
                     scenarios_to_run.append({
                         'scenario_id': scenario_id,
                         **metadata
                     })
             
-            # Запускаем найденные сценарии через TaskManager
-            # Используем очередь action для scheduled сценариев
+            # Launch found scenarios through TaskManager
+            # Use action queue for scheduled scenarios
             for scenario_info in scenarios_to_run:
                 scenario_id = scenario_info['scenario_id']
                 
-                # Создаем async-обертку для TaskManager (как в ActionRegistry._create_action_wrapper)
-                # Фиксируем scenario_info через параметр по умолчанию (вычисляется при создании функции)
+                # Create async wrapper for TaskManager (like in ActionRegistry._create_action_wrapper)
+                # Fix scenario_info via default parameter (evaluated at function creation)
                 async def scenario_wrapper(sc_info=scenario_info):
                     await self._run_scheduled_scenario(sc_info)
                 
-                # Отправляем в очередь action с fire_and_forget=True
+                # Submit to action queue with fire_and_forget=True
                 asyncio.create_task(
                     self.task_manager.submit_task(
                         task_id=f"scheduled_scenario_{scenario_id}",
@@ -226,145 +226,145 @@ class ScheduledScenarioManager:
                 )
                 
         except Exception as e:
-            self.logger.error(f"Ошибка проверки scheduled сценариев: {e}")
+            self.logger.error(f"Error checking scheduled scenarios: {e}")
     
     async def _run_scheduled_scenario(self, scenario_info: Dict[str, Any]):
-        """Запуск scheduled сценария"""
+        """Launch scheduled scenario"""
         scenario_id = scenario_info['scenario_id']
         tenant_id = scenario_info['tenant_id']
         scenario_name = scenario_info['scenario_name']
         cron = scenario_info['cron']
         
-        # Проверяем еще раз что сценарий не выполняется (race condition защита)
+        # Check again that scenario is not running (race condition protection)
         if self._scheduled_metadata.get(scenario_id, {}).get('is_running', False):
             return
         
-        # Помечаем сценарий как выполняющийся
+        # Mark scenario as running
         self._scheduled_metadata[scenario_id]['is_running'] = True
         
         try:
-            # Создаем синтетическое событие для scheduled сценария
+            # Create synthetic event for scheduled scenario
             scheduled_at = await self.datetime_formatter.now_local()
             
-            # Получаем bot_id через cache_manager (как в TenantCache)
-            # Шаг 1: Пытаемся получить bot_id из маппинга tenant:{tenant_id}:bot_id
+            # Get bot_id through cache_manager (like in TenantCache)
+            # Step 1: Try to get bot_id from mapping tenant:{tenant_id}:bot_id
             tenant_bot_id_key = f"tenant:{tenant_id}:bot_id"
             cached_bot_id = await self.cache_manager.get(tenant_bot_id_key)
             
             bot_id = None
             if cached_bot_id:
-                # Маппинг есть в кэше
+                # Mapping exists in cache
                 bot_id = cached_bot_id
             else:
-                # Маппинга нет - получаем из БД
+                # Mapping not found - get from DB
                 master_repo = self.database_manager.get_master_repository()
                 bot_data = await master_repo.get_bot_by_tenant_id(tenant_id)
                 if not bot_data:
-                    self.logger.error(f"[Tenant-{tenant_id}] Бот не найден для scheduled сценария '{scenario_name}' (ID: {scenario_id})")
+                    self.logger.error(f"[Tenant-{tenant_id}] Bot not found for scheduled scenario '{scenario_name}' (ID: {scenario_id})")
                     return
-                # Сырые данные из БД используют 'id'
+                # Raw data from DB uses 'id'
                 bot_id = bot_data.get('id')
                 if not bot_id:
-                    self.logger.error(f"[Tenant-{tenant_id}] Бот найден, но bot_id отсутствует для scheduled сценария '{scenario_name}' (ID: {scenario_id})")
+                    self.logger.error(f"[Tenant-{tenant_id}] Bot found but bot_id missing for scheduled scenario '{scenario_name}' (ID: {scenario_id})")
                     return
-                # Сохраняем маппинг в кэш (TTL берем из настроек, но для простоты используем большой TTL)
+                # Save mapping to cache (TTL from settings, but use large TTL for simplicity)
                 await self.cache_manager.set(tenant_bot_id_key, bot_id, ttl=315360000)
             
             if not bot_id:
-                self.logger.error(f"[Tenant-{tenant_id}] Не удалось получить bot_id для scheduled сценария '{scenario_name}' (ID: {scenario_id})")
+                self.logger.error(f"[Tenant-{tenant_id}] Failed to get bot_id for scheduled scenario '{scenario_name}' (ID: {scenario_id})")
                 return
             
             if not bot_id:
-                self.logger.error(f"[Tenant-{tenant_id}] Не удалось получить bot_id для scheduled сценария '{scenario_name}' (ID: {scenario_id})")
+                self.logger.error(f"[Tenant-{tenant_id}] Failed to get bot_id for scheduled scenario '{scenario_name}' (ID: {scenario_id})")
                 return
             
-            # Получаем конфиг тенанта из общего кэша с fallback на БД
+            # Get tenant config from shared cache with DB fallback
             cache_key = f"tenant:{tenant_id}:config"
             tenant_config = await self.cache_manager.get(cache_key)
             
-            # Если кэша нет - загружаем из БД (fallback для решения проблемы рассинхрона)
+            # If cache not found - load from DB (fallback to solve desynchronization problem)
             if tenant_config is None:
-                self.logger.warning(f"[Tenant-{tenant_id}] Конфиг тенанта не найден в кэше для scheduled сценария '{scenario_name}', загружаем из БД")
+                self.logger.warning(f"[Tenant-{tenant_id}] Tenant config not found in cache for scheduled scenario '{scenario_name}', loading from DB")
                 
                 try:
                     master_repo = self.database_manager.get_master_repository()
                     tenant_data = await master_repo.get_tenant_by_id(tenant_id)
                     
                     if tenant_data:
-                        # Формируем словарь конфига из всех полей БД (исключаем служебные)
+                        # Form config dictionary from all DB fields (exclude system fields)
                         config = {}
                         excluded_fields = {'id', 'processed_at'}
                         for key, value in tenant_data.items():
                             if key not in excluded_fields and value is not None:
                                 config[key] = value
                         
-                        # Не сохраняем в кэш - им управляет TenantCache
-                        # Это редкий кейс, когда кэша нет, поэтому просто возвращаем данные из БД
+                        # Don't save to cache - TenantCache manages it
+                        # This is a rare case when cache is missing, so just return data from DB
                         tenant_config = config
                 except Exception as e:
-                    self.logger.error(f"[Tenant-{tenant_id}] Ошибка загрузки конфига тенанта из БД для scheduled сценария '{scenario_name}': {e}")
+                    self.logger.error(f"[Tenant-{tenant_id}] Error loading tenant config from DB for scheduled scenario '{scenario_name}': {e}")
             
-            # Формируем системные поля (как в обычных событиях)
+            # Form system fields (like in regular events)
             system_fields = {
                 'tenant_id': tenant_id,
                 'bot_id': bot_id
             }
             
-            # Преобразуем scheduled_at в ISO строку локального времени
+            # Convert scheduled_at to ISO string of local time
             scheduled_at_iso = await self.datetime_formatter.to_iso_local_string(scheduled_at)
             
             synthetic_event = {
                 'system': system_fields,
                 'tenant_id': tenant_id,
                 'bot_id': bot_id,
-                'scheduled_at': scheduled_at_iso,  # ISO формат локального времени
+                'scheduled_at': scheduled_at_iso,  # ISO format of local time
                 'scheduled_scenario_id': scenario_id,
                 'scheduled_scenario_name': scenario_name
             }
             
-            # Добавляем конфиг тенанта в событие (если есть)
+            # Add tenant config to event (if present)
             if tenant_config:
                 synthetic_event['_config'] = tenant_config
             
-            # Запускаем через scenario_engine.execute_scenario_by_name
+            # Launch through scenario_engine.execute_scenario_by_name
             result, _ = await self.scenario_engine._execute_scenario_by_name(
                 tenant_id=tenant_id,
                 scenario_name=scenario_name,
                 data=synthetic_event
             )
             
-            # Получаем время окончания выполнения
+            # Get completion time
             completion_time = await self.datetime_formatter.now_local()
             
-            # Логируем ошибку если была, но продолжаем обновление метаданных
+            # Log error if present, but continue metadata update
             if result == 'error':
-                self.logger.warning(f"[Tenant-{tenant_id}] Ошибка выполнения scheduled сценария '{scenario_name}' (ID: {scenario_id})")
+                self.logger.warning(f"[Tenant-{tenant_id}] Error executing scheduled scenario '{scenario_name}' (ID: {scenario_id})")
             
-            # Обновляем last_run всегда (и в кэше, и в БД) - запуск был, независимо от результата
-            # Это гарантирует предсказуемое поведение при перезапуске сервиса
+            # Update last_run always (both in cache and DB) - launch occurred regardless of result
+            # This guarantees predictable behavior on service restart
             self._scheduled_metadata[scenario_id]['last_run'] = scheduled_at
             await self._update_last_run_in_db(scenario_id, scheduled_at)
             
-            # Вычисляем next_run от момента окончания выполнения (стандартное поведение cron)
-            # Пропущенные запуски просто пропускаются, следующий будет в будущем
-            # Обновляем всегда, даже при ошибке, чтобы избежать повторных запусков
+            # Calculate next_run from completion time (standard cron behavior)
+            # Missed launches are simply skipped, next will be in future
+            # Update always, even on error, to avoid repeated launches
             next_run = await self.scheduler.get_next_run_time(cron, completion_time)
             if next_run:
                 self._scheduled_metadata[scenario_id]['next_run'] = next_run
             else:
-                self.logger.warning(f"Не удалось вычислить next_run для сценария {scenario_id}")
+                self.logger.warning(f"Failed to calculate next_run for scenario {scenario_id}")
                 
         except Exception as e:
-            self.logger.error(f"Ошибка запуска scheduled сценария {scenario_id}: {e}")
+            self.logger.error(f"Error launching scheduled scenario {scenario_id}: {e}")
         finally:
-            # Снимаем флаг выполнения
+            # Clear running flag
             self._scheduled_metadata[scenario_id]['is_running'] = False
     
     async def _update_last_run_in_db(self, scenario_id: int, last_run: datetime):
-        """Обновление last_scheduled_run в БД"""
+        """Update last_scheduled_run in DB"""
         try:
             master_repo = self.database_manager.get_master_repository()
             await master_repo.update_scenario_last_run(scenario_id, last_run)
         except Exception as e:
-            self.logger.error(f"Ошибка обновления last_scheduled_run для сценария {scenario_id}: {e}")
+            self.logger.error(f"Error updating last_scheduled_run for scenario {scenario_id}: {e}")
 

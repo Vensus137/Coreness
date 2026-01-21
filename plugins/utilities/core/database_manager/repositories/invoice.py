@@ -1,5 +1,5 @@
 """
-Репозиторий для работы с инвойсами (invoice)
+Repository for working with invoices (invoice)
 """
 
 from datetime import datetime
@@ -13,12 +13,12 @@ from .base import BaseRepository
 
 class InvoiceRepository(BaseRepository):
     """
-    Репозиторий для работы с инвойсами
+    Repository for working with invoices
     """
     
     async def get_by_id(self, invoice_id: int) -> Optional[Dict[str, Any]]:
         """
-        Получение инвойса по ID
+        Get invoice by ID
         """
         try:
             with self._get_session() as session:
@@ -28,12 +28,12 @@ class InvoiceRepository(BaseRepository):
                 return await self._to_dict(result)
                     
         except Exception as e:
-            self.logger.error(f"Ошибка получения инвойса {invoice_id}: {e}")
+            self.logger.error(f"Error getting invoice {invoice_id}: {e}")
             return None
     
     async def get_by_user(self, tenant_id: int, user_id: int, include_cancelled: bool = False) -> Optional[List[Dict[str, Any]]]:
         """
-        Получение всех инвойсов пользователя
+        Get all user invoices
         """
         try:
             with self._get_session() as session:
@@ -51,12 +51,12 @@ class InvoiceRepository(BaseRepository):
                 return await self._to_dict_list(result)
                     
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Ошибка получения инвойсов: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Error getting invoices: {e}")
             return None
     
     async def create(self, invoice_data: Dict[str, Any]) -> Optional[int]:
         """
-        Создание нового инвойса
+        Create new invoice
         """
         try:
             with self._get_session() as session:
@@ -83,12 +83,12 @@ class InvoiceRepository(BaseRepository):
                 return result.inserted_primary_key[0] if result.inserted_primary_key else None
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{invoice_data.get('tenant_id')}] Ошибка создания инвойса: {e}")
+            self.logger.error(f"[Tenant-{invoice_data.get('tenant_id')}] Error creating invoice: {e}")
             return None
     
     async def update(self, invoice_id: int, invoice_data: Dict[str, Any]) -> Optional[bool]:
         """
-        Обновление инвойса
+        Update invoice
         """
         try:
             with self._get_session() as session:
@@ -111,12 +111,12 @@ class InvoiceRepository(BaseRepository):
                 return result.rowcount > 0
                 
         except Exception as e:
-            self.logger.error(f"Ошибка обновления инвойса {invoice_id}: {e}")
+            self.logger.error(f"Error updating invoice {invoice_id}: {e}")
             return None
     
     async def mark_as_paid(self, invoice_id: int, telegram_payment_charge_id: str, paid_at: datetime) -> Optional[bool]:
         """
-        Отметить инвойс как оплаченный
+        Mark invoice as paid
         """
         try:
             with self._get_session() as session:
@@ -139,12 +139,12 @@ class InvoiceRepository(BaseRepository):
                 return result.rowcount > 0
                 
         except Exception as e:
-            self.logger.error(f"Ошибка отметки инвойса {invoice_id} как оплаченного: {e}")
+            self.logger.error(f"Error marking invoice {invoice_id} as paid: {e}")
             return None
     
     async def cancel(self, invoice_id: int) -> Optional[bool]:
         """
-        Отменить инвойс (пометить как неактивный)
+        Cancel invoice (mark as inactive)
         """
         try:
             with self._get_session() as session:
@@ -166,6 +166,6 @@ class InvoiceRepository(BaseRepository):
                 return result.rowcount > 0
                 
         except Exception as e:
-            self.logger.error(f"Ошибка отмены инвойса {invoice_id}: {e}")
+            self.logger.error(f"Error cancelling invoice {invoice_id}: {e}")
             return None
 

@@ -1,5 +1,5 @@
 """
-Утилита для обработки Media Group сообщений от Telegram API
+Utility for processing Media Group messages from Telegram API
 """
 
 import asyncio
@@ -8,15 +8,15 @@ from typing import Any, Callable, Dict, List
 
 class MediaGroupProcessor:
     """
-    Сервис для обработки Media Group сообщений от Telegram API.
-    Группирует сообщения с одинаковым media_group_id и возвращает объединенное событие.
+    Service for processing Media Group messages from Telegram API.
+    Groups messages with the same media_group_id and returns merged event.
     """
 
     def __init__(self, logger, settings_manager):
         self.logger = logger
         self.settings_manager = settings_manager
         
-        # Получаем настройки
+        # Get settings
         settings = self.settings_manager.get_plugin_settings("event_processor")
         self.timeout = settings.get('media_group_timeout', 0.5)
         
@@ -25,68 +25,68 @@ class MediaGroupProcessor:
 
     async def process_event(self, event: Dict[str, Any], callback: Callable[[Dict[str, Any]], None]) -> None:
         """
-        Обрабатывает событие. Если это Media Group - группирует, иначе сразу вызывает callback.
+        Process event. If it's a Media Group - group it, otherwise immediately call callback.
         """
         if event.get('media_group_id'):
             await self._handle_media_group(event, callback)
         else:
-            # Обычное событие - сразу вызываем callback
+            # Regular event - immediately call callback
             await callback(event)
 
     async def _handle_media_group(self, event: Dict[str, Any], callback: Callable[[Dict[str, Any]], None]) -> None:
         """
-        Обрабатывает событие как часть Media Group.
+        Process event as part of Media Group.
         """
         group_id = event['media_group_id']
 
-        # Добавляем событие в кэш группы
+        # Add event to group cache
         if group_id not in self.group_cache:
             self.group_cache[group_id] = []
         
         self.group_cache[group_id].append(event)
 
-        # Если это первое событие в группе, запускаем таймер
+        # If this is first event in group, start timer
         if len(self.group_cache[group_id]) == 1:
             task = asyncio.create_task(self._process_group_after_timeout(group_id, callback))
             self._background_tasks.append(task)
 
     async def _process_group_after_timeout(self, group_id: str, callback: Callable[[Dict[str, Any]], None]) -> None:
         """
-        Обрабатывает группу событий после таймаута.
+        Process group of events after timeout.
         """
         try:
-            # Ждем таймаут
+            # Wait for timeout
             await asyncio.sleep(self.timeout)
 
-            # Получаем все события группы
+            # Get all group events
             group_events = self.group_cache.get(group_id, [])
             if not group_events:
                 return
 
-            # Объединяем события в одно
+            # Merge events into one
             merged_event = self._merge_group_events(group_events)
             
-            # Вызываем callback с объединенным событием
+            # Call callback with merged event
             await callback(merged_event)
 
-            # Очищаем кэш группы
+            # Clear group cache
             if group_id in self.group_cache:
                 del self.group_cache[group_id]
 
         except Exception as e:
-            self.logger.error(f"Ошибка обработки медиагруппы {group_id}: {e}")
+            self.logger.error(f"Error processing media group {group_id}: {e}")
 
     def _merge_group_events(self, group_events: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Объединяет события медиагруппы в одно событие.
+        Merge media group events into one event.
         """
         if not group_events:
             return {}
 
-        # Берем первое событие как основу
+        # Take first event as base
         merged_event = group_events[0].copy()
 
-        # Объединяем вложения из всех событий
+        # Merge attachments from all events
         all_attachments = []
         for event in group_events:
             attachments = event.get('event_attachment', [])
@@ -94,13 +94,13 @@ class MediaGroupProcessor:
 
         merged_event['event_attachment'] = all_attachments
 
-        # Обновляем текст (берем из последнего события с текстом)
+        # Update text (take from last event with text)
         for event in reversed(group_events):
             if event.get('event_text'):
                 merged_event['event_text'] = event['event_text']
                 break
 
-        # Добавляем информацию о группе
+        # Add group information
         merged_event['media_group_count'] = len(group_events)
         merged_event['media_group_events'] = len(group_events)
 
@@ -108,17 +108,17 @@ class MediaGroupProcessor:
 
     async def cleanup(self):
         """
-        Очищает ресурсы и отменяет фоновые задачи.
+        Clean up resources and cancel background tasks.
         """
-        # Отменяем все фоновые задачи
+        # Cancel all background tasks
         for task in self._background_tasks:
             if not task.done():
                 task.cancel()
         
-        # Ждем завершения отмененных задач
+        # Wait for cancelled tasks to complete
         if self._background_tasks:
             await asyncio.gather(*self._background_tasks, return_exceptions=True)
         
-        # Очищаем кэш
+        # Clear cache
         self.group_cache.clear()
         self._background_tasks.clear()

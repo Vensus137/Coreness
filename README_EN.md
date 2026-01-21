@@ -7,7 +7,6 @@
 [![Telegram Bot API](https://img.shields.io/badge/Telegram-Bot%20API-26A5E4.svg?logo=telegram&logoColor=white)](https://core.telegram.org/bots/api)
 
 <p align="left">
-  <a href="https://t.me/coreness"><img src="https://img.shields.io/badge/Community-@Coreness-blue.svg" alt="Community"></a>
   <a href="https://t.me/vensus137"><img src="https://img.shields.io/badge/Developer-@vensus137-blue.svg" alt="Developer"></a>
 </p>
 
@@ -100,32 +99,30 @@ Automation based on cron expressions:
 
 ## 📖 Documentation
 
-Complete documentation is available in the **[`docs/`](docs/)** folder → **[Documentation Navigation](docs/README.md)**
-
-> ℹ️ **Note**: Most documentation is currently in Russian. English translations are in progress.
+Complete documentation is available in the **[`docs/`](docs/)** folder → **[Documentation Navigation](docs/en/README.md)**
 
 ### Quick Start
-- 🚀 **[Practical Examples](docs/EXAMPLES_GUIDE.md)** — from simple bot to AI agent with RAG
-- 📋 **[Scenario Guide](docs/SCENARIO_CONFIG_GUIDE.md)** — creating bot logic
-- 🎯 **[Action Guide](docs/ACTION_GUIDE.md)** — reference of all available actions
+- 🚀 **[Practical Examples](docs/en/EXAMPLES_GUIDE.md)** — from simple bot to AI agent with RAG
+- 📋 **[Scenario Guide](docs/en/SCENARIO_CONFIG_GUIDE.md)** — creating bot logic
+- 🎯 **[Action Guide](docs/en/ACTION_GUIDE.md)** — reference of all available actions
 
 ### Configuration
-- ⚙️ **[Tenant Configuration](docs/TENANT_CONFIG_GUIDE.md)** — bot setup
-- 💾 **[Attribute Storage](docs/STORAGE_CONFIG_GUIDE.md)** — working with Storage
-- 🤖 **[AI Models](docs/AI_MODELS_GUIDE.md)** — LLM integration
+- ⚙️ **[Tenant Configuration](docs/en/TENANT_CONFIG_GUIDE.md)** — bot setup
+- 💾 **[Attribute Storage](docs/en/STORAGE_CONFIG_GUIDE.md)** — working with Storage
+- 🤖 **[AI Models](docs/en/AI_MODELS_GUIDE.md)** — LLM integration
 
 ### Reference
-- 📡 **[System Events](docs/EVENT_GUIDE.md)** — available fields in placeholders
-- 🔄 **[Changelog](docs/CHANGELOG.md)** — change history and updates
+- 📡 **[System Events](docs/en/EVENT_GUIDE.md)** — available fields in placeholders
+- 🔄 **[Changelog](docs/en/CHANGELOG.md)** — change history and updates
 
 ### Advanced Documentation
-- 🔧 **[Master Bot](docs/advanced/MASTER_BOT_GUIDE.md)** — tenant management system (like @BotFather)
-- 🏗️ **[Platform Architecture](docs/advanced/ARCHITECTURE.md)** — detailed architecture and patterns
-- 🚀 **[Deployment](docs/advanced/DEPLOYMENT.md)** — complete installation and update guide
-- 🔌 **[Plugin Development](docs/advanced/PLUGINS_GUIDE.md)** — creating custom services and utilities
-- ⚙️ **[System Configuration](docs/advanced/SETTINGS_CONFIG_GUIDE.md)** — global platform parameters
-- 📝 **[Logging](docs/advanced/LOGGING_GUIDE.md)** — working with logs and debugging
-- 🧪 **[Testing](docs/advanced/TESTING_GUIDE.md)** — platform testing approaches
+- 🔧 **[Master Bot](docs/en/advanced/MASTER_BOT_GUIDE.md)** — tenant management system (like @BotFather)
+- 🏗️ **[Platform Architecture](docs/en/advanced/ARCHITECTURE.md)** — detailed architecture and patterns
+- 🚀 **[Deployment](docs/en/advanced/DEPLOYMENT.md)** — complete installation and update guide
+- 🔌 **[Plugin Development](docs/en/advanced/PLUGINS_GUIDE.md)** — creating custom services and utilities
+- ⚙️ **[System Configuration](docs/en/advanced/SETTINGS_CONFIG_GUIDE.md)** — global platform parameters
+- 📝 **[Logging](docs/en/advanced/LOGGING_GUIDE.md)** — working with logs and debugging
+- 🧪 **[Testing](docs/en/advanced/TESTING_GUIDE.md)** — platform testing approaches
 
 ---
 

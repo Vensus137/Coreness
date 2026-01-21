@@ -1,5 +1,5 @@
 """
-Локальные фикстуры для тестов action_validator
+Local fixtures for action_validator tests
 """
 import sys
 from pathlib import Path
@@ -8,10 +8,10 @@ import pytest
 
 from tests.conftest import logger, module_logger  # noqa: F401
 
-# Автоматически добавляем родительскую директорию плагина в sys.path
-# Это позволяет использовать импорты вида "from action_validator import ..."
-# вместо "from plugins.utilities.core.action_validator.action_validator import ..."
-# и делает тесты независимыми от структуры папок выше уровня плагина
+# Automatically add parent plugin directory to sys.path
+# This allows using imports like "from action_validator import ..."
+# instead of "from plugins.utilities.core.action_validator.action_validator import ..."
+# and makes tests independent of folder structure above plugin level
 _plugin_dir = Path(__file__).parent.parent
 if str(_plugin_dir) not in sys.path:
     sys.path.insert(0, str(_plugin_dir))
@@ -20,10 +20,10 @@ from action_validator import ActionValidator
 
 
 class MockSettingsManager:
-    """Мок SettingsManager для тестов"""
+    """Mock SettingsManager for tests"""
     
     def __init__(self):
-        # Тестовые схемы действий
+        # Test action schemas
         self._plugin_info = {
             'test_service': {
                 'actions': {
@@ -223,22 +223,22 @@ class MockSettingsManager:
         }
     
     def get_plugin_info(self, plugin_name: str):
-        """Получение информации о плагине"""
+        """Get plugin information"""
         return self._plugin_info.get(plugin_name)
     
     def get_plugin_settings(self, plugin_name: str):
-        """Получение настроек плагина"""
+        """Get plugin settings"""
         return {}
 
 
 @pytest.fixture(scope="session")
 def mock_settings_manager():
-    """Создает MockSettingsManager один раз на всю сессию тестов (максимальная оптимизация)"""
+    """Creates MockSettingsManager once per test session (maximum optimization)"""
     return MockSettingsManager()
 
 
 @pytest.fixture(scope="session")
 def validator(module_logger, mock_settings_manager):
-    """Создает ActionValidator один раз на всю сессию тестов (максимальная оптимизация)"""
+    """Creates ActionValidator once per test session (maximum optimization)"""
     return ActionValidator(logger=module_logger, settings_manager=mock_settings_manager)
 

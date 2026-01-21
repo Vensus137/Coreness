@@ -1,5 +1,5 @@
 """
-Тесты TTL (время жизни кэша)
+Tests for TTL (cache time to live)
 """
 import asyncio
 
@@ -8,170 +8,170 @@ import pytest
 
 @pytest.mark.asyncio
 class TestTTL:
-    """Тесты TTL функциональности"""
+    """Tests for TTL functionality"""
     
     async def test_eternal_cache_large_ttl(self, cache_manager):
-        """Проверка вечного кэша (большой TTL)"""
+        """Test eternal cache (large TTL)"""
         key = "bot:123"
         value = {"bot_id": 123}
-        large_ttl = 315360000  # 10 лет
+        large_ttl = 315360000  # 10 years
         
         await cache_manager.set(key, value, ttl=large_ttl)
         
-        # Ждем немного
+        # Wait a bit
         await asyncio.sleep(0.01)
         
-        # Значение должно остаться (тестируем ПОВЕДЕНИЕ, а не внутренние данные)
+        # Value should remain (test BEHAVIOR, not internal data)
         retrieved = await cache_manager.get(key)
         assert retrieved == value
         
-        # Проверяем, что ключ существует
+        # Check that key exists
         assert await cache_manager.exists(key) is True
     
     async def test_ttl_expiration(self, cache_manager_with_short_ttl):
-        """Проверка истечения TTL"""
+        """Test TTL expiration"""
         key = "user:123:1"
         value = {"user_id": 123}
-        short_ttl = 0.01  # 0.01 секунды для быстрого теста
+        short_ttl = 0.01  # 0.01 seconds for fast test
         
         await cache_manager_with_short_ttl.set(key, value, ttl=short_ttl)
         
-        # Сразу после установки значение должно быть доступно
+        # Immediately after setting value should be available
         retrieved = await cache_manager_with_short_ttl.get(key)
         assert retrieved == value
         
-        # Ждем истечения TTL (0.01 сек + небольшой запас)
+        # Wait for TTL expiration (0.01 sec + small margin)
         await asyncio.sleep(0.02)
         
-        # Значение должно истечь
+        # Value should expire
         retrieved = await cache_manager_with_short_ttl.get(key)
         assert retrieved is None
         assert await cache_manager_with_short_ttl.exists(key) is False
     
     async def test_lazy_cleanup_on_get(self, cache_manager_with_short_ttl):
-        """Проверка ленивой очистки при обращении"""
+        """Test lazy cleanup on access"""
         key = "user:123:1"
         value = {"user_id": 123}
-        short_ttl = 0.01  # 0.01 секунды для быстрого теста
+        short_ttl = 0.01  # 0.01 seconds for fast test
         
         await cache_manager_with_short_ttl.set(key, value, ttl=short_ttl)
         
-        # Ждем истечения TTL (0.01 сек + небольшой запас)
+        # Wait for TTL expiration (0.01 sec + small margin)
         await asyncio.sleep(0.02)
         
-        # При обращении должна произойти ленивая очистка (тестируем ПОВЕДЕНИЕ)
+        # Lazy cleanup should occur on access (test BEHAVIOR)
         retrieved = await cache_manager_with_short_ttl.get(key)
         assert retrieved is None
         
-        # Проверяем, что элемент действительно удален
+        # Check that item is actually deleted
         assert await cache_manager_with_short_ttl.exists(key) is False
     
     async def test_explicit_ttl_override(self, cache_manager):
-        """Проверка явного указания TTL (переопределение настроек)"""
+        """Test explicit TTL specification (override settings)"""
         key = "test:explicit_ttl"
         value = "test_value"
-        explicit_ttl = 0.01  # 0.01 секунды (10 мс) для быстрого теста
+        explicit_ttl = 0.01  # 0.01 seconds (10 ms) for fast test
         
         await cache_manager.set(key, value, ttl=explicit_ttl)
         
-        # Сразу доступно
+        # Immediately available
         assert await cache_manager.get(key) == value
         
-        # Ждем истечения явного TTL (0.01 сек + небольшой запас)
+        # Wait for explicit TTL expiration (0.01 sec + small margin)
         await asyncio.sleep(0.02)
         
-        # Значение должно истечь
+        # Value should expire
         assert await cache_manager.get(key) is None
     
     async def test_explicit_ttl_override_large(self, cache_manager):
-        """Проверка явного указания большого TTL (вечный кэш)"""
+        """Test explicit large TTL specification (eternal cache)"""
         key = "user:123:1"
         value = {"user_id": 123}
-        large_ttl = 315360000  # 10 лет
+        large_ttl = 315360000  # 10 years
         
-        # Устанавливаем с явным большим TTL
+        # Set with explicit large TTL
         await cache_manager.set(key, value, ttl=large_ttl)
         
-        # Проверяем, что есть время истечения
+        # Check that expiration time exists
         assert key in cache_manager._cache_expires_at
         
-        # Значение должно остаться
+        # Value should remain
         await asyncio.sleep(0.01)
         assert await cache_manager.get(key) == value
     
     async def test_default_ttl_when_not_specified(self, cache_manager):
-        """Проверка дефолтного TTL когда TTL не указан"""
+        """Test default TTL when TTL not specified"""
         key = "test:123"
         value = "test_value"
         
-        await cache_manager.set(key, value)  # TTL не указан
+        await cache_manager.set(key, value)  # TTL not specified
         
-        # Должен быть установлен дефолтный TTL (3600 секунд)
+        # Default TTL should be set (3600 seconds)
         assert key in cache_manager._cache_expires_at
         
-        # Значение должно быть доступно сразу
+        # Value should be available immediately
         assert await cache_manager.get(key) == value
     
     async def test_ttl_refresh_on_set(self, cache_manager):
-        """Проверка обновления TTL при перезаписи"""
+        """Test TTL refresh on overwrite"""
         key = "test:ttl_refresh"
         value1 = {"user_id": 123}
         value2 = {"user_id": 456}
-        short_ttl = 0.05  # 50 мс для быстрого теста
+        short_ttl = 0.05  # 50 ms for fast test
         
         await cache_manager.set(key, value1, ttl=short_ttl)
         
-        # Ждем почти истечения (но не полностью) - 40% от TTL
+        # Wait almost to expiration (but not fully) - 40% of TTL
         await asyncio.sleep(0.02)
         
-        # Перезаписываем значение (TTL должен обновиться)
+        # Overwrite value (TTL should update)
         await cache_manager.set(key, value2, ttl=short_ttl)
         
-        # Ждем еще немного (но не больше нового TTL) - еще 40% от нового TTL
+        # Wait a bit more (but not more than new TTL) - another 40% of new TTL
         await asyncio.sleep(0.02)
         
-        # Значение должно быть доступно (TTL обновился)
+        # Value should be available (TTL updated)
         retrieved = await cache_manager.get(key)
         assert retrieved == value2
     
     async def test_multiple_keys_different_ttl(self, cache_manager):
-        """Проверка работы с множественными ключами с разным TTL"""
-        # Вечный кэш (большой TTL)
+        """Test working with multiple keys with different TTL"""
+        # Eternal cache (large TTL)
         eternal_key = "bot:123"
         eternal_value = {"bot_id": 123}
-        large_ttl = 315360000  # 10 лет
+        large_ttl = 315360000  # 10 years
         await cache_manager.set(eternal_key, eternal_value, ttl=large_ttl)
         
-        # Кэш с TTL (через явное указание, короткий для быстрого теста)
+        # Cache with TTL (via explicit specification, short for fast test)
         ttl_key = "test:ttl"
         ttl_value = "ttl_value"
-        short_ttl = 0.01  # 0.01 секунды
+        short_ttl = 0.01  # 0.01 seconds
         await cache_manager.set(ttl_key, ttl_value, ttl=short_ttl)
         
-        # Оба должны быть доступны сразу
+        # Both should be available immediately
         assert await cache_manager.get(eternal_key) == eternal_value
         assert await cache_manager.get(ttl_key) == ttl_value
         
-        # Ждем истечения TTL для второго ключа (0.01 сек + небольшой запас)
+        # Wait for TTL expiration for second key (0.01 sec + small margin)
         await asyncio.sleep(0.02)
         
-        # Первый должен остаться (вечный)
+        # First should remain (eternal)
         assert await cache_manager.get(eternal_key) == eternal_value
         
-        # Второй должен истечь
+        # Second should expire
         assert await cache_manager.get(ttl_key) is None
     
     async def test_ttl_after_delete(self, cache_manager):
-        """Проверка, что TTL удаляется при удалении ключа"""
+        """Test that TTL is deleted when key is deleted"""
         key = "user:123:1"
         value = {"user_id": 123}
         
-        await cache_manager.set(key, value)  # Используется default_ttl
+        await cache_manager.set(key, value)  # Uses default_ttl
         assert key in cache_manager._cache_expires_at
         
         await cache_manager.delete(key)
         
-        # TTL должен быть удален
+        # TTL should be deleted
         assert key not in cache_manager._cache
         assert key not in cache_manager._cache_expires_at
 

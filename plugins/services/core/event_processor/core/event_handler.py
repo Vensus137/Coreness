@@ -1,6 +1,6 @@
 """
-Core модуль для обработки событий от Telegram пулинга
-Содержит основную логику обработки и пересылки событий
+Core module for processing events from Telegram polling
+Contains main logic for processing and forwarding events
 """
 
 from typing import Any, Dict
@@ -8,10 +8,10 @@ from typing import Any, Dict
 
 class EventHandler:
     """
-    Основной обработчик событий от Telegram пулинга
-    - Парсинг raw событий в стандартный формат
-    - Обработка медиагрупп (объединение событий)
-    - Передача обработанных событий дальше
+    Main event handler for Telegram polling
+    - Parsing raw events into standard format
+    - Processing media groups (merging events)
+    - Forwarding processed events
     """
     
     def __init__(self, logger, action_hub, datetime_formatter, settings_manager, database_manager, user_manager, data_converter, cache_manager):
@@ -20,12 +20,12 @@ class EventHandler:
         self.datetime_formatter = datetime_formatter
         self.settings_manager = settings_manager
         
-        # Получаем настройки фильтрации по времени
+        # Get time filtering settings
         settings = self.settings_manager.get_plugin_settings('event_processor')
         self.enable_time_comparison = settings.get('enable_time_comparison', False)
         self.startup_time_offset = settings.get('startup_time_offset', 0)
         
-        # Инициализируем утилиты
+        # Initialize utilities
         from ..utils.event_parser import EventParser
         from ..utils.media_group_processor import MediaGroupProcessor
         
@@ -44,81 +44,81 @@ class EventHandler:
     
     async def handle_raw_event(self, raw_event: Dict[str, Any]) -> None:
         """
-        Обработка raw события от пулинга
-        Вызывается из telegram_polling_service через event_callback
+        Process raw event from polling
+        Called from telegram_polling_service via event_callback
         """
         try:
-            # Парсим событие в стандартный формат
+            # Parse event into standard format
             parsed_event = await self.event_parser.parse_event(raw_event)
             
             if not parsed_event:
-                # Событие не было распознано или произошла ошибка парсинга
+                # Event was not recognized or parsing error occurred
                 return
             
-            # Фильтрация по времени относительно запуска пуллинга
+            # Filter by time relative to polling start
             if await self._should_ignore_event_by_time(parsed_event, raw_event):
                 return
             
-            # Обрабатываем медиагруппы (если есть)
+            # Process media groups (if any)
             await self.media_group_processor.process_event(
                 parsed_event, 
                 self._forward_processed_event
             )
                     
         except Exception as e:
-            self.logger.error(f"Ошибка обработки raw события: {e}")
+            self.logger.error(f"Error processing raw event: {e}")
     
     async def _forward_processed_event(self, processed_event: Dict[str, Any]) -> None:
         """
-        Передача обработанного события в scenario_processor через ActionHub
+        Forward processed event to scenario_processor via ActionHub
         """
         try:
-            # Отправляем событие в scenario_processor для обработки по сценариям
+            # Send event to scenario_processor for scenario processing
             await self.action_hub.execute_action(
                 'process_scenario_event',
                 processed_event
             )
                 
         except Exception as e:
-            self.logger.error(f"Ошибка передачи обработанного события в scenario_processor: {e}")
+            self.logger.error(f"Error forwarding processed event to scenario_processor: {e}")
     
     async def _should_ignore_event_by_time(self, parsed_event: dict, raw_event: dict) -> bool:
         """
-        Определяет нужно ли игнорировать событие по времени
+        Determine whether to ignore event by time
         """
-        # Если сравнение времени отключено, не игнорируем события
+        # If time comparison disabled, don't ignore events
         if not self.enable_time_comparison:
             return False
         
         try:
-            # Получаем время запуска пуллинга из системных данных raw_event
+            # Get polling start time from raw_event system data
             polling_start_time = raw_event.get('system', {}).get('polling_start_time')
             if not polling_start_time:
-                # Если нет времени запуска, не фильтруем
+                # If no start time, don't filter
                 return False
             
-            # Получаем время события из parsed_event (уже в локальном времени)
+            # Get event time from parsed_event (already in local time)
             event_date = parsed_event.get('event_date')
             if not event_date:
-                # Если нет времени события, не фильтруем
+                # If no event time, don't filter
                 return False
             
-            # Вычисляем разность времени между запуском пуллинга и событием
+            # Calculate time difference between polling start and event
             time_diff = await self.datetime_formatter.time_diff(event_date, polling_start_time)
             time_diff_seconds = time_diff.total_seconds()
             
-            # Игнорируем события если разность больше startup_time_offset
+            # Ignore events if difference is greater than startup_time_offset
             return time_diff_seconds > self.startup_time_offset
                 
         except Exception as e:
-            self.logger.warning(f"Ошибка проверки времени события: {e}")
+            self.logger.warning(f"Error checking event time: {e}")
             return False
     
     async def cleanup(self) -> None:
         """
-        Очистка ресурсов
+        Clean up resources
         """
         try:
             await self.media_group_processor.cleanup()
         except Exception as e:
-            self.logger.error(f"Ошибка очистки: {e}")
+            self.logger.error(f"Error cleaning up: {e}")

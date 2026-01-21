@@ -1,5 +1,5 @@
 """
-Репозиторий для работы с векторным хранилищем (vector_storage)
+Repository for working with vector storage (vector_storage)
 """
 
 import json
@@ -14,12 +14,12 @@ from .base import BaseRepository
 
 class VectorStorageRepository(BaseRepository):
     """
-    Репозиторий для работы с векторным хранилищем (RAG)
+    Repository for working with vector storage (RAG)
     """
     
     async def get_chunks_by_document(self, tenant_id: int, document_id: str) -> Optional[List[Dict[str, Any]]]:
         """
-        Получить все чанки документа по document_id
+        Get all document chunks by document_id
         """
         try:
             with self._get_session() as session:
@@ -29,15 +29,15 @@ class VectorStorageRepository(BaseRepository):
                 ).order_by(VectorStorage.chunk_index)
                 
                 result = session.execute(stmt).scalars().all()
-                return await self._to_dict_list(result)  # JSONB обрабатывается автоматически SQLAlchemy
+                return await self._to_dict_list(result)  # JSONB is automatically handled by SQLAlchemy
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения чанков документа {document_id}: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting document chunks {document_id}: {e}")
             return None
     
     async def get_chunks_by_type(self, tenant_id: int, document_type: str, limit: Optional[int] = None) -> Optional[List[Dict[str, Any]]]:
         """
-        Получить чанки по типу документа
+        Get chunks by document type
         """
         try:
             with self._get_session() as session:
@@ -50,52 +50,52 @@ class VectorStorageRepository(BaseRepository):
                     stmt = stmt.limit(limit)
                 
                 result = session.execute(stmt).scalars().all()
-                return await self._to_dict_list(result)  # JSONB обрабатывается автоматически SQLAlchemy
+                return await self._to_dict_list(result)  # JSONB is automatically handled by SQLAlchemy
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения чанков типа {document_type}: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting chunks of type {document_type}: {e}")
             return None
     
     async def get_recent_chunks(self, tenant_id: int, limit: int, document_type: Optional[List[str]] = None,
                                 document_id: Optional[List[str]] = None, until_date=None, since_date=None,
                                 metadata_filter: Optional[Dict[str, Any]] = None) -> Optional[List[Dict[str, Any]]]:
         """
-        Получить последние N чанков по дате created_at (сортировка по убыванию)
-        Используется created_at для правильной сортировки истории.
+        Get last N chunks by created_at date (descending sort)
+        Uses created_at for correct history sorting.
         
-        Многоуровневая сортировка для детерминированности:
-        1. created_at DESC (основной уровень)
-        2. processed_at DESC (второй уровень - для чанков с одинаковым created_at)
-        3. chunk_index ASC (третий уровень - для правильного порядка чанков в документе)
-        4. document_id ASC (четвертый уровень - для полной детерминированности)
+        Multi-level sorting for determinism:
+        1. created_at DESC (primary level)
+        2. processed_at DESC (second level - for chunks with same created_at)
+        3. chunk_index ASC (third level - for correct chunk order in document)
+        4. document_id ASC (fourth level - for full determinism)
         """
         try:
             with self._get_session() as session:
-                # Базовые условия
+                # Base conditions
                 conditions = [VectorStorage.tenant_id == tenant_id]
                 
-                # Фильтр по document_type
+                # Filter by document_type
                 if document_type:
                     if isinstance(document_type, str):
                         conditions.append(VectorStorage.document_type == document_type)
                     elif isinstance(document_type, list) and document_type:
                         conditions.append(VectorStorage.document_type.in_(document_type))
                 
-                # Фильтр по document_id
+                # Filter by document_id
                 if document_id:
                     if isinstance(document_id, str):
                         conditions.append(VectorStorage.document_id == document_id)
                     elif isinstance(document_id, list) and document_id:
                         conditions.append(VectorStorage.document_id.in_(document_id))
                 
-                # Фильтр по дате processed_at (включительно)
+                # Filter by processed_at date (inclusive)
                 if until_date is not None:
                     conditions.append(VectorStorage.processed_at <= until_date)
                 
                 if since_date is not None:
                     conditions.append(VectorStorage.processed_at >= since_date)
                 
-                # Фильтр по метаданным (JSONB)
+                # Filter by metadata (JSONB)
                 if metadata_filter:
                     metadata_json = json.dumps(metadata_filter)
                     conditions.append(
@@ -115,15 +115,15 @@ class VectorStorageRepository(BaseRepository):
                 ).where(
                     *conditions
                 ).order_by(
-                    VectorStorage.created_at.desc(),  # Основная сортировка по created_at (новые первыми)
-                    VectorStorage.processed_at.desc(),  # Второй уровень: по processed_at (новые первыми)
-                    VectorStorage.chunk_index.asc(),  # Третий уровень: по chunk_index (по возрастанию)
-                    VectorStorage.document_id.asc()  # Четвертый уровень: по document_id (по возрастанию) для детерминированности
+                    VectorStorage.created_at.desc(),  # Primary sort by created_at (newest first)
+                    VectorStorage.processed_at.desc(),  # Second level: by processed_at (newest first)
+                    VectorStorage.chunk_index.asc(),  # Third level: by chunk_index (ascending)
+                    VectorStorage.document_id.asc()  # Fourth level: by document_id (ascending) for determinism
                 ).limit(limit)
                 
                 result = session.execute(stmt).all()
                 
-                # Формируем результат
+                # Form result
                 chunks = []
                 for row in result:
                     chunks.append({
@@ -141,13 +141,13 @@ class VectorStorageRepository(BaseRepository):
                 return chunks
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения последних чанков: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting recent chunks: {e}")
             return None
     
     async def delete_document(self, tenant_id: int, document_id: str) -> Optional[int]:
         """
-        Удалить все чанки документа по document_id
-        Возвращает количество удаленных чанков
+        Delete all document chunks by document_id
+        Returns number of deleted chunks
         """
         try:
             with self._get_session() as session:
@@ -161,15 +161,15 @@ class VectorStorageRepository(BaseRepository):
                 return result.rowcount
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка удаления документа {document_id}: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error deleting document {document_id}: {e}")
             return None
     
     async def delete_by_date(self, tenant_id: int, until_date=None, since_date=None,
                             metadata_filter: Optional[Dict[str, Any]] = None) -> Optional[int]:
         """
-        Удалить чанки по дате processed_at
-        Можно указать since_date (удалить с даты включительно) или until_date (удалить до даты включительно), или оба
-        Также можно указать metadata_filter для фильтрации по метаданным
+        Delete chunks by processed_at date
+        Can specify since_date (delete from date inclusive) or until_date (delete until date inclusive), or both
+        Can also specify metadata_filter for filtering by metadata
         """
         try:
             with self._get_session() as session:
@@ -181,7 +181,7 @@ class VectorStorageRepository(BaseRepository):
                 if since_date is not None:
                     conditions.append(VectorStorage.processed_at >= since_date)
                 
-                # Фильтр по метаданным (JSONB)
+                # Filter by metadata (JSONB)
                 if metadata_filter:
                     metadata_json = json.dumps(metadata_filter)
                     conditions.append(
@@ -189,7 +189,7 @@ class VectorStorageRepository(BaseRepository):
                     )
                 
                 if until_date is None and since_date is None and not metadata_filter:
-                    self.logger.error("Необходимо указать хотя бы один параметр: until_date, since_date или metadata_filter")
+                    self.logger.error("Must specify at least one parameter: until_date, since_date or metadata_filter")
                     return None
                 
                 stmt = delete(VectorStorage).where(*conditions)
@@ -199,13 +199,13 @@ class VectorStorageRepository(BaseRepository):
                 return result.rowcount
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка удаления по дате: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error deleting by date: {e}")
             return None
     
     async def create_chunk(self, chunk_data: Dict[str, Any]) -> Optional[bool]:
         """
-        Создать чанк документа
-        Возвращает True при успешном создании
+        Create document chunk
+        Returns True on successful creation
         """
         try:
             with self._get_session() as session:
@@ -213,19 +213,19 @@ class VectorStorageRepository(BaseRepository):
                     'tenant_id': chunk_data.get('tenant_id'),
                     'document_id': chunk_data.get('document_id'),
                     'document_type': chunk_data.get('document_type'),
-                    'role': chunk_data.get('role', 'user'),  # По умолчанию 'user'
+                    'role': chunk_data.get('role', 'user'),  # Default 'user'
                     'chunk_index': chunk_data.get('chunk_index'),
                     'content': chunk_data.get('content'),
                     'embedding': chunk_data.get('embedding'),
-                    'embedding_model': chunk_data.get('embedding_model'),  # Модель для генерации embedding
-                    'chunk_metadata': chunk_data.get('chunk_metadata'),  # Метаданные (JSONB)
-                    'created_at': chunk_data.get('created_at')  # Всегда явно устанавливаем для единообразия (если передан)
+                    'embedding_model': chunk_data.get('embedding_model'),  # Model for embedding generation
+                    'chunk_metadata': chunk_data.get('chunk_metadata'),  # Metadata (JSONB)
+                    'created_at': chunk_data.get('created_at')  # Always explicitly set for consistency (if provided)
                 }
                 
                 prepared_fields = await self.data_preparer.prepare_for_insert(
                     model=VectorStorage,
                     fields=fields_dict,
-                    json_fields=['chunk_metadata']  # JSONB поле
+                    json_fields=['chunk_metadata']  # JSONB field
                 )
                 
                 stmt = insert(VectorStorage).values(**prepared_fields)
@@ -235,13 +235,13 @@ class VectorStorageRepository(BaseRepository):
                 return True
                 
         except Exception as e:
-            self.logger.error(f"Ошибка создания чанка: {e}")
+            self.logger.error(f"Error creating chunk: {e}")
             return None
     
     async def create_chunks_batch(self, chunks_data: List[Dict[str, Any]]) -> Optional[int]:
         """
-        Создать несколько чанков одним запросом (batch insert)
-        Возвращает количество созданных чанков
+        Create multiple chunks with one query (batch insert)
+        Returns number of created chunks
         """
         try:
             if not chunks_data:
@@ -254,19 +254,19 @@ class VectorStorageRepository(BaseRepository):
                         'tenant_id': chunk_data.get('tenant_id'),
                         'document_id': chunk_data.get('document_id'),
                         'document_type': chunk_data.get('document_type'),
-                        'role': chunk_data.get('role', 'user'),  # По умолчанию 'user'
+                        'role': chunk_data.get('role', 'user'),  # Default 'user'
                         'chunk_index': chunk_data.get('chunk_index'),
                         'content': chunk_data.get('content'),
                         'embedding': chunk_data.get('embedding'),
-                        'embedding_model': chunk_data.get('embedding_model'),  # Модель для генерации embedding
-                        'chunk_metadata': chunk_data.get('chunk_metadata'),  # Метаданные (JSONB)
-                        'created_at': chunk_data.get('created_at')  # Всегда явно устанавливаем для единообразия (если передан)
+                        'embedding_model': chunk_data.get('embedding_model'),  # Model for embedding generation
+                        'chunk_metadata': chunk_data.get('chunk_metadata'),  # Metadata (JSONB)
+                        'created_at': chunk_data.get('created_at')  # Always explicitly set for consistency (if provided)
                     }
                     
                     prepared_fields = await self.data_preparer.prepare_for_insert(
                         model=VectorStorage,
                         fields=fields_dict,
-                        json_fields=['chunk_metadata']  # JSONB поле
+                        json_fields=['chunk_metadata']  # JSONB field
                     )
                     prepared_inserts.append(prepared_fields)
                 
@@ -279,12 +279,12 @@ class VectorStorageRepository(BaseRepository):
                     return 0
                 
         except Exception as e:
-            self.logger.error(f"Ошибка batch создания чанков: {e}")
+            self.logger.error(f"Error batch creating chunks: {e}")
             return None
     
     async def get_chunk(self, tenant_id: int, document_id: str, chunk_index: int) -> Optional[Dict[str, Any]]:
         """
-        Получить чанк по составному ключу (tenant_id, document_id, chunk_index)
+        Get chunk by composite key (tenant_id, document_id, chunk_index)
         """
         try:
             with self._get_session() as session:
@@ -295,15 +295,15 @@ class VectorStorageRepository(BaseRepository):
                 )
                 result = session.execute(stmt).scalar_one_or_none()
                 
-                return await self._to_dict(result)  # JSONB обрабатывается автоматически SQLAlchemy
+                return await self._to_dict(result)  # JSONB is automatically handled by SQLAlchemy
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения чанка {document_id}[{chunk_index}]: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting chunk {document_id}[{chunk_index}]: {e}")
             return None
     
     async def update_chunk(self, tenant_id: int, document_id: str, chunk_index: int, chunk_data: Dict[str, Any]) -> Optional[bool]:
         """
-        Обновить чанк по составному ключу (tenant_id, document_id, chunk_index)
+        Update chunk by composite key (tenant_id, document_id, chunk_index)
         """
         try:
             with self._get_session() as session:
@@ -312,9 +312,9 @@ class VectorStorageRepository(BaseRepository):
                     fields={
                         'content': chunk_data.get('content'),
                         'embedding': chunk_data.get('embedding'),
-                        'embedding_model': chunk_data.get('embedding_model')  # Модель для генерации embedding
+                        'embedding_model': chunk_data.get('embedding_model')  # Model for embedding generation
                     },
-                    json_fields=[]  # JSONB обрабатывается автоматически SQLAlchemy
+                    json_fields=[]  # JSONB is automatically handled by SQLAlchemy
                 )
                 
                 stmt = update(VectorStorage).where(
@@ -329,7 +329,7 @@ class VectorStorageRepository(BaseRepository):
                 return True
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка обновления чанка {document_id}[{chunk_index}]: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error updating chunk {document_id}[{chunk_index}]: {e}")
             return None
     
     async def search_similar(self, tenant_id: int, query_vector: List[float], limit: int = 5,
@@ -337,67 +337,67 @@ class VectorStorageRepository(BaseRepository):
                             document_id: Optional[List[str]] = None, until_date=None, since_date=None,
                             metadata_filter: Optional[Dict[str, Any]] = None) -> Optional[List[Dict[str, Any]]]:
         """
-        Поиск похожих чанков по вектору (cosine similarity)
+        Search similar chunks by vector (cosine similarity)
         """
         try:
             from sqlalchemy import text
             
             with self._get_session() as session:
-                # pgvector использует оператор <=> для cosine distance
+                # pgvector uses <=> operator for cosine distance
                 # similarity = 1 - (embedding <=> query_vector)
-                # embedding действие возвращает готовый список Python, передаем его напрямую
+                # embedding action returns ready Python list, pass it directly
                 
-                # Базовые условия
+                # Base conditions
                 conditions = [VectorStorage.tenant_id == tenant_id]
                 
-                # Фильтр по document_type
+                # Filter by document_type
                 if document_type:
                     if isinstance(document_type, str):
                         conditions.append(VectorStorage.document_type == document_type)
                     elif isinstance(document_type, list) and document_type:
                         conditions.append(VectorStorage.document_type.in_(document_type))
                 
-                # Фильтр по document_id
+                # Filter by document_id
                 if document_id:
                     if isinstance(document_id, str):
                         conditions.append(VectorStorage.document_id == document_id)
                     elif isinstance(document_id, list) and document_id:
                         conditions.append(VectorStorage.document_id.in_(document_id))
                 
-                # Фильтр по дате created_at (включительно) - используем created_at для правильной сортировки
+                # Filter by created_at date (inclusive) - use created_at for correct sorting
                 if until_date is not None:
                     conditions.append(VectorStorage.created_at <= until_date)
                 
                 if since_date is not None:
                     conditions.append(VectorStorage.created_at >= since_date)
                 
-                # Фильтр по метаданным (JSONB)
+                # Filter by metadata (JSONB)
                 if metadata_filter:
-                    # Используем оператор @> для проверки наличия ключей и значений в JSONB
-                    # Это работает быстрее и поддерживает индексы
+                    # Use @> operator to check for keys and values in JSONB
+                    # This works faster and supports indexes
                     metadata_json = json.dumps(metadata_filter)
                     conditions.append(
                         VectorStorage.chunk_metadata.op('@>')(text(f"'{metadata_json}'::jsonb"))
                     )
                 
-                # Фильтр: только записи с не-null embedding (для векторного поиска)
+                # Filter: only records with non-null embedding (for vector search)
                 conditions.append(VectorStorage.embedding.isnot(None))
                 
-                # Поиск по cosine similarity
-                # Используем SQL выражение для вычисления similarity
+                # Search by cosine similarity
+                # Use SQL expression to calculate similarity
                 # 1 - (embedding <=> query_vector) = cosine similarity
                 # 
-                # РЕШЕНИЕ: Используем нативные конструкции SQLAlchemy с типом Vector
-                # вместо text() и bindparam() - это обеспечивает правильную генерацию SQL
-                # и поддержку .label() для создания алиаса
+                # SOLUTION: Use native SQLAlchemy constructs with Vector type
+                # instead of text() and bindparam() - this ensures correct SQL generation
+                # and support for .label() to create alias
                 
-                # Преобразуем Python список в pgvector Vector через literal()
-                # literal() создает SQL литерал из Python значения, которое pgvector может обработать
-                # Используем PgVector для правильного преобразования списка в векторный тип
+                # Convert Python list to pgvector Vector via literal()
+                # literal() creates SQL literal from Python value that pgvector can process
+                # Use PgVector for correct list to vector type conversion
                 query_vec_expr = literal(query_vector, type_=PgVector(1024))
                 
-                # Создаем выражение similarity используя оператор <=> через .op()
-                # Используем literal(1) для литерального значения 1, чтобы оно не стало параметром
+                # Create similarity expression using <=> operator via .op()
+                # Use literal(1) for literal value 1 so it doesn't become a parameter
                 similarity_expr = literal(1) - (VectorStorage.embedding.op('<=>')(query_vec_expr))
                 
                 stmt = select(
@@ -410,21 +410,21 @@ class VectorStorageRepository(BaseRepository):
                     VectorStorage.embedding_model,
                     VectorStorage.created_at,
                     VectorStorage.processed_at,
-                    similarity_expr.label('similarity')  # Теперь .label() работает корректно
+                    similarity_expr.label('similarity')  # Now .label() works correctly
                 ).where(
                     *conditions
                 ).order_by(
-                    similarity_expr.desc()  # Используем то же выражение для сортировки
+                    similarity_expr.desc()  # Use same expression for sorting
                 ).limit(limit)
                 
-                # Выполняем запрос (query_vector уже преобразован в вектор через cast)
+                # Execute query (query_vector already converted to vector via cast)
                 result = session.execute(stmt).all()
                 
-                # Формируем результат (фильтрация по min_similarity уже выполнена в SQL)
+                # Form result (filtering by min_similarity already done in SQL)
                 chunks = []
                 for row in result:
                     similarity = float(row.similarity)
-                    # Дополнительная проверка на всякий случай (должна быть избыточной)
+                    # Additional check just in case (should be redundant)
                     if similarity >= min_similarity:
                         chunks.append({
                             "content": row.content,
@@ -436,12 +436,12 @@ class VectorStorageRepository(BaseRepository):
                             "embedding_model": row.embedding_model,
                             "created_at": row.created_at.isoformat() if row.created_at else None,
                             "processed_at": row.processed_at.isoformat() if row.processed_at else None,
-                            "similarity": round(similarity, 4)  # Округляем до 4 знаков
+                            "similarity": round(similarity, 4)  # Round to 4 decimal places
                         })
                 
                 return chunks
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка поиска похожих чанков: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error searching similar chunks: {e}")
             return None
 

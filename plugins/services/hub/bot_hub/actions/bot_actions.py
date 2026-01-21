@@ -1,5 +1,5 @@
 """
-BotActions - действия для управления ботами
+BotActions - actions for managing bots
 """
 
 from typing import Any, Dict
@@ -7,7 +7,7 @@ from typing import Any, Dict
 
 class BotActions:
     """
-    Действия для управления ботами
+    Actions for managing bots
     """
     
     def __init__(self, bot_info_manager, telegram_polling, telegram_api, webhook_manager, settings_manager, logger):
@@ -18,35 +18,35 @@ class BotActions:
         self.settings_manager = settings_manager
         self.logger = logger
         
-        # Получаем настройки из bot_hub
+        # Get settings from bot_hub
         bot_hub_settings = self.settings_manager.get_plugin_settings("bot_hub")
         use_webhooks_setting = bot_hub_settings.get('use_webhooks', False)
         
-        # Автоматически переключаем на пулинг, если вебхуки недоступны
-        # Проверяем доступность http_server через webhook_manager
+        # Automatically switch to polling if webhooks are unavailable
+        # Check http_server availability through webhook_manager
         self.use_webhooks = use_webhooks_setting and webhook_manager.http_server is not None
         
         if use_webhooks_setting and not self.use_webhooks:
-            self.logger.warning("Вебхуки включены в настройках, но http_server недоступен - автоматически используется пулинг")
+            self.logger.warning("Webhooks enabled in settings, but http_server unavailable - automatically using polling")
     
     async def start_bot(self, data: dict) -> Dict[str, Any]:
         """
-        Запуск бота
+        Start bot
         """
         try:
             bot_id = data.get('bot_id')
             
-            # Получаем информацию о боте
+            # Get bot information
             bot_result = await self.bot_info_manager.get_bot_info(bot_id)
             if bot_result.get('result') != 'success':
-                error_msg = bot_result.get('error', 'Неизвестная ошибка')
+                error_msg = bot_result.get('error', 'Unknown error')
                 if isinstance(error_msg, dict):
-                    error_msg = error_msg.get('message', 'Неизвестная ошибка')
+                    error_msg = error_msg.get('message', 'Unknown error')
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Не удалось получить информацию о боте {bot_id}: {error_msg}"
+                        "message": f"Failed to get bot information for {bot_id}: {error_msg}"
                     }
                 }
             
@@ -56,20 +56,20 @@ class BotActions:
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Токен бота {bot_id} не найден"
+                        "message": f"Bot token for {bot_id} not found"
                     }
                 }
             
-            # Запускаем бота в зависимости от режима
+            # Start bot depending on mode
             if self.use_webhooks:
-                # Устанавливаем вебхук
+                # Set webhook
                 result = await self.webhook_manager.set_webhook(bot_id, bot_info['bot_token'])
                 if result.get('result') == 'success':
                     return {"result": "success"}
                 else:
                     return result
             else:
-                # Запускаем пулинг
+                # Start polling
                 success = await self.telegram_polling.start_bot_polling(bot_id, bot_info['bot_token'])
                 if success:
                     return {"result": "success"}
@@ -78,54 +78,54 @@ class BotActions:
                         "result": "error",
                         "error": {
                             "code": "INTERNAL_ERROR",
-                            "message": f"Не удалось запустить бота {bot_id}"
+                            "message": f"Failed to start bot {bot_id}"
                         }
                     }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка запуска бота: {e}")
+            self.logger.error(f"Error starting bot: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def stop_bot(self, data: dict) -> Dict[str, Any]:
         """
-        Остановка конкретного бота
+        Stop specific bot
         """
         try:
             bot_id = data.get('bot_id')
             
-            # Получаем информацию о боте для получения токена
+            # Get bot information to get token
             bot_result = await self.bot_info_manager.get_bot_info(bot_id)
             if bot_result.get('result') != 'success':
-                error_msg = bot_result.get('error', 'Неизвестная ошибка')
+                error_msg = bot_result.get('error', 'Unknown error')
                 if isinstance(error_msg, dict):
-                    error_msg = error_msg.get('message', 'Неизвестная ошибка')
+                    error_msg = error_msg.get('message', 'Unknown error')
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Не удалось получить информацию о боте {bot_id}: {error_msg}"
+                        "message": f"Failed to get bot information for {bot_id}: {error_msg}"
                     }
                 }
             
             bot_info = bot_result.get('response_data', {})
             bot_token = bot_info.get('bot_token')
             
-            # Останавливаем бота в зависимости от режима
+            # Stop bot depending on mode
             if self.use_webhooks:
-                # Удаляем вебхук
+                # Delete webhook
                 if bot_token:
                     result = await self.webhook_manager.delete_webhook(bot_token, bot_id)
                     return result
                 else:
                     return {"result": "success"}
             else:
-                # Останавливаем пулинг
+                # Stop polling
                 success = await self.telegram_polling.stop_bot_polling(bot_id)
                 if success:
                     return {"result": "success"}
@@ -134,28 +134,28 @@ class BotActions:
                         "result": "error",
                         "error": {
                             "code": "INTERNAL_ERROR",
-                            "message": f"Не удалось остановить бота {bot_id}"
+                            "message": f"Failed to stop bot {bot_id}"
                         }
                     }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка остановки бота: {e}")
+            self.logger.error(f"Error stopping bot: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def stop_all_bots(self, data: dict) -> Dict[str, Any]:
         """
-        Остановка всех ботов
+        Stop all bots
         """
         try:
             if self.use_webhooks:
-                # Для вебхуков нужно получить всех ботов и удалить вебхуки
-                # Получаем всех ботов из БД
+                # For webhooks need to get all bots and delete webhooks
+                # Get all bots from DB
                 master_repo = self.bot_info_manager.database_manager.get_master_repository()
                 all_bots = await master_repo.get_all_bots()
                 
@@ -170,18 +170,18 @@ class BotActions:
                             errors.append(f"Bot-{bot_id}")
                 
                 if errors:
-                    self.logger.warning(f"Ошибки при остановке ботов: {', '.join(errors)}")
+                    self.logger.warning(f"Errors stopping bots: {', '.join(errors)}")
                     return {
                         "result": "partial_success",
                         "error": {
                             "code": "PARTIAL_ERROR",
-                            "message": f"Не удалось остановить некоторых ботов: {', '.join(errors)}"
+                            "message": f"Failed to stop some bots: {', '.join(errors)}"
                         }
                     }
                 
                 return {"result": "success"}
             else:
-                # Останавливаем все пулинги
+                # Stop all polling
                 success = await self.telegram_polling.stop_all_polling()
                 
                 if success:
@@ -191,40 +191,40 @@ class BotActions:
                         "result": "error",
                         "error": {
                             "code": "INTERNAL_ERROR",
-                            "message": "Не удалось остановить всех ботов"
+                            "message": "Failed to stop all bots"
                         }
                     }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка остановки всех ботов: {e}")
+            self.logger.error(f"Error stopping all bots: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_bot_config(self, data: dict) -> Dict[str, Any]:
         """
-        Синхронизация конфигурации бота: создание/обновление бота + условный перезапуск пуллинга
-        Перезапускает пулинг только если изменились критичные поля (bot_token, is_active) или бот создан впервые
+        Sync bot configuration: create/update bot + conditional polling restart
+        Restarts polling only if critical fields changed (bot_token, is_active) or bot created for first time
         """
         try:
             tenant_id = data.get('tenant_id')
             
-            # Получаем текущие данные бота ДО обновления (для сравнения)
+            # Get current bot data BEFORE update (for comparison)
             old_bot_data = None
             bot_id = None
-            # Пытаемся найти существующего бота по tenant_id
+            # Try to find existing bot by tenant_id
             bot_result = await self.bot_info_manager.get_bot_info_by_tenant_id(tenant_id)
             if bot_result.get('result') == 'success':
                 old_bot_data = bot_result.get('response_data', {})
                 bot_id = old_bot_data.get('bot_id')
-            # Если бот не найден (result == 'error') - это нормально, значит будет создан новый
+            # If bot not found (result == 'error') - this is normal, means new bot will be created
             
-            # Используем BotInfoManager для создания/обновления бота (БД + кэш)
-            # Передаем data напрямую, так как он уже содержит все данные бота
+            # Use BotInfoManager to create/update bot (DB + cache)
+            # Pass data directly, as it already contains all bot data
             sync_result = await self.bot_info_manager.create_or_update_bot(data)
             
             if sync_result.get('result') != 'success':
@@ -233,76 +233,76 @@ class BotActions:
             bot_id = sync_result.get('response_data', {}).get('bot_id')
             action = sync_result.get('response_data', {}).get('action')
             
-            # Определяем, нужно ли перезапускать пулинг
-            # По умолчанию перезапускаем (безопасный подход)
+            # Determine if polling needs to be restarted
+            # By default restart (safe approach)
             new_bot_token = data.get('bot_token')
-            # Если токен не передан из конфига, используем из БД (старый)
+            # If token not provided from config, use from DB (old)
             if new_bot_token is None and old_bot_data:
                 new_bot_token = old_bot_data.get('bot_token')
             
             new_is_active = data.get('is_active', True)
             
-            # Определяем, нужно ли перезапускать бота
-            should_restart = True  # По умолчанию перезапускаем
+            # Determine if bot needs to be restarted
+            should_restart = True  # By default restart
             
             if action == "updated" and old_bot_data:
-                # Бот обновлен - проверяем, изменились ли критичные поля
+                # Bot updated - check if critical fields changed
                 old_bot_token = old_bot_data.get('bot_token')
                 old_is_active = old_bot_data.get('is_active')
                 
-                # Проверяем текущее состояние
+                # Check current state
                 if self.use_webhooks:
-                    # Для вебхуков: всегда устанавливаем вебхук при синхронизации, если бот активен
-                    # Это гарантирует установку вебхука при первом запуске и после перезапуска системы
-                    # Telegram API сам обработает конфликт (409), если вебхук уже установлен
-                    is_active = False  # Всегда считаем, что нужно установить/переустановить вебхук
+                    # For webhooks: always set webhook on sync if bot is active
+                    # This guarantees webhook setup on first start and after system restart
+                    # Telegram API will handle conflict (409) itself if webhook already set
+                    is_active = False  # Always consider that webhook needs to be set/re-set
                 else:
-                    # Для пулинга проверяем фактический статус
+                    # For polling check actual status
                     is_active = self.telegram_polling.is_bot_polling(bot_id)
                 
-                # НЕ перезапускаем только если:
-                # 1. Критичные поля совпадают И
-                # 2. Бот уже активен (только для пулинга)
+                # Do NOT restart only if:
+                # 1. Critical fields match AND
+                # 2. Bot already active (only for polling)
                 if (old_bot_token == new_bot_token and 
                     old_is_active is not None and 
                     old_is_active == new_is_active):
                     if self.use_webhooks:
-                        # Для вебхуков всегда перезапускаем (устанавливаем вебхук)
-                        # Это гарантирует установку вебхука при первом запуске и после перезапуска
+                        # For webhooks always restart (set webhook)
+                        # This guarantees webhook setup on first start and after restart
                         should_restart = True
                     elif is_active:
-                        # Для пулинга не перезапускаем, если он уже запущен
+                        # For polling don't restart if already running
                         should_restart = False
                     else:
-                        # Пулинг не запущен - нужно запустить
+                        # Polling not started - need to start
                         should_restart = True
             
-            # Перезапускаем бота только если нужно
+            # Restart bot only if needed
             if should_restart:
-                # Останавливаем существующий режим
+                # Stop existing mode
                 if self.use_webhooks:
-                    # Удаляем вебхук
+                    # Delete webhook
                     if new_bot_token:
                         await self.webhook_manager.delete_webhook(new_bot_token, bot_id)
                 else:
-                    # Останавливаем пулинг
+                    # Stop polling
                     await self.telegram_polling.stop_bot_polling(bot_id)
                 
-                # Запускаем бота только если он активен
+                # Start bot only if active
                 if new_is_active:
                     if new_bot_token:
                         if self.use_webhooks:
-                            # Устанавливаем вебхук
+                            # Set webhook
                             result = await self.webhook_manager.set_webhook(bot_id, new_bot_token)
                             if result.get('result') != 'success':
-                                self.logger.error(f"[Bot-{bot_id}] Не удалось установить вебхук")
+                                self.logger.error(f"[Bot-{bot_id}] Failed to set webhook")
                         else:
-                            # Запускаем пулинг
+                            # Start polling
                             success = await self.telegram_polling.start_bot_polling(bot_id, new_bot_token)
                             if not success:
-                                self.logger.error(f"[Bot-{bot_id}] Не удалось запустить пулинг")
+                                self.logger.error(f"[Bot-{bot_id}] Failed to start polling")
                     else:
-                        self.logger.warning(f"[Bot-{bot_id}] Отсутствует токен, бот не запущен")
+                        self.logger.warning(f"[Bot-{bot_id}] Token missing, bot not started")
             
             return {
                 "result": "success",
@@ -313,34 +313,34 @@ class BotActions:
             }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации конфигурации бота: {e}")
+            self.logger.error(f"Error syncing bot configuration: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_bot_commands(self, data: dict) -> Dict[str, Any]:
         """
-        Синхронизация команд бота: сохранение в БД → применение в Telegram
+        Sync bot commands: save to DB → apply in Telegram
         """
         try:
             bot_id = data.get('bot_id')
             command_list = data.get('command_list', [])
             
-            # Получаем информацию о боте
+            # Get bot information
             bot_result = await self.bot_info_manager.get_bot_info(bot_id)
             if bot_result.get('result') != 'success':
-                error_msg = bot_result.get('error', 'Неизвестная ошибка')
+                error_msg = bot_result.get('error', 'Unknown error')
                 if isinstance(error_msg, dict):
-                    error_msg = error_msg.get('message', 'Неизвестная ошибка')
+                    error_msg = error_msg.get('message', 'Unknown error')
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Не удалось получить информацию о боте {bot_id}: {error_msg}"
+                        "message": f"Failed to get bot information for {bot_id}: {error_msg}"
                     }
                 }
             
@@ -350,22 +350,22 @@ class BotActions:
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Токен бота {bot_id} не найден"
+                        "message": f"Bot token for {bot_id} not found"
                     }
                 }
             
-            # Сначала синхронизируем команды в базе данных
+            # First sync commands in database
             sync_success = await self.bot_info_manager.sync_bot_commands(bot_id, command_list)
             if not sync_success:
                 return {
                     "result": "error",
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": f"Не удалось синхронизировать команды в БД для бота {bot_id}"
+                        "message": f"Failed to sync commands in DB for bot {bot_id}"
                     }
                 }
             
-            # Затем применяем команды в Telegram
+            # Then apply commands in Telegram
             result = await self.telegram_api.sync_bot_commands(
                 bot_info['bot_token'], 
                 bot_id, 
@@ -375,9 +375,9 @@ class BotActions:
             if result.get('result') == 'success':
                 return {"result": "success"}
             else:
-                error_msg = result.get('error', 'Неизвестная ошибка')
+                error_msg = result.get('error', 'Unknown error')
                 if isinstance(error_msg, dict):
-                    error_msg = error_msg.get('message', 'Неизвестная ошибка')
+                    error_msg = error_msg.get('message', 'Unknown error')
                 return {
                     "result": "error",
                     "error": {
@@ -387,56 +387,56 @@ class BotActions:
                 }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации команд: {e}")
+            self.logger.error(f"Error syncing commands: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def set_bot_token(self, data: dict) -> Dict[str, Any]:
         """
-        Установка токена бота.
-        Бот должен быть создан через синхронизацию конфигурации (sync_bot_config).
-        Токен будет проверен автоматически при запуске пулинга.
+        Set bot token.
+        Bot must be created through configuration sync (sync_bot_config).
+        Token will be validated automatically when polling starts.
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             
-            # Проверяем, что поле явно передано (присутствует в data)
+            # Check that field is explicitly provided (present in data)
             if 'bot_token' not in data:
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Нет полей для обновления"
+                        "message": "No fields to update"
                     }
                 }
             
-            bot_token = data.get('bot_token')  # Может быть None для удаления
+            bot_token = data.get('bot_token')  # Can be None for deletion
             
-            # Получаем текущие данные бота ДО обновления
-            # Проверяем, что бот существует (должен быть создан через конфигурацию)
+            # Get current bot data BEFORE update
+            # Check that bot exists (should be created through configuration)
             bot_result = await self.bot_info_manager.get_bot_info_by_tenant_id(tenant_id)
             if bot_result.get('result') != 'success':
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Бот для тенанта {tenant_id} не найден. Сначала создайте бота через синхронизацию конфигурации (sync_bot_config)"
+                        "message": f"Bot for tenant {tenant_id} not found. First create bot through configuration sync (sync_bot_config)"
                     }
                 }
             
             old_bot_data = bot_result.get('response_data', {})
             
-            # Сохраняем токен в БД через create_or_update_bot
-            # Токен будет проверен автоматически при запуске пулинга
+            # Save token to DB through create_or_update_bot
+            # Token will be validated automatically when polling starts
             bot_data = {
                 'tenant_id': tenant_id,
-                'bot_token': bot_token,  # Может быть None для удаления
+                'bot_token': bot_token,  # Can be None for deletion
                 'is_active': old_bot_data.get('is_active', True)
             }
             
@@ -446,34 +446,34 @@ class BotActions:
             
             updated_bot_id = sync_result.get('response_data', {}).get('bot_id')
             
-            # Останавливаем существующий режим (в любом случае, т.к. токен изменился или удален)
+            # Stop existing mode (in any case, as token changed or deleted)
             if self.use_webhooks:
-                # Удаляем вебхук
+                # Delete webhook
                 old_token = old_bot_data.get('bot_token')
                 if old_token:
                     await self.webhook_manager.delete_webhook(old_token, updated_bot_id)
             else:
-                # Останавливаем пулинг
+                # Stop polling
                 await self.telegram_polling.stop_bot_polling(updated_bot_id)
             
-            # Если токен не None и бот активен - запускаем бота с новым токеном
+            # If token not None and bot active - start bot with new token
             if bot_token is not None and bot_data.get('is_active', True):
                 if self.use_webhooks:
-                    # Устанавливаем вебхук
+                    # Set webhook
                     result = await self.webhook_manager.set_webhook(updated_bot_id, bot_token)
                     if result.get('result') != 'success':
-                        self.logger.warning(f"[Bot-{updated_bot_id}] Не удалось установить вебхук после установки токена (возможно, токен неверный)")
+                        self.logger.warning(f"[Bot-{updated_bot_id}] Failed to set webhook after setting token (token may be invalid)")
                 else:
-                    # Запускаем пулинг
+                    # Start polling
                     success = await self.telegram_polling.start_bot_polling(updated_bot_id, bot_token)
                     if not success:
-                        self.logger.warning(f"[Bot-{updated_bot_id}] Не удалось запустить пулинг после установки токена (возможно, токен неверный)")
+                        self.logger.warning(f"[Bot-{updated_bot_id}] Failed to start polling after setting token (token may be invalid)")
             elif bot_token is None:
-                # Токен удален - бот уже остановлен
-                mode = "вебхук" if self.use_webhooks else "пулинг"
-                self.logger.info(f"[Bot-{updated_bot_id}] Токен бота удален, {mode} остановлен")
+                # Token deleted - bot already stopped
+                mode = "webhook" if self.use_webhooks else "polling"
+                self.logger.info(f"[Bot-{updated_bot_id}] Bot token deleted, {mode} stopped")
             
-            self.logger.info(f"[Tenant-{tenant_id}] [Bot-{updated_bot_id}] Токен установлен")
+            self.logger.info(f"[Tenant-{tenant_id}] [Bot-{updated_bot_id}] Token set")
             
             return {
                 "result": "success",
@@ -481,11 +481,11 @@ class BotActions:
             }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка установки токена бота: {e}")
+            self.logger.error(f"Error setting bot token: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }

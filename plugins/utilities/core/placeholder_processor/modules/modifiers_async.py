@@ -1,19 +1,19 @@
 """
-Модификаторы для асинхронных действий
+Modifiers for async actions
 """
 from typing import Any
 
 
 class AsyncModifiers:
-    """Класс с модификаторами для работы с асинхронными действиями"""
+    """Class with modifiers for working with async actions"""
     
     def __init__(self, logger):
         self.logger = logger
     
     def modifier_not_ready(self, value: Any, param: str) -> bool:
         """
-        Проверка что асинхронное действие еще выполняется.
-        value уже должен быть Future объектом, полученным через _get_nested_value.
+        Check that async action is still executing.
+        value should already be a Future object obtained through _get_nested_value.
         """
         import asyncio
         
@@ -23,8 +23,8 @@ class AsyncModifiers:
     
     def modifier_ready(self, value: Any, param: str) -> bool:
         """
-        Проверка готовности асинхронного действия.
-        value уже должен быть Future объектом, полученным через _get_nested_value.
+        Check async action readiness.
+        value should already be a Future object obtained through _get_nested_value.
         """
         import asyncio
         

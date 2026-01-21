@@ -1,21 +1,21 @@
 """
-Утилиты для работы с объектами (словари, списки)
+Utilities for working with objects (dictionaries, lists)
 """
 from typing import Dict
 
 
 def deep_merge(base: Dict, updates: Dict) -> Dict:
     """
-    Рекурсивно объединяет два словаря, сохраняя все поля из base и обновляя их значениями из updates
+    Recursively merges two dictionaries, preserving all fields from base and updating them with values from updates
     """
     result = base.copy()
     
     for key, value in updates.items():
         if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            # Рекурсивно объединяем вложенные словари
+            # Recursively merge nested dictionaries
             result[key] = deep_merge(result[key], value)
         else:
-            # Обновляем значение (или добавляем новое)
+            # Update value (or add new)
             result[key] = value
     
     return result

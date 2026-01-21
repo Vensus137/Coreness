@@ -1,5 +1,5 @@
 """
-Validator - сервис для валидации условий в сценариях
+Validator - service for validating conditions in scenarios
 """
 
 from typing import Any, Dict
@@ -7,35 +7,35 @@ from typing import Any, Dict
 
 class Validator:
     """
-    Сервис для валидации условий в сценариях
-    - Принимает условие и данные события
-    - Использует condition_parser для оценки
-    - Возвращает результат валидации
+    Service for validating conditions in scenarios
+    - Accepts condition and event data
+    - Uses condition_parser for evaluation
+    - Returns validation result
     """
     
     def __init__(self, **kwargs):
         self.logger = kwargs['logger']
         self.condition_parser = kwargs['condition_parser']
         
-        # Регистрируем себя в ActionHub
+        # Register ourselves in ActionHub
         self.action_hub = kwargs['action_hub']
         self.action_hub.register('validator', self)
     
-    # === Actions для ActionHub ===
+    # === Actions for ActionHub ===
     
     async def validate(self, data: dict) -> Dict[str, Any]:
         """
-        Валидация условия с возвратом результата
+        Validate condition with result return
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             condition = data.get('condition')
             
-            # Удаляем данные условия из контекста для передачи в condition_parser
+            # Remove condition data from context for passing to condition_parser
             context_data = data.copy()
             context_data.pop('condition', None)
             
-            # Используем condition_parser для оценки условия
+            # Use condition_parser to evaluate condition
             result = await self.condition_parser.check_match(condition, context_data)
             
             if result is True:
@@ -43,22 +43,22 @@ class Validator:
             elif result is False:
                 return {"result": "failed"}
             else:
-                # Если condition_parser вернул что-то неожиданное
-                self.logger.error(f"Неожиданный результат оценки условия: {result} (тип: {type(result)})")
+                # If condition_parser returned something unexpected
+                self.logger.error(f"Unexpected condition evaluation result: {result} (type: {type(result)})")
                 return {
                     "result": "error",
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": f"Неожиданный результат оценки: {result}"
+                        "message": f"Unexpected evaluation result: {result}"
                     }
                 }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка валидации условия: {e}")
+            self.logger.error(f"Error validating condition: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }

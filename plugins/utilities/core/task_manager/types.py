@@ -6,7 +6,7 @@ from typing import Callable, Optional
 
 @dataclass
 class QueueConfig:
-    """Конфигурация очереди"""
+    """Queue configuration"""
     name: str
     max_concurrent: int
     timeout: float
@@ -15,10 +15,10 @@ class QueueConfig:
 
 @dataclass
 class TaskItem:
-    """Элемент задачи в очереди"""
+    """Task item in queue"""
     id: str
     coro: Callable
     config: QueueConfig
     created_at: datetime
     retry_count: int = 0
-    future: Optional['asyncio.Future'] = None  # Добавляем Future для возврата результата
+    future: Optional['asyncio.Future'] = None  # Add Future for returning result

@@ -1,5 +1,5 @@
 """
-BotInfoManager - подмодуль для сбора и кэширования информации о ботах
+BotInfoManager - submodule for collecting and caching bot information
 """
 
 from typing import Any, Dict, List
@@ -7,8 +7,8 @@ from typing import Any, Dict, List
 
 class BotInfoManager:
     """
-    Менеджер информации о ботах
-    Собирает данные из базы и кэширует их для быстрого доступа
+    Bot information manager
+    Collects data from database and caches it for fast access
     """
     
     def __init__(self, database_manager, action_hub, telegram_api, telegram_polling, logger, cache_manager, settings_manager, webhook_manager):
@@ -20,33 +20,33 @@ class BotInfoManager:
         self.cache_manager = cache_manager
         self.webhook_manager = webhook_manager
         
-        # Получаем TTL из конфига bot_hub
+        # Get TTL from bot_hub config
         bot_hub_settings = settings_manager.get_plugin_settings("bot_hub")
-        self._bot_ttl = bot_hub_settings.get('cache_ttl', 315360000)  # Вечный кэш
-        self._error_ttl = bot_hub_settings.get('error_cache_ttl', 300)  # Кэш ошибок
+        self._bot_ttl = bot_hub_settings.get('cache_ttl', 315360000)  # Eternal cache
+        self._error_ttl = bot_hub_settings.get('error_cache_ttl', 300)  # Error cache
     
     def _get_bot_cache_key(self, bot_id: int) -> str:
-        """Генерация ключа кэша для бота по bot_id"""
+        """Generate cache key for bot by bot_id"""
         return f"bot:{bot_id}"
     
     def _get_token_cache_key(self, bot_token: str) -> str:
-        """Генерация ключа кэша для бота по токену"""
+        """Generate cache key for bot by token"""
         return f"bot:token:{bot_token}"
     
     def _format_token_for_logs(self, bot_token: str) -> str:
         """
-        Форматирование токена для логов: первые 15 символов
-        Формат токена: {bot_id}:{secret}, где bot_id можно извлечь из начала
+        Format token for logs: first 15 characters
+        Token format: {bot_id}:{secret}, where bot_id can be extracted from start
         """
         if not bot_token:
             return "[Bot-Token: unknown]"
         
-        # Берем первые 15 символов (обычно это bot_id + часть секрета)
+        # Take first 15 characters (usually bot_id + part of secret)
         return f"[Bot-Token: {bot_token[:15]}...]"
     
     async def _get_telegram_bot_info(self, bot_token: str) -> Dict[str, Any]:
         """
-        Получение информации о боте через Telegram API
+        Get bot information through Telegram API
         """
         try:
             result = await self.telegram_api.get_bot_info(bot_token)
@@ -55,18 +55,18 @@ class BotInfoManager:
                 return result.get('response_data', {})
             else:
                 token_info = self._format_token_for_logs(bot_token)
-                self.logger.warning(f"{token_info} Не удалось получить информацию о боте: {result.get('error', 'Неизвестная ошибка')}")
+                self.logger.warning(f"{token_info} Failed to get bot information: {result.get('error', 'Unknown error')}")
                 return {}
                 
         except Exception as e:
             token_info = self._format_token_for_logs(bot_token)
-            self.logger.error(f"{token_info} Ошибка получения информации о боте через Telegram API: {e}")
+            self.logger.error(f"{token_info} Error getting bot information through Telegram API: {e}")
             return {}
     
     async def get_telegram_bot_info_by_token(self, bot_token: str) -> Dict[str, Any]:
         """
-        Получение полной информации о боте по токену (с вечным кэшированием)
-        Возвращает результат в стандартном формате ActionHub
+        Get full bot information by token (with eternal caching)
+        Returns result in standard ActionHub format
         """
         try:
             if not bot_token:
@@ -74,60 +74,60 @@ class BotInfoManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "bot_token обязателен"
+                        "message": "bot_token is required"
                     }
                 }
             
-            # Проверяем кэш
+            # Check cache
             cache_key = self._get_token_cache_key(bot_token)
             cached_data = await self.cache_manager.get(cache_key)
             if cached_data:
-                # Проверяем, это ошибка или данные
+                # Check if it's error or data
                 if cached_data.get('_error'):
-                    # Это кэшированная ошибка
+                    # This is cached error
                     return {
                         "result": "error",
                         "error": {
                             "code": cached_data.get('code', 'UNKNOWN_ERROR'),
-                            "message": cached_data.get('message', 'Неизвестная ошибка')
+                            "message": cached_data.get('message', 'Unknown error')
                         }
                     }
                 else:
-                    # Это данные бота
+                    # This is bot data
                     return {"result": "success", "response_data": cached_data}
             
-            # Получаем информацию о боте через Telegram API
-            # bot_id недоступен в этом методе, так как он вызывается только по токену
+            # Get bot information through Telegram API
+            # bot_id unavailable in this method, as it's called only by token
             bot_info = await self._get_telegram_bot_info(bot_token)
             
-            # Формируем результат в стандартном формате
+            # Form result in standard format
             if bot_info and bot_info.get('telegram_bot_id'):
-                # Сохраняем в кэш только данные (без обертки)
+                # Save to cache only data (without wrapper)
                 await self.cache_manager.set(cache_key, bot_info, ttl=self._bot_ttl)
                 return {
                     "result": "success",
                     "response_data": bot_info
                 }
             else:
-                # Кэшируем ошибку с коротким TTL
+                # Cache error with short TTL
                 error_data = {
                     '_error': True,
                     'code': 'API_ERROR',
-                    'message': 'Не удалось получить информацию о боте'
+                    'message': 'Failed to get bot information'
                 }
                 await self.cache_manager.set(cache_key, error_data, ttl=self._error_ttl)
                 return {
                     "result": "error",
                     "error": {
                         "code": "API_ERROR",
-                        "message": "Не удалось получить информацию о боте"
+                        "message": "Failed to get bot information"
                     }
                 }
             
         except Exception as e:
             token_info = self._format_token_for_logs(bot_token)
-            self.logger.error(f"{token_info} Ошибка получения информации о боте: {e}")
-            # Кэшируем ошибку с коротким TTL
+            self.logger.error(f"{token_info} Error getting bot information: {e}")
+            # Cache error with short TTL
             error_data = {
                 '_error': True,
                 'code': 'INTERNAL_ERROR',
@@ -144,45 +144,45 @@ class BotInfoManager:
     
     async def get_bot_info(self, bot_id: int, force_refresh: bool = False) -> Dict[str, Any]:
         """
-        Получение полной информации о боте из базы данных (с кэшированием)
-        Возвращает универсальную структуру: {"result": "success/error", "error": "...", "response_data": {...}}
+        Get full bot information from database (with caching)
+        Returns universal structure: {"result": "success/error", "error": "...", "response_data": {...}}
         """
         try:
-            # Проверяем кэш
+            # Check cache
             cache_key = self._get_bot_cache_key(bot_id)
             if not force_refresh:
                 cached_data = await self.cache_manager.get(cache_key)
                 if cached_data:
-                    # Проверяем, это ошибка или данные
+                    # Check if it's error or data
                     if cached_data.get('_error'):
-                        # Это кэшированная ошибка
+                        # This is cached error
                         return {
                             "result": "error",
                             "error": {
                                 "code": cached_data.get('code', 'UNKNOWN_ERROR'),
-                                "message": cached_data.get('message', 'Неизвестная ошибка')
+                                "message": cached_data.get('message', 'Unknown error')
                             }
                         }
                     else:
-                        # Это данные бота
+                        # This is bot data
                         return {"result": "success", "response_data": cached_data}
             
-            # Собираем информацию из базы
+            # Collect information from database
             result = await self._collect_bot_info_from_db(bot_id)
             
-            # Проверяем, есть ли ошибка
+            # Check if there's an error
             if result.get('error'):
                 error_info = result['error']
                 error_type = error_info.get('type')
                 
                 if error_type == 'NOT_FOUND':
                     error_code = 'NOT_FOUND'
-                    error_message = f'Бот {bot_id} не найден в базе данных'
+                    error_message = f'Bot {bot_id} not found in database'
                 else:  # INTERNAL_ERROR
                     error_code = 'INTERNAL_ERROR'
-                    error_message = error_info.get('message', 'Ошибка получения информации о боте из БД')
+                    error_message = error_info.get('message', 'Error getting bot information from DB')
                 
-                # Кэшируем ошибку с коротким TTL
+                # Cache error with short TTL
                 error_data = {
                     '_error': True,
                     'code': error_code,
@@ -197,39 +197,39 @@ class BotInfoManager:
                     }
                 }
             
-            # Получаем данные бота
+            # Get bot data
             bot_info = result.get('bot_info')
             if not bot_info:
-                # На всякий случай (не должно случиться, но для безопасности)
+                # Just in case (shouldn't happen, but for safety)
                 error_data = {
                     '_error': True,
                     'code': 'INTERNAL_ERROR',
-                    'message': 'Не удалось получить данные о боте'
+                    'message': 'Failed to get bot data'
                 }
                 await self.cache_manager.set(cache_key, error_data, ttl=self._error_ttl)
                 return {
                     "result": "error",
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": "Не удалось получить данные о боте"
+                        "message": "Failed to get bot data"
                     }
                 }
             
-            # Сохраняем в кэш только данные (без обертки)
+            # Save to cache only data (without wrapper)
             await self.cache_manager.set(cache_key, bot_info, ttl=self._bot_ttl)
             
-            # Сохраняем маппинг tenant_id -> bot_id для быстрого доступа
+            # Save mapping tenant_id -> bot_id for fast access
             tenant_id = bot_info.get('tenant_id')
             if tenant_id:
                 tenant_bot_id_key = f"tenant:{tenant_id}:bot_id"
                 await self.cache_manager.set(tenant_bot_id_key, bot_id, ttl=self._bot_ttl)
             
-            # Формируем универсальную структуру для возврата
+            # Form universal structure for return
             return {"result": "success", "response_data": bot_info}
                 
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Неожиданная ошибка получения информации о боте: {e}")
-            # Кэшируем ошибку с коротким TTL
+            self.logger.error(f"[Bot-{bot_id}] Unexpected error getting bot information: {e}")
+            # Cache error with short TTL
             error_data = {
                 '_error': True,
                 'code': 'INTERNAL_ERROR',
@@ -246,36 +246,36 @@ class BotInfoManager:
     
     async def get_bot_info_by_tenant_id(self, tenant_id: int) -> Dict[str, Any]:
         """
-        Получение информации о боте по tenant_id (с кэшированием)
-        Возвращает универсальную структуру: {"result": "success/error", "error": "...", "response_data": {...}}
+        Get bot information by tenant_id (with caching)
+        Returns universal structure: {"result": "success/error", "error": "...", "response_data": {...}}
         """
         try:
-            # Получаем мастер-репозиторий
+            # Get master repository
             master_repo = self.database_manager.get_master_repository()
             
-            # Получаем bot_id через get_bot_id_by_tenant_id (использует кэш маппинга)
-            # Но у нас нет прямого доступа к tenant_cache, поэтому используем прямой запрос
+            # Get bot_id through get_bot_id_by_tenant_id (uses cache mapping)
+            # But we don't have direct access to tenant_cache, so use direct query
             bot_data = await master_repo.get_bot_by_tenant_id(tenant_id)
             
             if not bot_data:
-                return {"result": "error", "error": f"Бот для tenant {tenant_id} не найден"}
+                return {"result": "error", "error": f"Bot for tenant {tenant_id} not found"}
             
-            # Сырые данные из БД используют 'id'
+            # Raw data from DB uses 'id'
             bot_id = bot_data.get('id')
             if not bot_id:
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Не удалось получить bot_id для tenant {tenant_id}"
+                        "message": f"Failed to get bot_id for tenant {tenant_id}"
                     }
                 }
             
-            # Используем существующий метод get_bot_info (с кэшированием)
+            # Use existing get_bot_info method (with caching)
             return await self.get_bot_info(bot_id, force_refresh=False)
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения информации о боте: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting bot information: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -285,12 +285,12 @@ class BotInfoManager:
             }
     
     async def load_all_bots_cache(self) -> List[Dict[str, Any]]:
-        """Загрузка кэша для всех ботов при запуске сервиса"""
+        """Load cache for all bots on service startup"""
         try:
-            # Получаем мастер-репозиторий
+            # Get master repository
             master_repo = self.database_manager.get_master_repository()
             
-            # Получаем всех ботов
+            # Get all bots
             all_bots = await master_repo.get_all_bots()
             
             loaded_count = 0
@@ -299,111 +299,111 @@ class BotInfoManager:
             for bot_data in all_bots:
                 bot_id = bot_data.get('id')
                 if bot_id:
-                    # Получаем команды для этого бота
+                    # Get commands for this bot
                     commands = await master_repo.get_commands_by_bot(bot_id)
                     
-                    # Формируем структуру данных используя унифицированный метод
-                    # Это гарантирует единообразие формата данных в кэше
+                    # Form data structure using unified method
+                    # This guarantees data format consistency in cache
                     bot_info = self._format_bot_info(bot_data, commands)
                     
-                    # Если данные некорректны - пропускаем (bot_token может быть None - это нормально)
+                    # If data incorrect - skip (bot_token can be None - this is normal)
                     if not bot_info.get('tenant_id'):
-                        self.logger.warning(f"[Bot-{bot_id}] Пропущен при загрузке кэша: отсутствует tenant_id")
+                        self.logger.warning(f"[Bot-{bot_id}] Skipped on cache load: tenant_id missing")
                         continue
                     
-                    # Сохраняем в кэш только данные (без обертки)
+                    # Save to cache only data (without wrapper)
                     cache_key = self._get_bot_cache_key(bot_id)
                     await self.cache_manager.set(cache_key, bot_info, ttl=self._bot_ttl)
                     
-                    # Сохраняем маппинг tenant_id -> bot_id для быстрого доступа
+                    # Save mapping tenant_id -> bot_id for fast access
                     tenant_id = bot_info.get('tenant_id')
                     if tenant_id:
                         tenant_bot_id_key = f"tenant:{tenant_id}:bot_id"
                         await self.cache_manager.set(tenant_bot_id_key, bot_id, ttl=self._bot_ttl)
                     
-                    # Для возврата оборачиваем в формат ответа
+                    # For return wrap in response format
                     loaded_bots.append({"result": "success", "response_data": bot_info})
                     loaded_count += 1
             
-            self.logger.info(f"Загружено {loaded_count} ботов в кэш")
+            self.logger.info(f"Loaded {loaded_count} bots into cache")
             
             return loaded_bots
             
         except Exception as e:
-            self.logger.error(f"Ошибка загрузки кэша всех ботов: {e}")
+            self.logger.error(f"Error loading cache for all bots: {e}")
             return []
     
     async def refresh_bot_info(self, bot_id: int) -> bool:
-        """Принудительное обновление информации о боте"""
+        """Force refresh bot information"""
         try:
             await self.get_bot_info(bot_id, force_refresh=True)
             return True
             
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка обновления информации о боте: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error refreshing bot information: {e}")
             return False
     
     async def clear_bot_cache(self, bot_id: int = None) -> bool:
-        """Очистка кэша для конкретного бота или всего кэша"""
+        """Clear cache for specific bot or entire cache"""
         try:
             if bot_id:
                 cache_key = self._get_bot_cache_key(bot_id)
-                # Получаем bot_info чтобы узнать tenant_id
+                # Get bot_info to know tenant_id
                 bot_info = await self.cache_manager.get(cache_key)
                 if bot_info:
                     tenant_id = bot_info.get('tenant_id')
                     if tenant_id:
-                        # Очищаем маппинг tenant -> bot_id
+                        # Clear mapping tenant -> bot_id
                         tenant_bot_id_key = f"tenant:{tenant_id}:bot_id"
                         await self.cache_manager.delete(tenant_bot_id_key)
                 
-                # Очищаем структурированные данные бота
+                # Clear structured bot data
                 await self.cache_manager.delete(cache_key)
-                self.logger.info(f"[Bot-{bot_id}] Кэш очищен")
+                self.logger.info(f"[Bot-{bot_id}] Cache cleared")
             else:
-                # Очищаем все ключи ботов по паттерну
+                # Clear all bot keys by pattern
                 await self.cache_manager.invalidate_pattern("bot:*")
-                # Очищаем все маппинги tenant -> bot_id
+                # Clear all mappings tenant -> bot_id
                 await self.cache_manager.invalidate_pattern("tenant:*:bot_id")
-                self.logger.info("Весь кэш ботов очищен")
+                self.logger.info("All bot cache cleared")
             
             return True
             
         except Exception as e:
-            self.logger.error(f"Ошибка очистки кэша: {e}")
+            self.logger.error(f"Error clearing cache: {e}")
             return False
     
     async def sync_bot_commands(self, bot_id: int, command_list: List[Dict[str, Any]]) -> bool:
         """
-        Синхронизация команд бота: удаление старых → сохранение новых → обновление кэша
+        Sync bot commands: delete old → save new → update cache
         """
         try:
-            # Получаем мастер-репозиторий
+            # Get master repository
             master_repo = self.database_manager.get_master_repository()
             
-            # Удаляем все существующие команды для бота
+            # Delete all existing commands for bot
             await master_repo.delete_commands_by_bot(bot_id)
             
-            # Сохраняем новые команды
+            # Save new commands
             saved_count = await master_repo.save_commands_by_bot(bot_id, command_list)
             
-            # Обновляем кэш
+            # Update cache
             cache_key = self._get_bot_cache_key(bot_id)
             cached_bot_info = await self.cache_manager.get(cache_key)
             if cached_bot_info:
                 cached_bot_info['bot_command'] = command_list
                 await self.cache_manager.set(cache_key, cached_bot_info, ttl=self._bot_ttl)
             
-            self.logger.info(f"[Bot-{bot_id}] Сохранено {saved_count} команд в БД")
+            self.logger.info(f"[Bot-{bot_id}] Saved {saved_count} commands to DB")
             return True
             
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка синхронизации команд: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error syncing commands: {e}")
             return False
     
     async def create_or_update_bot(self, bot_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Создание или обновление бота: управление БД + кэшем
+        Create or update bot: manage DB + cache
         """
         try:
             tenant_id = bot_data.get('tenant_id')
@@ -412,14 +412,14 @@ class BotInfoManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "tenant_id обязателен в bot_data"
+                        "message": "tenant_id is required in bot_data"
                     }
                 }
             
-            # Получаем мастер-репозиторий
+            # Get master repository
             master_repo = self.database_manager.get_master_repository()
             
-            # Ищем существующего бота для этого тенанта
+            # Find existing bot for this tenant
             existing_bot = None
             all_bots = await master_repo.get_all_bots()
             for bot in all_bots:
@@ -430,30 +430,30 @@ class BotInfoManager:
             bot_id = None
             action = None
             
-            # Получаем токен из данных (может быть None если не передан из конфига)
+            # Get token from data (can be None if not provided from config)
             bot_token = bot_data.get('bot_token')
-            # Нормализуем: пустые строки и строки только с пробелами превращаем в None
-            # Это нужно для корректной обработки случая, когда токен не указан в конфиге
+            # Normalize: empty strings and strings with only spaces convert to None
+            # This is needed for correct handling when token not specified in config
             if bot_token is not None and not bot_token.strip():
                 bot_token = None
             
-            # Получаем информацию о боте через Telegram API (только если токен передан)
+            # Get bot information through Telegram API (only if token provided)
             telegram_info = {}
             if bot_token:
                 telegram_info = await self._get_telegram_bot_info(bot_token)
                     
             if existing_bot:
-                # Обновляем существующего бота
+                # Update existing bot
                 bot_id = existing_bot.get('id')
                 update_data = {
                     'is_active': bot_data.get('is_active', True)
                 }
                 
-                # Обновляем токен только если он передан (приоритет конфига)
+                # Update token only if provided (config priority)
                 if bot_token is not None:
                     update_data['bot_token'] = bot_token
                 
-                # Добавляем данные из Telegram API (только если токен был передан и валиден)
+                # Add data from Telegram API (only if token was provided and valid)
                 if telegram_info:
                     update_data.update({
                         'telegram_bot_id': telegram_info.get('telegram_bot_id'),
@@ -464,22 +464,22 @@ class BotInfoManager:
                 update_success = await master_repo.update_bot(bot_id, update_data)
                 
                 if not update_success:
-                    return {"result": "error", "error": f"Не удалось обновить бота {bot_id}"}
+                    return {"result": "error", "error": f"Failed to update bot {bot_id}"}
                 
                 action = "updated"
                 if bot_token is not None:
-                    self.logger.info(f"[Tenant-{tenant_id}] [Bot-{bot_id}] Обновлен бот (токен обновлен из конфига)")
+                    self.logger.info(f"[Tenant-{tenant_id}] [Bot-{bot_id}] Bot updated (token updated from config)")
                 else:
-                    self.logger.info(f"[Tenant-{tenant_id}] [Bot-{bot_id}] Обновлен бот (токен из БД сохранен)")
+                    self.logger.info(f"[Tenant-{tenant_id}] [Bot-{bot_id}] Bot updated (token from DB preserved)")
             else:
-                # Создаем нового бота (токен опционален, можно установить позже через мастер-бота)
+                # Create new bot (token optional, can be set later through master bot)
                 create_data = {
                     'tenant_id': tenant_id,
-                    'bot_token': bot_token,  # Может быть None, если токен не передан
+                    'bot_token': bot_token,  # Can be None if token not provided
                     'is_active': bot_data.get('is_active', True)
                 }
                 
-                # Добавляем данные из Telegram API (только если токен был передан и валиден)
+                # Add data from Telegram API (only if token was provided and valid)
                 if telegram_info:
                     create_data.update({
                         'telegram_bot_id': telegram_info.get('telegram_bot_id'),
@@ -494,14 +494,14 @@ class BotInfoManager:
                         "result": "error",
                         "error": {
                             "code": "INTERNAL_ERROR",
-                            "message": "Не удалось создать бота"
+                            "message": "Failed to create bot"
                         }
                     }
                 
                 action = "created"
-                self.logger.info(f"[Tenant-{tenant_id}] [Bot-{bot_id}] Создан новый бот")
+                self.logger.info(f"[Tenant-{tenant_id}] [Bot-{bot_id}] New bot created")
             
-            # Обновляем кэш - получаем свежие данные из БД
+            # Update cache - get fresh data from DB
             await self.get_bot_info(bot_id, force_refresh=True)
             
             return {
@@ -513,7 +513,7 @@ class BotInfoManager:
             }
             
         except Exception as e:
-            self.logger.error(f"Ошибка создания/обновления бота: {e}")
+            self.logger.error(f"Error creating/updating bot: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -522,12 +522,12 @@ class BotInfoManager:
                 }
             }
     
-    # === Приватные методы ===
+    # === Private methods ===
     
     def _format_bot_info(self, bot_data: Dict[str, Any], commands: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Формирование унифицированной структуры bot_info из данных бота и команд
-        Используется для единообразия формата данных в кэше
+        Form unified bot_info structure from bot data and commands
+        Used for data format consistency in cache
         """
         return {
             'bot_id': bot_data.get('id'),
@@ -542,29 +542,29 @@ class BotInfoManager:
     
     async def _collect_bot_info_from_db(self, bot_id: int) -> Dict[str, Any]:
         """
-        Сбор всей информации о боте из базы данных
-        Возвращает структуру: {'bot_info': Dict | None, 'error': Dict | None}
-        - Если успех: {'bot_info': {...}, 'error': None}
-        - Если NOT_FOUND: {'bot_info': None, 'error': {'type': 'NOT_FOUND'}}
-        - Если INTERNAL_ERROR: {'bot_info': None, 'error': {'type': 'INTERNAL_ERROR', 'message': '...'}}
+        Collect all bot information from database
+        Returns structure: {'bot_info': Dict | None, 'error': Dict | None}
+        - If success: {'bot_info': {...}, 'error': None}
+        - If NOT_FOUND: {'bot_info': None, 'error': {'type': 'NOT_FOUND'}}
+        - If INTERNAL_ERROR: {'bot_info': None, 'error': {'type': 'INTERNAL_ERROR', 'message': '...'}}
         """
         try:
-            # Получаем мастер-репозиторий
+            # Get master repository
             master_repo = self.database_manager.get_master_repository()
             
-            # Получаем данные бота
+            # Get bot data
             bot_data = await master_repo.get_bot_by_id(bot_id)
             if not bot_data:
-                self.logger.warning(f"Бот {bot_id} не найден в базе данных")
+                self.logger.warning(f"Bot {bot_id} not found in database")
                 return {
                     'bot_info': None,
                     'error': {'type': 'NOT_FOUND'}
                 }
             
-            # Получаем команды бота
+            # Get bot commands
             commands = await master_repo.get_commands_by_bot(bot_id)
             
-            # Формируем результат используя унифицированный метод
+            # Form result using unified method
             bot_info = self._format_bot_info(bot_data, commands)
             return {
                 'bot_info': bot_info,
@@ -572,8 +572,8 @@ class BotInfoManager:
             }
             
         except Exception as e:
-            # INTERNAL_ERROR - ошибка при запросе к БД
-            self.logger.error(f"[Bot-{bot_id}] Ошибка получения информации о боте из БД: {e}")
+            # INTERNAL_ERROR - error on DB query
+            self.logger.error(f"[Bot-{bot_id}] Error getting bot information from DB: {e}")
             return {
                 'bot_info': None,
                 'error': {
@@ -584,7 +584,7 @@ class BotInfoManager:
     
     async def get_bot_status(self, data: dict) -> Dict[str, Any]:
         """
-        Получение статуса работы бота: пулинг ИЛИ вебхуки
+        Get bot working status: polling OR webhooks
         """
         try:
             bot_id = data.get('bot_id')
@@ -593,19 +593,19 @@ class BotInfoManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "bot_id обязателен"
+                        "message": "bot_id is required"
                     }
                 }
             
-            # Получаем информацию о боте из БД (используем кэш)
+            # Get bot information from DB (use cache)
             bot_info = await self.get_bot_info(bot_id, force_refresh=False)
             is_active = bot_info.get('response_data', {}).get('is_active')
             bot_token = bot_info.get('response_data', {}).get('bot_token')
             
-            # Проверяем активность пулинга
+            # Check polling activity
             is_polling = self.telegram_polling.is_bot_polling(bot_id)
             
-            # Проверяем активность вебхука (если есть токен)
+            # Check webhook activity (if token exists)
             is_webhook_active = False
             if bot_token:
                 try:
@@ -613,9 +613,9 @@ class BotInfoManager:
                     if webhook_info.get('result') == 'success':
                         is_webhook_active = webhook_info.get('response_data', {}).get('is_webhook_active', False)
                 except Exception as e:
-                    self.logger.warning(f"[Bot-{bot_id}] Ошибка проверки статуса вебхука: {e}")
+                    self.logger.warning(f"[Bot-{bot_id}] Error checking webhook status: {e}")
             
-            # Общий статус работы: пулинг ИЛИ вебхуки
+            # Overall working status: polling OR webhooks
             is_working = is_polling or is_webhook_active
             
             return {
@@ -629,7 +629,7 @@ class BotInfoManager:
             }
                 
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка получения статуса бота: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error getting bot status: {e}")
             return {
                 "result": "error",
                 "error": {

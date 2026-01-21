@@ -1,22 +1,22 @@
 """
-Тесты кэширования моделей валидации
+Tests for validation model caching
 """
 
 
 class TestCaching:
-    """Тесты кэширования"""
+    """Caching tests"""
 
     def test_caching(self, validator):
-        """Проверка, что валидация работает корректно при повторных вызовах (кэширование)"""
-        # Первый вызов
+        """Check that validation works correctly on repeated calls (caching)"""
+        # First call
         result1 = validator.validate_action_input('test_service', 'simple_action', {'name': 'Test'})
-        assert result1.get('result') == 'success', "Первый вызов должен быть успешным"
+        assert result1.get('result') == 'success', "First call should be successful"
         
-        # Второй вызов с другими данными (должен использовать кэш модели, но это детали реализации)
+        # Second call with different data (should use model cache, but this is implementation detail)
         result2 = validator.validate_action_input('test_service', 'simple_action', {'name': 'Test2'})
-        assert result2.get('result') == 'success', "Второй вызов должен быть успешным"
+        assert result2.get('result') == 'success', "Second call should be successful"
         
-        # Третий вызов с невалидными данными
+        # Third call with invalid data
         result3 = validator.validate_action_input('test_service', 'simple_action', {})
-        assert result3.get('result') == 'error', "Вызов без обязательных полей должен вернуть ошибку"
+        assert result3.get('result') == 'error', "Call without required fields should return error"
 

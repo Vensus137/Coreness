@@ -1,5 +1,5 @@
 """
-APIClient - HTTP клиент для Telegram Bot API
+APIClient - HTTP client for Telegram Bot API
 """
 
 import json
@@ -9,7 +9,7 @@ import aiohttp
 
 
 class APIClient:
-    """HTTP клиент для Telegram Bot API"""
+    """HTTP client for Telegram Bot API"""
     
     def __init__(self, session: aiohttp.ClientSession, rate_limiter, **kwargs):
         self.logger = kwargs['logger']
@@ -18,20 +18,20 @@ class APIClient:
         self.rate_limiter = rate_limiter
     
     async def make_request(self, bot_token: str, method: str, payload: dict) -> Dict[str, Any]:
-        """Выполнение запроса к Telegram API без rate limiting (обычные запросы)"""
+        """Execute request to Telegram API without rate limiting (regular requests)"""
         return await self._make_http_request(bot_token, method, payload)
     
     async def make_request_with_limit(self, bot_token: str, method: str, payload: dict, bot_id: int = 0, chat_id: int = 0) -> Dict[str, Any]:
-        """Выполнение запроса к Telegram API с rate limiting (для спам-действий)"""
-        # Если bot_id не передан, извлекаем его из токена
+        """Execute request to Telegram API with rate limiting (for spam actions)"""
+        # If bot_id not provided, extract it from token
         if not bot_id:
             try:
                 bot_id = int(bot_token.split(':')[0])
             except (ValueError, IndexError):
-                self.logger.warning("Не удалось извлечь bot_id из токена, выполняем без rate limiting")
+                self.logger.warning("Failed to extract bot_id from token, executing without rate limiting")
                 return await self._make_http_request(bot_token, method, payload)
         
-        # Используем rate limiter для выполнения запроса
+        # Use rate limiter to execute request
         return await self.rate_limiter.execute_with_rate_limit(
             self._make_http_request,
             token=bot_token,
@@ -42,29 +42,29 @@ class APIClient:
         )
     
     async def _make_http_request(self, token: str, method: str, payload: dict) -> Dict[str, Any]:
-        """Выполнение HTTP запроса к Telegram API (внутренний метод)"""
+        """Execute HTTP request to Telegram API (internal method)"""
         try:
-            # Формируем URL
+            # Build URL
             url = f"{self.base_url}{token}/{method}"
             
-            # Очищаем payload от None значений
+            # Clean payload from None values
             clean_payload = {k: v for k, v in payload.items() if v is not None}
             
-            # Выполняем HTTP запрос
+            # Execute HTTP request
             async with self.session.post(
                 url,
                 json=clean_payload,
                 headers={'Content-Type': 'application/json'}
             ) as response:
                 
-                # Получаем ответ
+                # Get response
                 response_data = await response.json()
                 
-                # Обрабатываем ответ
+                # Process response
                 return self._process_response(response.status, response_data)
                 
         except aiohttp.ClientTimeout:
-            self.logger.warning(f"Таймаут запроса к API: {method}")
+            self.logger.warning(f"Request timeout to API: {method}")
             return {
                 "result": "timeout",
                 "error": {
@@ -74,7 +74,7 @@ class APIClient:
             }
             
         except aiohttp.ClientError as e:
-            self.logger.error(f"Ошибка сети при запросе к API: {method} - {e}")
+            self.logger.error(f"Network error on API request: {method} - {e}")
             return {
                 "result": "timeout",
                 "error": {
@@ -84,7 +84,7 @@ class APIClient:
             }
             
         except json.JSONDecodeError as e:
-            self.logger.error(f"Ошибка парсинга JSON ответа: {method} - {e}")
+            self.logger.error(f"JSON parsing error in response: {method} - {e}")
             return {
                 "result": "error",
                 "error": {
@@ -94,7 +94,7 @@ class APIClient:
             }
             
         except Exception as e:
-            self.logger.error(f"Неожиданная ошибка при запросе к API: {method} - {e}")
+            self.logger.error(f"Unexpected error on API request: {method} - {e}")
             return {
                 "result": "error",
                 "error": {
@@ -104,9 +104,9 @@ class APIClient:
             }
     
     def _process_response(self, status_code: int, response_data: dict) -> Dict[str, Any]:
-        """Обработка ответа от Telegram API"""
+        """Process response from Telegram API"""
         
-        # Успешный ответ (200)
+        # Successful response (200)
         if status_code == 200:
             if response_data.get('ok', False):
                 return {
@@ -114,11 +114,11 @@ class APIClient:
                     "response_data": response_data.get('result', {})
                 }
             else:
-                # Telegram API вернул ошибку
+                # Telegram API returned error
                 error_code = response_data.get('error_code', 0)
                 description = response_data.get('description', 'Unknown error')
                 
-                # Определяем тип ошибки
+                # Determine error type
                 if error_code == 401:
                     return {
                         "result": "not_found",
@@ -144,7 +144,7 @@ class APIClient:
                         }
                     }
         
-        # HTTP ошибки
+        # HTTP errors
         elif status_code == 401:
             return {
                 "result": "not_found",
@@ -162,7 +162,7 @@ class APIClient:
                 }
             }
         elif status_code >= 400:
-            # Для HTTP ошибок пытаемся извлечь описание из response_data
+            # For HTTP errors try to extract description from response_data
             description = response_data.get('description', f'HTTP {status_code}')
             return {
                 "result": "error",

@@ -1,5 +1,5 @@
 """
-Локальные фикстуры для тестов scenario_processor
+Local fixtures for scenario_processor tests
 """
 import sys
 from pathlib import Path
@@ -7,13 +7,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-# Импортируем фикстуры из tests/conftest
+# Import fixtures from tests/conftest
 from tests.conftest import logger, module_logger, settings_manager  # noqa: F401
 
-# Автоматически добавляем родительскую директорию плагина в sys.path
-# Это позволяет использовать импорты вида "from scenario_engine.scenario_engine import ..."
-# вместо "from plugins.services.scenario_processor.scenario_engine.scenario_engine import ..."
-# и делает тесты независимыми от структуры папок выше уровня плагина
+# Automatically add parent plugin directory to sys.path
+# This allows using imports like "from scenario_engine.scenario_engine import ..."
+# instead of "from plugins.services.scenario_processor.scenario_engine.scenario_engine import ..."
+# and makes tests independent of folder structure above plugin level
 _plugin_dir = Path(__file__).parent.parent
 if str(_plugin_dir) not in sys.path:
     sys.path.insert(0, str(_plugin_dir))
@@ -21,7 +21,7 @@ if str(_plugin_dir) not in sys.path:
 
 @pytest.fixture
 def mock_data_loader():
-    """Создает мок DataLoader"""
+    """Create mock DataLoader"""
     mock = MagicMock()
     mock.load_scenarios_by_tenant = AsyncMock(return_value=[])
     mock.load_triggers_by_scenario = AsyncMock(return_value=[])
@@ -32,7 +32,7 @@ def mock_data_loader():
 
 @pytest.fixture
 def mock_action_hub():
-    """Создает мок ActionHub"""
+    """Create mock ActionHub"""
     mock = MagicMock()
     mock.execute_action = AsyncMock(return_value={"result": "success"})
     return mock
@@ -40,7 +40,7 @@ def mock_action_hub():
 
 @pytest.fixture
 def mock_condition_parser():
-    """Создает мок ConditionParser"""
+    """Create mock ConditionParser"""
     mock = MagicMock()
     mock.parse = MagicMock(return_value=True)
     return mock
@@ -48,15 +48,15 @@ def mock_condition_parser():
 
 @pytest.fixture
 def mock_placeholder_processor():
-    """Создает мок PlaceholderProcessor"""
+    """Create mock PlaceholderProcessor"""
     mock = MagicMock()
-    mock.process = AsyncMock(side_effect=lambda x, y: x)  # Возвращает как есть
+    mock.process = AsyncMock(side_effect=lambda x, y: x)  # Return as is
     return mock
 
 
 @pytest.fixture
 def mock_scenario_finder():
-    """Создает мок ScenarioFinder"""
+    """Create mock ScenarioFinder"""
     mock = MagicMock()
     mock.extract_tenant_id = MagicMock(return_value=1)
     mock.find_scenarios_by_event = AsyncMock(return_value=[])
@@ -65,8 +65,8 @@ def mock_scenario_finder():
 
 @pytest.fixture
 def mock_cache_manager():
-    """Создает мок CacheManager с сохранением состояния"""
-    cache_storage = {}  # Хранилище для кэша
+    """Create mock CacheManager with state preservation"""
+    cache_storage = {}  # Cache storage
     
     mock = MagicMock()
     
@@ -86,7 +86,7 @@ def mock_cache_manager():
         return True
     
     async def invalidate_pattern_side_effect(pattern):
-        # Простая реализация для тестов
+        # Simple implementation for tests
         keys_to_delete = [k for k in cache_storage.keys() if pattern.replace('*', '') in k]
         for key in keys_to_delete:
             del cache_storage[key]
@@ -103,9 +103,9 @@ def mock_cache_manager():
 
 @pytest.fixture
 def mock_settings_manager():
-    """Создает мок SettingsManager для тестов"""
+    """Create mock SettingsManager for tests"""
     mock = MagicMock()
-    # Настраиваем возврат настроек scenario_processor
+    # Configure return of scenario_processor settings
     mock.get_plugin_settings = MagicMock(return_value={
         'cache_ttl': 315360000
     })
@@ -114,10 +114,10 @@ def mock_settings_manager():
 
 @pytest.fixture
 def scenario_engine(mock_data_loader, logger, mock_action_hub, mock_condition_parser, mock_placeholder_processor, mock_cache_manager, mock_settings_manager):
-    """Создает ScenarioEngine для тестов"""
+    """Create ScenarioEngine for tests"""
     from scenario_engine.scenario_engine import ScenarioEngine
     
-    # Мокируем методы condition_parser, которые используются в ScenarioLoader
+    # Mock condition_parser methods used in ScenarioLoader
     mock_condition_parser.parse_condition_string = AsyncMock(return_value={
         'search_path': ['event_type', 'message']
     })

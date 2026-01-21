@@ -1,0 +1,110 @@
+# Changelog
+
+All notable changes to this project documented in this file.
+
+---
+
+## [1.0.3] - 2026-01-21
+
+### Added
+
+- Added AI models guide in English (`docs/en/AI_MODELS_GUIDE.md`)
+- Added complete English version of documentation — all main guides available in `docs/en/`
+- All configuration files and code comments translated to English
+
+### Technical Improvements
+
+- Created `extensions` level for plugins — allows easily adding additional plugins to extend platform functionality, which are not overwritten during updates
+- Updated plugin documentation — added description of extension system and usage rules
+
+---
+
+## [1.0.2] - 2026-01-16
+
+### ⚠️ BREAKING CHANGES
+
+- **Placeholders: Renaming modifier `time` → `seconds`** — modifier renamed for clarity and consistency. Functionality unchanged, but syntax changed: use `{duration|seconds}` instead of `{duration|time}` in all scenarios
+- **Placeholders: Renaming PostgreSQL formats `date_postgres`/`datetime_postgres` → `pg_date`/`pg_datetime`** — formats renamed for brevity. Update usage: `{timestamp|format:pg_date}` instead of `{timestamp|format:date_postgres}`, `{timestamp|format:pg_datetime}` instead of `{timestamp|format:datetime_postgres}`
+
+### Added
+
+- **Placeholders: Support for literal values in quotes** — now can use values directly in placeholders without passing through dictionary: `{'hello'|upper}`, `{'1d 2w'|seconds}`, `{'100'|+50}`. Supports single and double quotes with escaping (`'it\'s'`, `"say \"hi\""`)
+- **Placeholders: `shift` modifier for date shifting** — new modifier for working with dates in PostgreSQL style: `{created|shift:+1 day}`, `{created|shift:+1 year 2 months}`, `{created|shift:-2 hours}`. Supports all date formats (PostgreSQL, standard, ISO, timestamp), correctly handles months/years and month edges (e.g., Jan 31 + 1 month = Feb 29 in leap year)
+- **Placeholders: Modifiers for rounding dates to period start** — new modifiers for rounding dates to start of various periods: `to_date` (start of day), `to_hour` (start of hour), `to_minute` (start of minute), `to_second` (start of second), `to_week` (start of week - Monday), `to_month` (start of month), `to_year` (start of year). All return ISO format (`YYYY-MM-DD HH:MM:SS`). Examples: `{created|to_date}`, `{created|to_month|format:date}`
+
+---
+
+## [1.0.1] - 2026-01-15
+
+### Fixed
+- `get_tenants_list`: All tenant ID lists (`tenant_ids`, `public_tenant_ids`, `system_tenant_ids`) now returned sorted in ascending order
+
+### Technical Improvements
+- Simplified Docker management utility (`docker/compose`) — removed environment specification requirement for most commands, direct work with containers by name (e.g., `dc logs app-test`, `dc start app-test`), improved `logs` command with tail and follow support by default (last 100 lines + follow)
+
+---
+
+## [1.0.0] - 2025-12-31
+
+### 🎉 Version 1.0.0 Release
+
+Platform reached stable state and ready for full production use. During development from version 0.4.0 to 1.0.0 platform underwent significant improvements in all key aspects.
+
+### Architecture and Infrastructure
+
+- **PostgreSQL Migration** — transition from SQLite to PostgreSQL for improved performance, scalability and data storage reliability
+- **Telegram Webhooks** — webhook support instead of polling with automatic SSL certificate generation
+- **Deployment System** — deployment automation via GitHub Actions, deployment management utility with DB migration, backup and versioning support
+- **Automatic Backups** — background DB backup service with configurable interval and automatic rotation
+- **Database Access Control Views** — DB-level access control system via PostgreSQL views
+- **GitHub Webhooks** — automatic tenant synchronization on repository changes
+
+### AI and RAG (Retrieval-Augmented Generation)
+
+- **Vector Storage** — integration with pgvector for PostgreSQL, support for 1024-dimensional vector embeddings
+- **HNSW Index** — optimized vector search even on large data volumes
+- **RAG Actions** — `save_embedding`, `search_embedding`, `get_recent_chunks`, `delete_embedding` for working with vector storage
+- **RAG Integration in Completion** — `rag_chunks` parameter for automatic context formation from vector search
+- **Migration to Polza.ai** — transition from OpenRouter to universal AI provider with extended pricing and modality support
+
+### Scenarios and Actions
+
+- **Unified Storage Actions** — unified action set for working with Tenant Storage and User Storage (get/set/delete)
+- **Async Actions** — support for background execution of long operations (e.g., LLM requests) with waiting via `wait_for_action`
+- **Scheduled Scenarios** — scenario launch on schedule via cron expressions
+- **Dynamic Keyboards** — `build_keyboard` action for creating keyboards from arrays with templates
+- **Centralized Validation** — unified validation system for all action input parameters with structured errors
+- **Automatic Type Conversion** — automatic parameter type conversion when needed
+- **Caching System** — unified caching utility for all critical data (bots, tenants, scenarios, users)
+
+### Events and Triggers
+
+- **New Event Types** — group member events (`member_joined`, `member_left`), payment events (`pre_checkout_query`, `payment_successful`)
+- **Improved Conditions** — support for `$name` marker for fields in conditions, modifiers for placeholders (`exists`, `is_null`, `code`, `keys`, `expand`)
+- **Placeholders** — extended placeholder system with support for complex data structures, dot notation and array element access
+
+### Data Storage
+
+- **Tenant Storage** — tenant attribute storage (key-value) with support for complex structures (JSON objects, arrays, nested structures)
+- **User Storage** — user data storage for storing user settings and data
+- **Storage Search** — `get_users_by_storage_value` action for finding users by storage values
+
+### Payments and Invoices
+
+- **invoice_service Service** — complete action set for working with invoices: creation, sending, payment confirmation/rejection, getting information, cancellation
+- **Payment Processing** — automatic processing of `pre_checkout_query` and `payment_successful` events for working with Telegram Stars
+
+### Performance and Reliability Improvements
+
+- **Parallel Processing** — bots can process incoming events in parallel
+- **Synchronization Optimization** — improved bot and tenant synchronization performance
+- **Improved Error Handling** — structured error codes for all actions with fields `code`, `message`, `details`
+- **Test Environment** — separate test environment for checking changes before production rollout
+
+### Documentation
+
+- **Extended Documentation** — created guides for AI models, storage, scenarios, events, usage examples
+- **Quick Start** — separate guide for new users
+- **Usage Examples** — practical examples working with RAG, payments, storage and other features
+
+---

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Скрипт миграции данных из SQLite в PostgreSQL
-Переносит все данные из data/core.db в PostgreSQL базу данных
+Script for migrating data from SQLite to PostgreSQL
+Transfers all data from data/core.db to PostgreSQL database
 """
 
 import os
@@ -12,14 +12,14 @@ from pathlib import Path
 from sqlalchemy import create_engine, insert, text
 from sqlalchemy.orm import sessionmaker
 
-# Добавляем корень проекта в путь
+# Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# Настраиваем кодировку
+# Configure encoding
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 
-# Импорты из проекта (после добавления project_root в sys.path)
+# Project imports (after adding project_root to sys.path)
 from app.di_container import DIContainer  # noqa: E402
 from plugins.utilities.core.database_manager.models import Base  # noqa: E402
 from plugins.utilities.foundation.logger.logger import Logger  # noqa: E402
@@ -27,7 +27,7 @@ from plugins.utilities.foundation.plugins_manager.plugins_manager import Plugins
 from plugins.utilities.foundation.settings_manager.settings_manager import SettingsManager  # noqa: E402
 
 
-# Цвета для вывода
+# Colors for output
 class Colors:
     RED = '\033[91m'
     GREEN = '\033[92m'
@@ -36,10 +36,10 @@ class Colors:
     BOLD = '\033[1m'
     END = '\033[0m'
 
-# Порядок миграции таблиц (с учетом FK зависимостей)
+# Table migration order (considering FK dependencies)
 MIGRATION_ORDER = [
-    'tenant',              # Нет зависимостей
-    'id_sequence',         # Нет зависимостей
+    'tenant',              # No dependencies
+    'id_sequence',         # No dependencies
     'tenant_storage',      # → tenant
     'user_storage',        # → tenant
     'tenant_user',         # → tenant
@@ -52,60 +52,60 @@ MIGRATION_ORDER = [
     'invoice',             # → tenant
 ]
 
-# Размер батча для вставки данных
+# Batch size for data insertion
 BATCH_SIZE = 1000
 
 
 class SQLiteToPostgreSQLMigrator:
-    """Класс для миграции данных из SQLite в PostgreSQL"""
+    """Class for migrating data from SQLite to PostgreSQL"""
     
     def __init__(self):
-        """Инициализация мигратора"""
+        """Initialize migrator"""
         self.logger = Logger()
         self.log = self.logger.get_logger("migration")
         
-        # Инициализируем DI-контейнер для PostgreSQL
+        # Initialize DI container for PostgreSQL
         self._init_di_container()
         
-        # Подключаемся к базам данных
+        # Connect to databases
         self._connect_to_sqlite()
         self._connect_to_postgresql()
         
-        # Получаем карту таблиц
+        # Get table class map
         self.table_class_map = self.db_service.get_table_class_map()
     
     def _init_di_container(self):
-        """Инициализирует DI-контейнер для доступа к PostgreSQL"""
-        self.log.info("Инициализация DI-контейнера...")
+        """Initializes DI container for PostgreSQL access"""
+        self.log.info("Initializing DI container...")
         
         plugins_manager = PluginsManager(logger=self.logger)
         settings_manager = SettingsManager(logger=self.logger, plugins_manager=plugins_manager)
         
-        # Проверяем, запущены ли мы в Docker
+        # Check if we're running in Docker
         is_inside_docker = os.path.exists('/.dockerenv')
         
         if is_inside_docker:
-            # В Docker - используем настройки из конфига как есть (host будет именем сервиса)
+            # In Docker - use config settings as is (host will be service name)
             postgres_host = os.getenv('POSTGRES_HOST', 'postgres')
             postgres_port = os.getenv('POSTGRES_PORT', '5432')
         else:
-            # На хосте - переопределяем настройки для подключения через localhost
+            # On host - override settings for connection via localhost
             postgres_host = os.getenv('POSTGRES_HOST', 'localhost')
-            postgres_port = os.getenv('POSTGRES_PORT', None)  # Определим автоматически если не указан
+            postgres_port = os.getenv('POSTGRES_PORT', None)  # Auto-detect if not specified
             
-            # Автоматически определяем порт по окружению
+            # Auto-detect port by environment
             if postgres_port is None:
                 environment = os.getenv('ENVIRONMENT', '')
                 if environment == 'test':
-                    postgres_port = '5433'  # Test окружение использует порт 5433
+                    postgres_port = '5433'  # Test environment uses port 5433
                 else:
-                    postgres_port = '5432'  # Prod использует порт 5432
+                    postgres_port = '5432'  # Prod uses port 5432
         
         postgres_user = os.getenv('POSTGRES_USER', 'postgres')
         postgres_password = os.getenv('POSTGRES_PASSWORD', '')
         postgres_db = os.getenv('POSTGRES_DB', 'core_db')
         
-        # Переопределяем настройки в settings_manager перед созданием DI-контейнера
+        # Override settings in settings_manager before creating DI container
         original_get_plugin_settings = settings_manager.get_plugin_settings
         
         def patched_get_plugin_settings(self_ref, plugin_name: str):
@@ -116,7 +116,7 @@ class SQLiteToPostgreSQLMigrator:
                     settings['database'] = {}
                 if 'postgresql' not in settings['database']:
                     settings['database']['postgresql'] = {}
-                # Переопределяем настройки подключения
+                # Override connection settings
                 settings['database']['postgresql']['host'] = postgres_host
                 settings['database']['postgresql']['port'] = int(postgres_port)
                 settings['database']['postgresql']['username'] = postgres_user
@@ -125,13 +125,13 @@ class SQLiteToPostgreSQLMigrator:
                 settings['database']['postgresql']['database'] = postgres_db
             return settings
         
-        # Временно патчим метод для переопределения настроек
+        # Temporarily patch method to override settings
         import types
         settings_manager.get_plugin_settings = types.MethodType(patched_get_plugin_settings, settings_manager)
         
-        # Логируем применяемые настройки (только на хосте)
+        # Log applied settings (only on host)
         if not is_inside_docker:
-            self.log.info(f"Настройки PostgreSQL переопределены для хоста: {postgres_host}:{postgres_port}")
+            self.log.info(f"PostgreSQL settings overridden for host: {postgres_host}:{postgres_port}")
         
         self.di_container = DIContainer(
             logger=self.logger,
@@ -139,126 +139,126 @@ class SQLiteToPostgreSQLMigrator:
             settings_manager=settings_manager
         )
         
-        # Получаем database_manager
+        # Get database_manager
         self.db_service = self.di_container.get_utility_on_demand("database_manager")
         if not self.db_service:
-            raise RuntimeError("Не удалось получить database_manager из DI-контейнера")
+            raise RuntimeError("Failed to get database_manager from DI container")
         
-        self.log.info(f"DI-контейнер инициализирован (PostgreSQL: {postgres_host}:{postgres_port}/{postgres_db})")
+        self.log.info(f"DI container initialized (PostgreSQL: {postgres_host}:{postgres_port}/{postgres_db})")
     
     def _connect_to_sqlite(self):
-        """Подключается к SQLite базе данных"""
+        """Connects to SQLite database"""
         sqlite_path = project_root / "data" / "core.db"
         
         if not sqlite_path.exists():
-            raise FileNotFoundError(f"SQLite база данных не найдена: {sqlite_path}")
+            raise FileNotFoundError(f"SQLite database not found: {sqlite_path}")
         
         sqlite_url = f"sqlite:///{sqlite_path}"
         self.sqlite_engine = create_engine(sqlite_url, echo=False)
         self.sqlite_session_factory = sessionmaker(bind=self.sqlite_engine)
         
-        self.log.info(f"Подключено к SQLite: {sqlite_path}")
+        self.log.info(f"Connected to SQLite: {sqlite_path}")
     
     def _connect_to_postgresql(self):
-        """Подключается к PostgreSQL базе данных"""
-        # Проверяем, что текущая БД - PostgreSQL
+        """Connects to PostgreSQL database"""
+        # Check that current DB is PostgreSQL
         db_info = self.db_service.get_database_info()
         if db_info.get('type') != 'postgresql':
-            raise RuntimeError(f"Текущая БД не PostgreSQL, а {db_info.get('type')}")
+            raise RuntimeError(f"Current DB is not PostgreSQL, but {db_info.get('type')}")
         
         self.pg_engine = self.db_service.engine
         self.pg_session_factory = self.db_service.session_factory
         
-        self.log.info(f"Подключено к PostgreSQL: {db_info.get('url')}")
+        self.log.info(f"Connected to PostgreSQL: {db_info.get('url')}")
     
     def _clear_postgresql_database(self):
-        """Очищает PostgreSQL базу данных"""
-        self.print_info("Очищаю целевую БД (PostgreSQL)...")
+        """Clears PostgreSQL database"""
+        self.print_info("Clearing target DB (PostgreSQL)...")
         
         try:
             with self.pg_engine.begin() as conn:
-                # Удаляем все объекты в схеме public
+                # Remove all objects in public schema
                 conn.execute(text('DROP SCHEMA public CASCADE'))
                 conn.execute(text('CREATE SCHEMA public'))
                 conn.execute(text('GRANT ALL ON SCHEMA public TO postgres'))
                 conn.execute(text('GRANT ALL ON SCHEMA public TO public'))
-            
-            self.print_success("Целевая БД очищена")
+                
+            self.print_success("Target DB cleared")
         except Exception as e:
-            self.print_error(f"Ошибка очистки БД: {e}")
+            self.print_error(f"Error clearing DB: {e}")
             raise
     
     def _create_postgresql_schema(self):
-        """Создает схему в PostgreSQL"""
-        self.print_info("Создаю схему в PostgreSQL...")
+        """Creates schema in PostgreSQL"""
+        self.print_info("Creating schema in PostgreSQL...")
         
         try:
             Base.metadata.create_all(self.pg_engine)
-            self.print_success("Схема создана")
+            self.print_success("Schema created")
         except Exception as e:
-            self.print_error(f"Ошибка создания схемы: {e}")
+            self.print_error(f"Error creating schema: {e}")
             raise
     
     def _get_table_count(self, table_name: str, engine) -> int:
-        """Получает количество записей в таблице"""
+        """Gets record count in table"""
         with engine.connect() as conn:
             result = conn.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
             return result.scalar() or 0
     
     def _get_existing_parent_ids(self, parent_table_name: str) -> set:
-        """Получает множество существующих ID из родительской таблицы в PostgreSQL"""
+        """Gets set of existing IDs from parent table in PostgreSQL"""
         try:
             with self.pg_engine.connect() as conn:
                 result = conn.execute(text(f"SELECT id FROM {parent_table_name}"))
                 return {row[0] for row in result}
         except Exception as e:
-            self.logger.warning(f"Ошибка получения ID из {parent_table_name}: {e}")
+            self.logger.warning(f"Error getting IDs from {parent_table_name}: {e}")
             return set()
     
     def _get_foreign_key_relations(self, table_class) -> list:
-        """Получает список FK связей для таблицы: [(column_name, referenced_table_name, referenced_column_name)]"""
+        """Gets list of FK relations for table: [(column_name, referenced_table_name, referenced_column_name)]"""
         fk_relations = []
         for column in table_class.__table__.columns:
             for fk in column.foreign_keys:
-                # fk.column.table.name - имя таблицы, на которую ссылается FK
-                # fk.column.name - имя колонки в родительской таблице
+                # fk.column.table.name - table name referenced by FK
+                # fk.column.name - column name in parent table
                 fk_relations.append((column.name, fk.column.table.name, fk.column.name))
         return fk_relations
     
     def _migrate_table(self, table_name: str) -> bool:
-        """Мигрирует данные одной таблицы"""
+        """Migrates data for one table"""
         if table_name not in self.table_class_map:
-            self.print_warning(f"Таблица {table_name} не найдена в моделях, пропускаю")
+            self.print_warning(f"Table {table_name} not found in models, skipping")
             return True
         
         table_class = self.table_class_map[table_name]
         
-        # Получаем количество записей
+        # Get record count
         source_count = self._get_table_count(table_name, self.sqlite_engine)
         
         if source_count == 0:
-            self.print_info(f"Таблица {table_name} пуста, пропускаю")
+            self.print_info(f"Table {table_name} is empty, skipping")
             return True
         
-        self.print_info(f"Мигрирую таблицу {table_name} ({source_count} записей)...")
+        self.print_info(f"Migrating table {table_name} ({source_count} records)...")
         
         try:
-            # Получаем все записи из SQLite
+            # Get all records from SQLite
             with self.sqlite_session_factory() as sqlite_session:
                 records = sqlite_session.query(table_class).all()
             
             if not records:
                 return True
             
-            # Проверяем FK связи и получаем существующие ID родительских таблиц
+            # Check FK relations and get existing IDs from parent tables
             fk_relations = self._get_foreign_key_relations(table_class)
             parent_ids_map = {}
             for fk_column, parent_table, _parent_column in fk_relations:
                 parent_ids_map[fk_column] = self._get_existing_parent_ids(parent_table)
                 if not parent_ids_map[fk_column]:
-                    self.print_warning(f"  Родительская таблица {parent_table} пуста, все записи будут пропущены")
+                    self.print_warning(f"  Parent table {parent_table} is empty, all records will be skipped")
             
-            # Фильтруем записи по FK - оставляем только те, у которых есть родительские записи
+            # Filter records by FK - keep only those with parent records
             filtered_records = []
             skipped_count = 0
             for record in records:
@@ -273,93 +273,93 @@ class SQLiteToPostgreSQLMigrator:
                     filtered_records.append(record)
             
             if skipped_count > 0:
-                self.print_warning(f"  Пропущено {skipped_count} записей из-за отсутствия родительских записей")
+                self.print_warning(f"  Skipped {skipped_count} records due to missing parent records")
             
             if not filtered_records:
-                self.print_warning(f"  Нет записей для миграции после фильтрации")
+                self.print_warning(f"  No records to migrate after filtering")
                 return True
             
-            # Вставляем батчами в PostgreSQL
+            # Insert in batches to PostgreSQL
             with self.pg_session_factory() as pg_session:
                 inserted = 0
                 for i in range(0, len(filtered_records), BATCH_SIZE):
                     batch = filtered_records[i:i + BATCH_SIZE]
                     
-                    # Конвертируем записи в словари для вставки
+                    # Convert records to dictionaries for insertion
                     batch_data = []
                     for record in batch:
                         record_dict = {}
                         for column in table_class.__table__.columns:
                             value = getattr(record, column.name)
-                            # Значения уже из БД, просто передаем как есть
+                            # Values are already from DB, just pass as is
                             record_dict[column.name] = value
                         batch_data.append(record_dict)
                     
-                    # Вставляем батч используя insert()
+                    # Insert batch using insert()
                     if batch_data:
                         pg_session.execute(insert(table_class), batch_data)
                         pg_session.commit()
                     
                     inserted += len(batch)
                     progress = (inserted / len(filtered_records)) * 100
-                    self.print_info(f"  Прогресс: {progress:.1f}% ({inserted}/{len(filtered_records)})", end='\r')
+                    self.print_info(f"  Progress: {progress:.1f}% ({inserted}/{len(filtered_records)})", end='\r')
                 
-                self.print_info("")  # Новая строка после прогресса
+                self.print_info("")  # New line after progress
             
-            # Проверяем количество записей в целевой БД
+            # Check record count in target DB
             target_count = self._get_table_count(table_name, self.pg_engine)
             
             if skipped_count > 0:
                 expected_count = source_count - skipped_count
                 if target_count == expected_count:
-                    self.print_success(f"Таблица {table_name} мигрирована: {target_count} записей (пропущено {skipped_count})")
+                    self.print_success(f"Table {table_name} migrated: {target_count} records (skipped {skipped_count})")
                     return True
                 else:
-                    self.print_warning(f"Несовпадение количества записей в {table_name}: ожидалось {expected_count}, получено {target_count}")
+                    self.print_warning(f"Record count mismatch in {table_name}: expected {expected_count}, got {target_count}")
                     return False
             else:
                 if target_count == source_count:
-                    self.print_success(f"Таблица {table_name} мигрирована: {target_count} записей")
+                    self.print_success(f"Table {table_name} migrated: {target_count} records")
                     return True
                 else:
-                    self.print_warning(f"Несовпадение количества записей в {table_name}: {source_count} → {target_count}")
+                    self.print_warning(f"Record count mismatch in {table_name}: {source_count} → {target_count}")
                     return False
                 
         except Exception as e:
-            self.print_error(f"Ошибка миграции таблицы {table_name}: {e}")
+            self.print_error(f"Error migrating table {table_name}: {e}")
             raise
     
     def _sync_sequences(self):
-        """Синхронизирует sequences в PostgreSQL"""
-        self.print_info("Синхронизирую sequences...")
+        """Synchronizes sequences in PostgreSQL"""
+        self.print_info("Synchronizing sequences...")
         
         try:
             with self.pg_engine.begin() as conn:
-                # Получаем все таблицы с автоинкрементом
+                # Get all tables with autoincrement
                 for table_name, table_class in self.table_class_map.items():
-                    # Проверяем, есть ли автоинкрементное поле id
+                    # Check if there's an autoincrement id field
                     if hasattr(table_class, 'id'):
                         id_column = table_class.id
                         if hasattr(id_column, 'property') and hasattr(id_column.property, 'columns'):
-                            # Получаем максимальный ID
+                            # Get maximum ID
                             result = conn.execute(text(f"SELECT MAX(id) FROM {table_name}"))
                             max_id = result.scalar() or 0
                             
                             if max_id > 0:
                                 sequence_name = f"{table_name}_id_seq"
-                                # Синхронизируем sequence с максимальным ID
+                                # Synchronize sequence with maximum ID
                                 conn.execute(text(f"SELECT setval('{sequence_name}', {max_id})"))
-                                self.print_success(f"Sequence {sequence_name} установлен на {max_id}")
+                                self.print_success(f"Sequence {sequence_name} set to {max_id}")
             
             return True
             
         except Exception as e:
-            self.print_error(f"Ошибка синхронизации sequences: {e}")
+            self.print_error(f"Error synchronizing sequences: {e}")
             return False
     
     def _validate_migration(self) -> bool:
-        """Валидирует миграцию - сравнивает количество записей"""
-        self.print_info("Валидирую миграцию...")
+        """Validates migration - compares record counts"""
+        self.print_info("Validating migration...")
         
         all_ok = True
         for table_name in MIGRATION_ORDER:
@@ -370,7 +370,7 @@ class SQLiteToPostgreSQLMigrator:
             target_count = self._get_table_count(table_name, self.pg_engine)
             
             if source_count == target_count:
-                self.print_success(f"  {table_name}: {source_count} записей ✓")
+                self.print_success(f"  {table_name}: {source_count} records ✓")
             else:
                 self.print_error(f"  {table_name}: {source_count} → {target_count} ✗")
                 all_ok = False
@@ -378,60 +378,60 @@ class SQLiteToPostgreSQLMigrator:
         return all_ok
     
     def migrate(self, clear_target: bool = True) -> bool:
-        """Выполняет полную миграцию данных"""
+        """Performs full data migration"""
         try:
-            self.print_separator("МИГРАЦИЯ ДАННЫХ SQLite → PostgreSQL")
+            self.print_separator("DATA MIGRATION SQLite → PostgreSQL")
             
-            # 1. Очистка целевой БД
+            # 1. Clear target DB
             if clear_target:
                 self._clear_postgresql_database()
             
-            # 2. Создание схемы
+            # 2. Create schema
             self._create_postgresql_schema()
             
-            # 3. Миграция данных по порядку
-            self.print_separator("МИГРАЦИЯ ДАННЫХ")
+            # 3. Migrate data in order
+            self.print_separator("DATA MIGRATION")
             for table_name in MIGRATION_ORDER:
                 if not self._migrate_table(table_name):
-                    self.print_error(f"Ошибка миграции таблицы {table_name}")
+                    self.print_error(f"Error migrating table {table_name}")
                     return False
             
-            # 4. Синхронизация sequences
-            self.print_separator("СИНХРОНИЗАЦИЯ SEQUENCES")
+            # 4. Synchronize sequences
+            self.print_separator("SEQUENCE SYNCHRONIZATION")
             self._sync_sequences()
             
-            # 5. Валидация
-            self.print_separator("ВАЛИДАЦИЯ")
+            # 5. Validation
+            self.print_separator("VALIDATION")
             if not self._validate_migration():
-                self.print_warning("Валидация показала несовпадения, но миграция завершена")
+                self.print_warning("Validation showed mismatches, but migration completed")
             
-            self.print_separator("МИГРАЦИЯ ЗАВЕРШЕНА")
-            self.print_success("✅ Миграция данных завершена успешно!")
+            self.print_separator("MIGRATION COMPLETED")
+            self.print_success("✅ Data migration completed successfully!")
             
             return True
             
         except Exception as e:
-            self.print_error(f"❌ Ошибка миграции: {e}")
+            self.print_error(f"❌ Migration error: {e}")
             raise
     
     def print_info(self, message: str, end: str = '\n'):
-        """Выводит информационное сообщение"""
+        """Prints informational message"""
         print(f"{Colors.CYAN}ℹ️ {message}{Colors.END}", end=end)
     
     def print_success(self, message: str):
-        """Выводит сообщение об успехе"""
+        """Prints success message"""
         print(f"{Colors.GREEN}✅ {message}{Colors.END}")
     
     def print_warning(self, message: str):
-        """Выводит предупреждение"""
+        """Prints warning"""
         print(f"{Colors.YELLOW}⚠️ {message}{Colors.END}")
     
     def print_error(self, message: str):
-        """Выводит ошибку"""
+        """Prints error"""
         print(f"{Colors.RED}❌ {message}{Colors.END}")
     
     def print_separator(self, title: str = None):
-        """Выводит разделитель"""
+        """Prints separator"""
         if title:
             print(f"\n{Colors.BOLD}{'='*60}{Colors.END}")
             print(f"{Colors.BOLD}{title:^60}{Colors.END}")
@@ -440,7 +440,7 @@ class SQLiteToPostgreSQLMigrator:
             print(f"{Colors.CYAN}{'='*60}{Colors.END}\n")
     
     def cleanup(self):
-        """Очищает ресурсы"""
+        """Cleans up resources"""
         if hasattr(self, 'sqlite_engine'):
             self.sqlite_engine.dispose()
         if hasattr(self, 'di_container'):
@@ -451,22 +451,22 @@ class SQLiteToPostgreSQLMigrator:
 
 
 def main():
-    """Главная функция"""
+    """Main function"""
     print(f"\n{Colors.BOLD}{'='*60}{Colors.END}")
-    print(f"{Colors.BOLD}{'МИГРАЦИЯ SQLite → PostgreSQL':^60}{Colors.END}")
+    print(f"{Colors.BOLD}{'SQLite → PostgreSQL MIGRATION':^60}{Colors.END}")
     print(f"{Colors.BOLD}{'='*60}{Colors.END}\n")
     
-    # Подтверждение
-    print(f"{Colors.YELLOW}⚠️ ВНИМАНИЕ:{Colors.END}")
-    print(f"{Colors.CYAN}Этот скрипт:{Colors.END}")
-    print(f"  1. Очистит целевую БД (PostgreSQL)")
-    print(f"  2. Перенесет все данные из SQLite (data/core.db) в PostgreSQL")
-    print(f"  3. Синхронизирует sequences")
+    # Confirmation
+    print(f"{Colors.YELLOW}⚠️ WARNING:{Colors.END}")
+    print(f"{Colors.CYAN}This script will:{Colors.END}")
+    print(f"  1. Clear target DB (PostgreSQL)")
+    print(f"  2. Transfer all data from SQLite (data/core.db) to PostgreSQL")
+    print(f"  3. Synchronize sequences")
     print()
     
-    confirm = input(f"{Colors.YELLOW}Продолжить? (y/N): {Colors.END}").strip().lower()
+    confirm = input(f"{Colors.YELLOW}Continue? (y/N): {Colors.END}").strip().lower()
     if confirm != 'y':
-        print(f"{Colors.CYAN}Миграция отменена{Colors.END}")
+        print(f"{Colors.CYAN}Migration cancelled{Colors.END}")
         return
     
     migrator = None
@@ -474,9 +474,9 @@ def main():
         migrator = SQLiteToPostgreSQLMigrator()
         migrator.migrate(clear_target=True)
     except KeyboardInterrupt:
-        print(f"\n{Colors.YELLOW}⚠️ Миграция прервана пользователем{Colors.END}")
+        print(f"\n{Colors.YELLOW}⚠️ Migration interrupted by user{Colors.END}")
     except Exception as e:
-        print(f"\n{Colors.RED}❌ Критическая ошибка: {e}{Colors.END}")
+        print(f"\n{Colors.RED}❌ Critical error: {e}{Colors.END}")
         import traceback
         traceback.print_exc()
     finally:

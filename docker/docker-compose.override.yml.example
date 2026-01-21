@@ -1,31 +1,31 @@
-# Локальные настройки для docker-compose
-# Скопируйте этот файл в docker-compose.override.yml и настройте под ваш сервер
-# Этот файл НЕ коммитится в репозиторий (добавлен в .gitignore)
+# Local settings for docker-compose
+# Copy this file to docker-compose.override.yml and configure for your server
+# This file is NOT committed to repository (added to .gitignore)
 #
-# Использование:
-#   1. Скопируйте: cp docker-compose.override.yml.example docker-compose.override.yml
-#   2. Настройте дополнительные параметры (environment, volumes и т.д.)
+# Usage:
+#   1. Copy: cp docker-compose.override.yml.example docker-compose.override.yml
+#   2. Configure additional parameters (environment, volumes, etc.)
 #
-# Примечание: docker-compose автоматически применяет этот файл при работе с docker-compose.yml
+# Note: docker-compose automatically applies this file when working with docker-compose.yml
 #
-# ⚠️ ВАЖНО: Ресурсы (cpus, memory) настраиваются через конфиг ~/.dc_config:
-#   - Используйте команду: dc resources set [service] --cpus 2 --memory 2G
-#   - Или отредактируйте ~/.dc_config вручную
-#   - Ресурсы автоматически генерируются в этот файл, не редактируйте их вручную!
+# ⚠️ IMPORTANT: Resources (cpus, memory) configured via ~/.dc_config:
+#   - Use command: dc resources set [service] --cpus 2 --memory 2G
+#   - Or edit ~/.dc_config manually
+#   - Resources automatically generated to this file, don't edit manually!
 
 services:
-  # Пример: дополнительные environment variables
+  # Example: additional environment variables
   # app:
   #   environment:
   #     - DEBUG=true
   #     - LOG_LEVEL=debug
   
-  # Пример: дополнительные volumes
+  # Example: additional volumes
   # app:
   #   volumes:
   #     - /host/path:/container/path:ro
   
-  # Пример: настройки для дополнительных сервисов (например, PostgreSQL)
+  # Example: settings for additional services (e.g., PostgreSQL)
   # postgres:
   #   image: postgres:15
   #   environment:
@@ -40,7 +40,7 @@ services:
   #         cpus: '1'
   #         memory: '1G'
   
-  # Пример: volumes для дополнительных сервисов
+  # Example: volumes for additional services
   # volumes:
   #   postgres_data:
 

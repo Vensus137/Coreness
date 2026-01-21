@@ -1,133 +1,133 @@
 """
-Тесты граничных случаев с типами данных
+Edge case tests with data types
 """
 import pytest
 
 
 class TestNumericTypes:
-    """Тесты числовых типов"""
+    """Numeric type tests"""
 
     @pytest.mark.asyncio
     async def test_data_type_equals_zero(self, parser):
-        """Проверка сравнения с нулем"""
+        """Check comparison with zero"""
         result = await parser.check_match("$value == 0", {"value": 0})
         assert result is True
 
     @pytest.mark.asyncio
     async def test_data_type_equals_zero_not_equal(self, parser):
-        """Проверка сравнения с нулем - не равно"""
+        """Check comparison with zero - not equal"""
         result = await parser.check_match("$value == 0", {"value": 1})
         assert result is False
 
     @pytest.mark.asyncio
     async def test_data_type_greater_than_negative(self, parser):
-        """Проверка сравнения с отрицательным числом"""
+        """Check comparison with negative number"""
         result = await parser.check_match("$value > -1", {"value": 0})
         assert result is True
 
     @pytest.mark.asyncio
     async def test_data_type_int_equals_float(self, parser):
-        """Проверка сравнения int с float (автопреобразование)"""
+        """Check int comparison with float (auto conversion)"""
         result = await parser.check_match("$value == 0.0", {"value": 0})
         assert result is True
 
     @pytest.mark.asyncio
     async def test_data_type_float_equals_int(self, parser):
-        """Проверка сравнения float с int (автопреобразование)"""
+        """Check float comparison with int (auto conversion)"""
         result = await parser.check_match("$value == 0", {"value": 0.0})
         assert result is True
 
 
 class TestStringTypes:
-    """Тесты строковых типов"""
+    """String type tests"""
 
     @pytest.mark.asyncio
     async def test_data_type_equals_empty_string(self, parser):
-        """Проверка сравнения с пустой строкой"""
+        """Check comparison with empty string"""
         result = await parser.check_match("$text == ''", {"text": ""})
         assert result is True
 
     @pytest.mark.asyncio
     async def test_data_type_equals_empty_string_with_space(self, parser):
-        """Проверка сравнения с пустой строкой - пробел"""
+        """Check comparison with empty string - space"""
         result = await parser.check_match("$text == ''", {"text": " "})
         assert result is False
 
     @pytest.mark.asyncio
     async def test_data_type_contains_empty_string(self, parser):
-        """Проверка содержит пустую строку (всегда True)"""
+        """Check contains empty string (always True)"""
         result = await parser.check_match("$text ~ ''", {"text": "anything"})
         assert result is True
 
     @pytest.mark.asyncio
     async def test_data_type_not_contains_empty_string(self, parser):
-        """Проверка не содержит пустую строку (всегда False)"""
+        """Check not contains empty string (always False)"""
         result = await parser.check_match("$text !~ ''", {"text": "anything"})
         assert result is False
 
 
 class TestBooleanTypes:
-    """Тесты булевых типов"""
+    """Boolean type tests"""
 
     @pytest.mark.asyncio
     async def test_data_type_boolean_true(self, parser):
-        """Проверка Boolean True"""
+        """Check Boolean True"""
         result = await parser.check_match("$flag == True", {"flag": True})
         assert result is True
 
     @pytest.mark.asyncio
     async def test_data_type_boolean_false(self, parser):
-        """Проверка Boolean False"""
+        """Check Boolean False"""
         result = await parser.check_match("$flag == False", {"flag": False})
         assert result is True
 
     @pytest.mark.asyncio
     async def test_data_type_boolean_true_lowercase(self, parser):
-        """Проверка Boolean true (lowercase)"""
+        """Check Boolean true (lowercase)"""
         result = await parser.check_match("$flag == true", {"flag": True})
         assert result is True
 
     @pytest.mark.asyncio
     async def test_data_type_boolean_false_lowercase(self, parser):
-        """Проверка Boolean false (lowercase)"""
+        """Check Boolean false (lowercase)"""
         result = await parser.check_match("$flag == false", {"flag": False})
         assert result is True
 
 
 class TestNoneType:
-    """Тесты типа None"""
+    """None type tests"""
 
     @pytest.mark.asyncio
     async def test_data_type_equals_none(self, parser):
-        """Проверка сравнения с None"""
+        """Check comparison with None"""
         result = await parser.check_match("$field == None", {"field": None})
         assert result is True
 
     @pytest.mark.asyncio
     async def test_data_type_not_equals_none(self, parser):
-        """Проверка неравенства с None"""
+        """Check inequality with None"""
         result = await parser.check_match("$field != None", {"field": None})
         assert result is False
 
     @pytest.mark.asyncio
     async def test_data_type_not_equals_none_has_value(self, parser):
-        """Проверка неравенства с None - есть значение"""
+        """Check inequality with None - has value"""
         result = await parser.check_match("$field != None", {"field": "value"})
         assert result is True
 
 
 class TestTypeConversion:
-    """Тесты автоматического преобразования типов"""
+    """Automatic type conversion tests"""
 
     @pytest.mark.asyncio
     async def test_data_type_number_equals_string(self, parser):
-        """Проверка сравнения числа со строкой (автопреобразование)"""
+        """Check number comparison with string (auto conversion)"""
         result = await parser.check_match("$value == '123'", {"value": 123})
         assert result is True
 
     @pytest.mark.asyncio
     async def test_data_type_string_equals_number(self, parser):
-        """Проверка сравнения строки с числом (автопреобразование)"""
+        """Check string comparison with number (auto conversion)"""
         result = await parser.check_match("$value == 123", {"value": "123"})
         assert result is True
 

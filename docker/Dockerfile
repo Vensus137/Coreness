@@ -1,7 +1,7 @@
 FROM mirror.gcr.io/library/python:3.11-slim
 
-# Устанавливаем системные зависимости
-# Добавляем официальный репозиторий PostgreSQL 18
+# Install system dependencies
+# Add official PostgreSQL 18 repository
 RUN apt-get update && apt-get install -y \
     wget \
     ca-certificates \
@@ -17,51 +17,51 @@ RUN apt-get update && apt-get install -y \
     postgresql-contrib-18 \
     && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем Supervisor для управления процессами
+# Install Supervisor for process management
 RUN apt-get update && apt-get install -y supervisor \
     && mkdir -p /var/log/supervisor \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Создаем рабочую директорию
+# Create working directory
 WORKDIR /workspace
 
-# Устанавливаем зависимости НАПРЯМУЮ (автономный образ)
-# Шаг 1: Основные зависимости
+# Install dependencies DIRECTLY (standalone image)
+# Step 1: Core dependencies
 RUN pip install PyYAML==6.0.1 SQLAlchemy==2.0.25 python-dotenv==1.0.0
 
-# Шаг 2: Утилиты
-RUN pip install unidecode emoji psutil>=5.9.0 python-dateutil>=2.8.0
+# Step 2: Utilities
+RUN pip install unidecode emoji python-dateutil>=2.8.0
 
-# Шаг 3: Сетевые библиотеки
+# Step 3: Network libraries
 RUN pip install requests>=2.31.0 aiohttp>=3.8.0
 
-# Шаг 4: Git
+# Step 4: Git
 RUN pip install gitpython>=3.1.0
 
-# Шаг 5: PostgreSQL драйвер
+# Step 5: PostgreSQL driver
 RUN pip install psycopg2-binary==2.9.9
 
-# Шаг 6: AI и Telegram
+# Step 6: AI and Telegram
 RUN pip install openai>=2.6.0 telegramify-markdown>=0.5.1
 
-# Шаг 7: Cron для scheduled сценариев
+# Step 7: Cron for scheduled scenarios
 RUN pip install croniter>=2.0.0
 
-# Шаг 8: Pydantic для валидации данных
+# Step 8: Pydantic for data validation
 RUN pip install pydantic>=2.0.0
 
-# Шаг 9: Cryptography для генерации SSL-сертификатов
+# Step 9: Cryptography for SSL certificate generation
 RUN pip install cryptography>=41.0.0
 
-# Шаг 10: pgvector для работы с векторными данными (RAG)
+# Step 10: pgvector for vector data (RAG)
 RUN pip install pgvector>=0.2.0
 
-# Копируем конфигурацию Supervisor
+# Copy Supervisor configuration
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Копируем код приложения в образ (для prod)
-# Для dev/test можно переопределить через volume в docker-compose
+# Copy application code to image (for prod)
+# For dev/test can be overridden via volume in docker-compose
 COPY app/ /workspace/app/
 COPY plugins/ /workspace/plugins/
 COPY tools/ /workspace/tools/

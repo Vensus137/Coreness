@@ -1,6 +1,6 @@
 """
-Тесты для функциональности chunk_format в ai_client
-Проверяем корректность применения шаблонов с маркерами $ к чанкам
+Tests for chunk_format functionality in ai_client
+Verify correctness of applying templates with $ markers to chunks
 """
 from unittest.mock import MagicMock
 
@@ -11,7 +11,7 @@ from plugins.utilities.ai.ai_client.ai_client import AIClient
 
 @pytest.fixture(scope="module")
 def ai_client():
-    """Создает AIClient с моками один раз на модуль (для ускорения тестов)"""
+    """Create AIClient with mocks once per module (for test speed)"""
     mock_logger = MagicMock()
     mock_settings_manager = MagicMock()
     mock_settings_manager.get_plugin_settings.return_value = {
@@ -36,346 +36,346 @@ def ai_client():
 
 
 # ═══════════════════════════════════════════════════════════
-# ТЕСТЫ _apply_chunk_template - БАЗОВАЯ ФУНКЦИОНАЛЬНОСТЬ
+# TESTS _apply_chunk_template - BASIC FUNCTIONALITY
 # ═══════════════════════════════════════════════════════════
 
 @pytest.mark.unit
 def test_apply_chunk_template_simple_content(ai_client):
-    """Тест: Простая подстановка $content"""
+    """Test: Simple $content substitution"""
     template = "$content"
-    content = "Текст чанка"
+    content = "Chunk text"
     chunk = {"chunk_metadata": {}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "Текст чанка"
+    assert result == "Chunk text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_with_username(ai_client):
-    """Тест: Подстановка username из chunk_metadata"""
+    """Test: Username substitution from chunk_metadata"""
     template = "[$username]: $content"
-    content = "Привет!"
+    content = "Hello!"
     chunk = {"chunk_metadata": {"username": "@john_doe"}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[@john_doe]: Привет!"
+    assert result == "[@john_doe]: Hello!"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_with_fallback(ai_client):
-    """Тест: Использование fallback когда поле отсутствует"""
-    template = "[$username|fallback:Пользователь]: $content"
-    content = "Привет!"
-    chunk = {"chunk_metadata": {}}  # username отсутствует
+    """Test: Using fallback when field is missing"""
+    template = "[$username|fallback:User]: $content"
+    content = "Hello!"
+    chunk = {"chunk_metadata": {}}  # username missing
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[Пользователь]: Привет!"
+    assert result == "[User]: Hello!"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_fallback_with_empty_string(ai_client):
-    """Тест: Fallback используется когда поле пустое"""
-    template = "[$username|fallback:Пользователь]: $content"
-    content = "Привет!"
-    chunk = {"chunk_metadata": {"username": ""}}  # Пустая строка
+    """Test: Fallback used when field is empty"""
+    template = "[$username|fallback:User]: $content"
+    content = "Hello!"
+    chunk = {"chunk_metadata": {"username": ""}}  # Empty string
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[Пользователь]: Привет!"
+    assert result == "[User]: Hello!"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_multiple_fields(ai_client):
-    """Тест: Несколько полей из chunk_metadata"""
+    """Test: Multiple fields from chunk_metadata"""
     template = "[$username] ($user_id): $content"
-    content = "Сообщение"
+    content = "Message"
     chunk = {"chunk_metadata": {"username": "@john_doe", "user_id": 12345}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[@john_doe] (12345): Сообщение"
+    assert result == "[@john_doe] (12345): Message"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_complex_format(ai_client):
-    """Тест: Сложный формат с несколькими полями и fallback"""
-    template = "[$username|fallback:Пользователь] ($user_id|fallback:Неизвестно): $content"
-    content = "Текст сообщения"
-    chunk = {"chunk_metadata": {"username": "@john_doe"}}  # user_id отсутствует
+    """Test: Complex format with multiple fields and fallback"""
+    template = "[$username|fallback:User] ($user_id|fallback:Unknown): $content"
+    content = "Message text"
+    chunk = {"chunk_metadata": {"username": "@john_doe"}}  # user_id missing
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[@john_doe] (Неизвестно): Текст сообщения"
+    assert result == "[@john_doe] (Unknown): Message text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_with_category(ai_client):
-    """Тест: Использование category для knowledge чанков"""
-    template = "[$category|fallback:База знаний] $content"
-    content = "Документация по API"
+    """Test: Using category for knowledge chunks"""
+    template = "[$category|fallback:Knowledge Base] $content"
+    content = "API documentation"
     chunk = {"chunk_metadata": {"category": "DOCUMENTATION"}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[DOCUMENTATION] Документация по API"
+    assert result == "[DOCUMENTATION] API documentation"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_with_version(ai_client):
-    """Тест: Использование version в шаблоне"""
+    """Test: Using version in template"""
     template = "[$category] v$version: $content"
-    content = "Описание функции"
+    content = "Function description"
     chunk = {"chunk_metadata": {"category": "API", "version": "1.2.3"}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[API] v1.2.3: Описание функции"
+    assert result == "[API] v1.2.3: Function description"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_multiline_format(ai_client):
-    """Тест: Многострочный формат"""
-    template = "$content\n\n📎 Источник: $source|fallback:Неизвестно"
-    content = "Текст чанка"
-    chunk = {"chunk_metadata": {"source": "Документация"}}
+    """Test: Multiline format"""
+    template = "$content\n\n📎 Source: $source|fallback:Unknown"
+    content = "Chunk text"
+    chunk = {"chunk_metadata": {"source": "Documentation"}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "Текст чанка\n\n📎 Источник: Документация"
+    assert result == "Chunk text\n\n📎 Source: Documentation"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_no_metadata(ai_client):
-    """Тест: chunk_metadata отсутствует (None)"""
-    template = "[$username|fallback:Пользователь]: $content"
-    content = "Текст"
+    """Test: chunk_metadata is missing (None)"""
+    template = "[$username|fallback:User]: $content"
+    content = "Text"
     chunk = {"chunk_metadata": None}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[Пользователь]: Текст"
+    assert result == "[User]: Text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_empty_metadata(ai_client):
-    """Тест: chunk_metadata пустой словарь"""
-    template = "[$username|fallback:Пользователь]: $content"
-    content = "Текст"
-    chunk = {}  # chunk_metadata отсутствует
+    """Test: chunk_metadata is empty dictionary"""
+    template = "[$username|fallback:User]: $content"
+    content = "Text"
+    chunk = {}  # chunk_metadata missing
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[Пользователь]: Текст"
+    assert result == "[User]: Text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_numeric_values(ai_client):
-    """Тест: Числовые значения из chunk_metadata"""
+    """Test: Numeric values from chunk_metadata"""
     template = "User ID: $user_id, Chat ID: $chat_id, Message: $content"
-    content = "Текст сообщения"
+    content = "Message text"
     chunk = {"chunk_metadata": {"user_id": 12345, "chat_id": 67890}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "User ID: 12345, Chat ID: 67890, Message: Текст сообщения"
+    assert result == "User ID: 12345, Chat ID: 67890, Message: Message text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_boolean_values(ai_client):
-    """Тест: Булевы значения из chunk_metadata"""
+    """Test: Boolean values from chunk_metadata"""
     template = "Is admin: $is_admin, Content: $content"
-    content = "Текст"
+    content = "Text"
     chunk = {"chunk_metadata": {"is_admin": True}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "Is admin: True, Content: Текст"
+    assert result == "Is admin: True, Content: Text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_nested_metadata_not_supported(ai_client):
-    """Тест: Вложенные поля не поддерживаются (только плоские ключи)"""
+    """Test: Nested fields not supported (only flat keys)"""
     template = "$content from $user.name"
-    content = "Текст"
+    content = "Text"
     chunk = {"chunk_metadata": {"user": {"name": "John"}}}
     
-    # Вложенные поля не поддерживаются - $user.name не будет найдено
+    # Nested fields not supported - $user.name won't be found
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    # $user.name не найден, вернется пустая строка (без fallback)
+    # $user.name not found, will return empty string (without fallback)
     assert "from " in result
-    assert "Текст" in result
+    assert "Text" in result
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_special_characters_in_fallback(ai_client):
-    """Тест: Специальные символы в fallback значении"""
-    template = "[$username|fallback:Пользователь (неизвестно)]: $content"
-    content = "Текст"
+    """Test: Special characters in fallback value"""
+    template = "[$username|fallback:User (unknown)]: $content"
+    content = "Text"
     chunk = {"chunk_metadata": {}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[Пользователь (неизвестно)]: Текст"
+    assert result == "[User (unknown)]: Text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_dollar_in_content(ai_client):
-    """Тест: Символ $ в самом контенте не обрабатывается как маркер"""
+    """Test: $ symbol in content itself is not processed as marker"""
     template = "$content"
-    content = "Цена: $100"
+    content = "Price: $100"
     chunk = {"chunk_metadata": {}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "Цена: $100"
+    assert result == "Price: $100"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_multiple_same_field(ai_client):
-    """Тест: Одно поле используется несколько раз в шаблоне"""
-    template = "$username сказал: $content (от $username)"
-    content = "Привет!"
+    """Test: Same field used multiple times in template"""
+    template = "$username said: $content (from $username)"
+    content = "Hello!"
     chunk = {"chunk_metadata": {"username": "@john_doe"}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "@john_doe сказал: Привет! (от @john_doe)"
+    assert result == "@john_doe said: Hello! (from @john_doe)"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_field_not_in_metadata_no_fallback(ai_client):
-    """Тест: Поле отсутствует и нет fallback - пустая строка"""
+    """Test: Field missing and no fallback - empty string"""
     template = "[$username]: $content"
-    content = "Текст"
-    chunk = {"chunk_metadata": {}}  # username отсутствует, fallback нет
+    content = "Text"
+    chunk = {"chunk_metadata": {}}  # username missing, no fallback
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[]: Текст"  # Пустая строка вместо $username
+    assert result == "[]: Text"  # Empty string instead of $username
 
 
 # ═══════════════════════════════════════════════════════════
-# ТЕСТЫ _apply_chunk_format - ИНТЕГРАЦИЯ
+# TESTS _apply_chunk_format - INTEGRATION
 # ═══════════════════════════════════════════════════════════
 
 @pytest.mark.unit
 def test_apply_chunk_format_no_format(ai_client):
-    """Тест: chunk_format не указан - возвращается оригинальный контент"""
-    content = "Оригинальный текст"
+    """Test: chunk_format not specified - original content returned"""
+    content = "Original text"
     chunk = {"document_type": "chat_history", "chunk_metadata": {"username": "@john"}}
     chunk_format = None
     
     result = ai_client._apply_chunk_format(content, chunk, "chat_history", chunk_format)
     
-    assert result == "Оригинальный текст"
+    assert result == "Original text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_format_no_template_for_type(ai_client):
-    """Тест: Шаблон не указан для типа документа - возвращается оригинальный контент"""
-    content = "Оригинальный текст"
+    """Test: Template not specified for document type - original content returned"""
+    content = "Original text"
     chunk = {"document_type": "chat_history", "chunk_metadata": {"username": "@john"}}
-    chunk_format = {"knowledge": "[$category]: $content"}  # Нет шаблона для chat_history
+    chunk_format = {"knowledge": "[$category]: $content"}  # No template for chat_history
     
     result = ai_client._apply_chunk_format(content, chunk, "chat_history", chunk_format)
     
-    assert result == "Оригинальный текст"
+    assert result == "Original text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_format_chat_history(ai_client):
-    """Тест: Применение шаблона для chat_history"""
-    content = "Привет!"
+    """Test: Applying template for chat_history"""
+    content = "Hello!"
     chunk = {"document_type": "chat_history", "chunk_metadata": {"username": "@john_doe"}}
-    chunk_format = {"chat_history": "[$username|fallback:Пользователь]: $content"}
+    chunk_format = {"chat_history": "[$username|fallback:User]: $content"}
     
     result = ai_client._apply_chunk_format(content, chunk, "chat_history", chunk_format)
     
-    assert result == "[@john_doe]: Привет!"
+    assert result == "[@john_doe]: Hello!"
 
 
 @pytest.mark.unit
 def test_apply_chunk_format_knowledge(ai_client):
-    """Тест: Применение шаблона для knowledge"""
-    content = "Документация"
+    """Test: Applying template for knowledge"""
+    content = "Documentation"
     chunk = {"document_type": "knowledge", "chunk_metadata": {"category": "API"}}
-    chunk_format = {"knowledge": "[$category|fallback:База знаний] $content"}
+    chunk_format = {"knowledge": "[$category|fallback:Knowledge Base] $content"}
     
     result = ai_client._apply_chunk_format(content, chunk, "knowledge", chunk_format)
     
-    assert result == "[API] Документация"
+    assert result == "[API] Documentation"
 
 
 @pytest.mark.unit
 def test_apply_chunk_format_other(ai_client):
-    """Тест: Применение шаблона для other"""
-    content = "Текст"
-    chunk = {"document_type": "other", "chunk_metadata": {"source": "Внешний источник"}}
-    chunk_format = {"other": "$content\n\nИсточник: $source|fallback:Неизвестно"}
+    """Test: Applying template for other"""
+    content = "Text"
+    chunk = {"document_type": "other", "chunk_metadata": {"source": "External source"}}
+    chunk_format = {"other": "$content\n\nSource: $source|fallback:Unknown"}
     
     result = ai_client._apply_chunk_format(content, chunk, "other", chunk_format)
     
-    assert result == "Текст\n\nИсточник: Внешний источник"
+    assert result == "Text\n\nSource: External source"
 
 
 @pytest.mark.unit
 def test_apply_chunk_format_all_types(ai_client):
-    """Тест: Применение шаблонов для всех типов документов"""
+    """Test: Applying templates for all document types"""
     chunk_format = {
-        "chat_history": "[$username|fallback:Пользователь]: $content",
-        "knowledge": "[$category|fallback:База знаний] $content",
+        "chat_history": "[$username|fallback:User]: $content",
+        "knowledge": "[$category|fallback:Knowledge Base] $content",
         "other": "$content"
     }
     
     # Chat history
     result1 = ai_client._apply_chunk_format(
-        "Привет!",
+        "Hello!",
         {"chunk_metadata": {"username": "@john"}},
         "chat_history",
         chunk_format
     )
-    assert result1 == "[@john]: Привет!"
+    assert result1 == "[@john]: Hello!"
     
     # Knowledge
     result2 = ai_client._apply_chunk_format(
-        "Документация",
+        "Documentation",
         {"chunk_metadata": {"category": "API"}},
         "knowledge",
         chunk_format
     )
-    assert result2 == "[API] Документация"
+    assert result2 == "[API] Documentation"
     
     # Other
     result3 = ai_client._apply_chunk_format(
-        "Текст",
+        "Text",
         {"chunk_metadata": {}},
         "other",
         chunk_format
     )
-    assert result3 == "Текст"
+    assert result3 == "Text"
 
 
 # ═══════════════════════════════════════════════════════════
-# ТЕСТЫ _build_messages - ИНТЕГРАЦИЯ С RAG
+# TESTS _build_messages - RAG INTEGRATION
 # ═══════════════════════════════════════════════════════════
 
 @pytest.mark.unit
 def test_build_messages_chat_history_with_format(ai_client):
-    """Тест: Форматирование chat_history чанков в messages"""
+    """Test: Formatting chat_history chunks in messages"""
     rag_chunks = [
         {
-            "content": "Привет!",
+            "content": "Hello!",
             "document_type": "chat_history",
             "role": "user",
             "processed_at": "2024-01-01T10:00:00",
             "chunk_metadata": {"username": "@john_doe"}
         },
         {
-            "content": "Привет, Джон!",
+            "content": "Hello, John!",
             "document_type": "chat_history",
             "role": "assistant",
             "processed_at": "2024-01-01T10:00:01",
@@ -383,132 +383,132 @@ def test_build_messages_chat_history_with_format(ai_client):
         }
     ]
     
-    chunk_format = {"chat_history": "[$username|fallback:Пользователь]: $content"}
+    chunk_format = {"chat_history": "[$username|fallback:User]: $content"}
     
     messages = ai_client._build_messages(
-        prompt="Как дела?",
+        prompt="How are you?",
         rag_chunks=rag_chunks,
         chunk_format=chunk_format
     )
     
-    # Проверяем, что chat_history отформатированы
-    assert len(messages) == 3  # system (нет), 2 chat_history, 1 final user
+    # Check that chat_history are formatted
+    assert len(messages) == 3  # no system, 2 chat_history, 1 final user
     assert messages[0]["role"] == "user"
-    assert messages[0]["content"] == "[@john_doe]: Привет!"
+    assert messages[0]["content"] == "[@john_doe]: Hello!"
     assert messages[1]["role"] == "assistant"
-    assert messages[1]["content"] == "[Пользователь]: Привет, Джон!"  # fallback для assistant
+    assert messages[1]["content"] == "[User]: Hello, John!"  # fallback for assistant
 
 
 @pytest.mark.unit
 def test_build_messages_knowledge_with_format(ai_client):
-    """Тест: Форматирование knowledge чанков в KNOWLEDGE блоке"""
+    """Test: Formatting knowledge chunks in KNOWLEDGE block"""
     rag_chunks = [
         {
-            "content": "Документация по API",
+            "content": "API documentation",
             "document_type": "knowledge",
             "similarity": 0.9,
             "chunk_metadata": {"category": "DOCUMENTATION"}
         },
         {
-            "content": "Примеры использования",
+            "content": "Usage examples",
             "document_type": "knowledge",
             "similarity": 0.85,
             "chunk_metadata": {"category": "EXAMPLES"}
         }
     ]
     
-    chunk_format = {"knowledge": "[$category|fallback:База знаний] $content"}
+    chunk_format = {"knowledge": "[$category|fallback:Knowledge Base] $content"}
     
     messages = ai_client._build_messages(
-        prompt="Вопрос",
+        prompt="Question",
         rag_chunks=rag_chunks,
         chunk_format=chunk_format
     )
     
-    # Проверяем KNOWLEDGE блок
-    assert len(messages) == 1  # Только final user
+    # Check KNOWLEDGE block
+    assert len(messages) == 1  # Only final user
     final_content = messages[0]["content"]
-    assert "[DOCUMENTATION] Документация по API" in final_content
-    assert "[EXAMPLES] Примеры использования" in final_content
+    assert "[DOCUMENTATION] API documentation" in final_content
+    assert "[EXAMPLES] Usage examples" in final_content
     assert "KNOWLEDGE" in final_content
 
 
 @pytest.mark.unit
 def test_build_messages_other_with_format(ai_client):
-    """Тест: Форматирование other чанков в ДОП. КОНТЕКСТ"""
+    """Test: Formatting other chunks in ADD. CONTEXT"""
     rag_chunks = [
         {
-            "content": "Дополнительная информация",
+            "content": "Additional information",
             "document_type": "other",
-            "chunk_metadata": {"source": "Внешний источник"}
+            "chunk_metadata": {"source": "External source"}
         }
     ]
     
-    chunk_format = {"other": "$content\n\n📎 Источник: $source|fallback:Неизвестно"}
+    chunk_format = {"other": "$content\n\n📎 Source: $source|fallback:Unknown"}
     
     messages = ai_client._build_messages(
-        prompt="Вопрос",
+        prompt="Question",
         rag_chunks=rag_chunks,
         chunk_format=chunk_format
     )
     
-    # Проверяем ДОП. КОНТЕКСТ блок
+    # Check ADD. CONTEXT block
     assert len(messages) == 1
     final_content = messages[0]["content"]
-    assert "Дополнительная информация" in final_content
-    assert "📎 Источник: Внешний источник" in final_content
-    assert "ДОП. КОНТЕКСТ" in final_content
+    assert "Additional information" in final_content
+    assert "📎 Source: External source" in final_content
+    assert "ADD. CONTEXT" in final_content
 
 
 @pytest.mark.unit
 def test_build_messages_mixed_types_with_format(ai_client):
-    """Тест: Смешанные типы чанков с разными форматами"""
+    """Test: Mixed chunk types with different formats"""
     rag_chunks = [
         {
-            "content": "Привет!",
+            "content": "Hello!",
             "document_type": "chat_history",
             "role": "user",
             "processed_at": "2024-01-01T10:00:00",
             "chunk_metadata": {"username": "@john"}
         },
         {
-            "content": "Документация",
+            "content": "Documentation",
             "document_type": "knowledge",
             "similarity": 0.9,
             "chunk_metadata": {"category": "API"}
         },
         {
-            "content": "Доп. инфо",
+            "content": "Additional info",
             "document_type": "other",
-            "chunk_metadata": {"source": "Внешний"}
+            "chunk_metadata": {"source": "External"}
         }
     ]
     
     chunk_format = {
-        "chat_history": "[$username|fallback:Пользователь]: $content",
-        "knowledge": "[$category|fallback:База знаний] $content",
-        "other": "$content (источник: $source|fallback:Неизвестно)"
+        "chat_history": "[$username|fallback:User]: $content",
+        "knowledge": "[$category|fallback:Knowledge Base] $content",
+        "other": "$content (source: $source|fallback:Unknown)"
     }
     
     messages = ai_client._build_messages(
-        prompt="Вопрос",
+        prompt="Question",
         rag_chunks=rag_chunks,
         chunk_format=chunk_format
     )
     
-    # Проверяем все типы
+    # Check all types
     assert len(messages) == 2  # 1 chat_history + 1 final user
-    assert "[@john]: Привет!" in messages[0]["content"]
-    assert "[API] Документация" in messages[1]["content"]
-    assert "Доп. инфо (источник: Внешний)" in messages[1]["content"]
+    assert "[@john]: Hello!" in messages[0]["content"]
+    assert "[API] Documentation" in messages[1]["content"]
+    assert "Additional info (source: External)" in messages[1]["content"]
 
 
 @pytest.mark.unit
 def test_build_messages_no_format_applied(ai_client):
-    """Тест: Без chunk_format используется оригинальный контент"""
+    """Test: Without chunk_format original content is used"""
     rag_chunks = [
         {
-            "content": "Привет!",
+            "content": "Hello!",
             "document_type": "chat_history",
             "role": "user",
             "processed_at": "2024-01-01T10:00:00",
@@ -517,55 +517,55 @@ def test_build_messages_no_format_applied(ai_client):
     ]
     
     messages = ai_client._build_messages(
-        prompt="Вопрос",
+        prompt="Question",
         rag_chunks=rag_chunks,
         chunk_format=None
     )
     
-    # Без формата используется оригинальный контент
-    assert messages[0]["content"] == "Привет!"
+    # Without format original content is used
+    assert messages[0]["content"] == "Hello!"
 
 
 @pytest.mark.unit
 def test_build_messages_partial_format(ai_client):
-    """Тест: Формат указан только для одного типа"""
+    """Test: Format specified only for one type"""
     rag_chunks = [
         {
-            "content": "Привет!",
+            "content": "Hello!",
             "document_type": "chat_history",
             "role": "user",
             "processed_at": "2024-01-01T10:00:00",
             "chunk_metadata": {"username": "@john"}
         },
         {
-            "content": "Документация",
+            "content": "Documentation",
             "document_type": "knowledge",
             "similarity": 0.9,
             "chunk_metadata": {"category": "API"}
         }
     ]
     
-    # Формат только для chat_history
-    chunk_format = {"chat_history": "[$username|fallback:Пользователь]: $content"}
+    # Format only for chat_history
+    chunk_format = {"chat_history": "[$username|fallback:User]: $content"}
     
     messages = ai_client._build_messages(
-        prompt="Вопрос",
+        prompt="Question",
         rag_chunks=rag_chunks,
         chunk_format=chunk_format
     )
     
-    # chat_history отформатирован, knowledge - нет
-    assert "[@john]: Привет!" in messages[0]["content"]
-    assert "Документация" in messages[1]["content"]  # Оригинальный контент для knowledge
+    # chat_history formatted, knowledge - not
+    assert "[@john]: Hello!" in messages[0]["content"]
+    assert "Documentation" in messages[1]["content"]  # Original content for knowledge
 
 
 # ═══════════════════════════════════════════════════════════
-# ТЕСТЫ ГРАНИЧНЫХ СЛУЧАЕВ
+# EDGE CASE TESTS
 # ═══════════════════════════════════════════════════════════
 
 @pytest.mark.unit
 def test_apply_chunk_template_empty_content(ai_client):
-    """Тест: Пустой контент"""
+    """Test: Empty content"""
     template = "[$username]: $content"
     content = ""
     chunk = {"chunk_metadata": {"username": "@john"}}
@@ -577,212 +577,212 @@ def test_apply_chunk_template_empty_content(ai_client):
 
 @pytest.mark.unit
 def test_apply_chunk_template_content_only_no_metadata(ai_client):
-    """Тест: Только $content, метаданные не используются"""
+    """Test: Only $content, metadata not used"""
     template = "$content"
-    content = "Текст"
-    chunk = {"chunk_metadata": {"username": "@john"}}  # Есть метаданные, но не используются
+    content = "Text"
+    chunk = {"chunk_metadata": {"username": "@john"}}  # Metadata exists but not used
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "Текст"
+    assert result == "Text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_all_fields_missing(ai_client):
-    """Тест: Все поля отсутствуют, используются fallback"""
-    template = "[$username|fallback:Пользователь] ($user_id|fallback:Неизвестно): $content"
-    content = "Текст"
+    """Test: All fields missing, fallbacks used"""
+    template = "[$username|fallback:User] ($user_id|fallback:Unknown): $content"
+    content = "Text"
     chunk = {"chunk_metadata": {}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[Пользователь] (Неизвестно): Текст"
+    assert result == "[User] (Unknown): Text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_null_values(ai_client):
-    """Тест: None значения в chunk_metadata"""
-    template = "[$username|fallback:Пользователь]: $content"
-    content = "Текст"
+    """Test: None values in chunk_metadata"""
+    template = "[$username|fallback:User]: $content"
+    content = "Text"
     chunk = {"chunk_metadata": {"username": None}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[Пользователь]: Текст"  # None обрабатывается как отсутствие
+    assert result == "[User]: Text"  # None treated as missing
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_zero_value(ai_client):
-    """Тест: Нулевое значение (0) не считается пустым"""
+    """Test: Zero value (0) is not considered empty"""
     template = "User ID: $user_id, Content: $content"
-    content = "Текст"
+    content = "Text"
     chunk = {"chunk_metadata": {"user_id": 0}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "User ID: 0, Content: Текст"
+    assert result == "User ID: 0, Content: Text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_false_value(ai_client):
-    """Тест: False значение не считается пустым"""
+    """Test: False value is not considered empty"""
     template = "Is active: $is_active, Content: $content"
-    content = "Текст"
+    content = "Text"
     chunk = {"chunk_metadata": {"is_active": False}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "Is active: False, Content: Текст"
+    assert result == "Is active: False, Content: Text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_very_long_fallback(ai_client):
-    """Тест: Очень длинное fallback значение"""
-    template = "[$username|fallback:Очень длинное имя пользователя которое может быть очень длинным]: $content"
-    content = "Текст"
+    """Test: Very long fallback value"""
+    template = "[$username|fallback:Very long username that can be very long]: $content"
+    content = "Text"
     chunk = {"chunk_metadata": {}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert "Очень длинное имя пользователя которое может быть очень длинным" in result
-    assert "Текст" in result
+    assert "Very long username that can be very long" in result
+    assert "Text" in result
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_special_chars_in_metadata(ai_client):
-    """Тест: Специальные символы в значениях метаданных"""
+    """Test: Special characters in metadata values"""
     template = "[$username]: $content"
-    content = "Текст"
+    content = "Text"
     chunk = {"chunk_metadata": {"username": "@user_123!@#$%^&*()"}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[@user_123!@#$%^&*()]: Текст"
+    assert result == "[@user_123!@#$%^&*()]: Text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_unicode_in_metadata(ai_client):
-    """Тест: Unicode символы в метаданных"""
+    """Test: Unicode characters in metadata"""
     template = "[$username]: $content"
-    content = "Текст"
-    chunk = {"chunk_metadata": {"username": "👤 Пользователь"}}
+    content = "Text"
+    chunk = {"chunk_metadata": {"username": "👤 User"}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[👤 Пользователь]: Текст"
+    assert result == "[👤 User]: Text"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_regex_special_chars(ai_client):
-    """Тест: Специальные символы regex в шаблоне (не должны ломать парсинг)"""
+    """Test: Regex special characters in template (should not break parsing)"""
     template = "[$username]: $content (.*+?^${}[]|)"
-    content = "Текст"
+    content = "Text"
     chunk = {"chunk_metadata": {"username": "@john"}}
     
-    # Не должно быть ошибки парсинга
+    # Should not have parsing error
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert "[@john]: Текст" in result
+    assert "[@john]: Text" in result
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_multiple_fallbacks(ai_client):
-    """Тест: Несколько полей с fallback в одном шаблоне"""
-    template = "[$username|fallback:Пользователь] ($user_id|fallback:Неизвестно) в чате $chat_id|fallback:Неизвестный: $content"
-    content = "Сообщение"
-    chunk = {"chunk_metadata": {"username": "@john"}}  # Только username есть
+    """Test: Multiple fields with fallback in one template"""
+    template = "[$username|fallback:User] ($user_id|fallback:Unknown) in chat $chat_id|fallback:Unknown: $content"
+    content = "Message"
+    chunk = {"chunk_metadata": {"username": "@john"}}  # Only username exists
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
     assert "[@john]" in result
-    assert "(Неизвестно)" in result
-    assert "Неизвестный" in result
-    assert "Сообщение" in result
+    assert "(Unknown)" in result
+    assert "Unknown" in result
+    assert "Message" in result
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_content_with_dollar_signs(ai_client):
-    """Тест: Контент содержит символы $ (не должны обрабатываться как маркеры)"""
+    """Test: Content contains $ symbols (should not be processed as markers)"""
     template = "[$username]: $content"
-    content = "Цена: $100, скидка: $20"
+    content = "Price: $100, discount: $20"
     chunk = {"chunk_metadata": {"username": "@john"}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[@john]: Цена: $100, скидка: $20"
+    assert result == "[@john]: Price: $100, discount: $20"
 
 
 @pytest.mark.unit
 def test_apply_chunk_template_fallback_with_dollar_sign(ai_client):
-    """Тест: Fallback содержит символ $ - не поддерживается, т.к. $ зарезервирован для маркеров"""
+    """Test: Fallback contains $ symbol - not supported, as $ is reserved for markers"""
     template = "[$username|fallback:unknown user]: $content"
-    content = "Текст"
+    content = "Text"
     chunk = {"chunk_metadata": {}}
     
     result = ai_client._apply_chunk_template(template, content, chunk)
     
-    assert result == "[unknown user]: Текст"
+    assert result == "[unknown user]: Text"
 
 
 @pytest.mark.unit
 def test_build_messages_empty_rag_chunks(ai_client):
-    """Тест: Пустой массив rag_chunks"""
+    """Test: Empty rag_chunks array"""
     messages = ai_client._build_messages(
-        prompt="Вопрос",
+        prompt="Question",
         rag_chunks=[],
         chunk_format={"chat_history": "[$username]: $content"}
     )
     
     assert len(messages) == 1
     assert messages[0]["role"] == "user"
-    assert messages[0]["content"] == "Вопрос"
+    assert messages[0]["content"] == "Question"
 
 
 @pytest.mark.unit
 def test_build_messages_none_rag_chunks(ai_client):
-    """Тест: rag_chunks = None"""
+    """Test: rag_chunks = None"""
     messages = ai_client._build_messages(
-        prompt="Вопрос",
+        prompt="Question",
         rag_chunks=None,
         chunk_format={"chat_history": "[$username]: $content"}
     )
     
     assert len(messages) == 1
     assert messages[0]["role"] == "user"
-    assert messages[0]["content"] == "Вопрос"
+    assert messages[0]["content"] == "Question"
 
 
 @pytest.mark.unit
 def test_build_messages_chunk_without_metadata_key(ai_client):
-    """Тест: Чанк без ключа chunk_metadata"""
+    """Test: Chunk without chunk_metadata key"""
     rag_chunks = [
         {
-            "content": "Привет!",
+            "content": "Hello!",
             "document_type": "chat_history",
             "role": "user",
             "processed_at": "2024-01-01T10:00:00"
-            # Нет chunk_metadata
+            # No chunk_metadata
         }
     ]
     
-    chunk_format = {"chat_history": "[$username|fallback:Пользователь]: $content"}
+    chunk_format = {"chat_history": "[$username|fallback:User]: $content"}
     
     messages = ai_client._build_messages(
-        prompt="Вопрос",
+        prompt="Question",
         rag_chunks=rag_chunks,
         chunk_format=chunk_format
     )
     
-    # Должен использоваться fallback
-    assert "[Пользователь]: Привет!" in messages[0]["content"]
+    # Should use fallback
+    assert "[User]: Hello!" in messages[0]["content"]
 
 
 @pytest.mark.unit
 def test_build_messages_invalid_document_type(ai_client):
-    """Тест: Неизвестный document_type (не обрабатывается форматом)"""
+    """Test: Unknown document_type (not processed by format)"""
     rag_chunks = [
         {
-            "content": "Текст",
+            "content": "Text",
             "document_type": "unknown_type",
             "chunk_metadata": {"username": "@john"}
         }
@@ -790,13 +790,13 @@ def test_build_messages_invalid_document_type(ai_client):
     
     chunk_format = {"chat_history": "[$username]: $content"}
     
-    # Не должно быть ошибки, просто не применяется формат
+    # Should not have error, just format not applied
     messages = ai_client._build_messages(
-        prompt="Вопрос",
+        prompt="Question",
         rag_chunks=rag_chunks,
         chunk_format=chunk_format
     )
     
-    # unknown_type не обрабатывается, но не должно быть ошибки
+    # unknown_type not processed, but should not have error
     assert len(messages) >= 1
 

@@ -1,14 +1,14 @@
 """
-Тесты валидации union типов с ограничениями (min_length, max_length, min, max)
+Tests for validation of union types with constraints (min_length, max_length, min, max)
 """
 
 
 class TestUnionTypesWithConstraints:
-    """Тесты union типов с ограничениями"""
+    """Tests for union types with constraints"""
 
     def test_union_string_integer_with_min_length_string(self, validator):
-        """Проверка: string|integer с min_length - строка проходит валидацию"""
-        # Добавляем тестовую схему в mock
+        """Check: string|integer with min_length - string passes validation"""
+        # Add test schema to mock
         validator.settings_manager._plugin_info['test_service']['actions']['union_string_int'] = {
             'input': {
                 'data': {
@@ -22,24 +22,24 @@ class TestUnionTypesWithConstraints:
                 }
             }
         }
-        # Очищаем кэш для нового действия
+        # Clear cache for new action
         validator.invalidate_cache('test_service', 'union_string_int')
         
-        # Строка должна пройти валидацию с min_length
+        # String should pass validation with min_length
         result = validator.validate_action_input('test_service', 'union_string_int', 
                                                 {'callback_query_id': '12345'})
         assert result.get('result') == 'success'
     
     def test_union_string_integer_with_min_length_integer(self, validator):
-        """Проверка: string|integer с min_length - integer проходит валидацию"""
-        # Integer должен пройти валидацию (min_length не применяется к int)
+        """Check: string|integer with min_length - integer passes validation"""
+        # Integer should pass validation (min_length not applied to int)
         result = validator.validate_action_input('test_service', 'union_string_int', 
                                                 {'callback_query_id': 12345})
         assert result.get('result') == 'success'
     
     def test_union_string_integer_with_min_length_empty_string(self, validator):
-        """Проверка: string|integer с min_length - пустая строка проходит (ограничения не применяются к union)"""
-        # Для union типов ограничения не применяются, поэтому пустая строка проходит валидацию
+        """Check: string|integer with min_length - empty string passes (constraints not applied to union)"""
+        # For union types constraints are not applied, so empty string passes validation
         result = validator.validate_action_input('test_service', 'union_string_int', 
                                                 {'callback_query_id': ''})
         assert result.get('result') == 'success'

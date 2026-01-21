@@ -1,11 +1,11 @@
-# Тестовые зависимости для проекта
-# Включает основные зависимости + тестовые инструменты
-# НЕ устанавливаются на сервере, только для разработки и CI/CD
+# Test dependencies for the project
+# Includes core dependencies + testing tools
+# NOT installed on the production server, only for development and CI/CD
 
-# Основные зависимости проекта (нужны для работы тестов)
+# Core project dependencies (required for running tests)
 -r ../requirements.txt
 
-# Pytest и расширения
+# Pytest and extensions
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pytest-cov>=4.1.0

@@ -1,6 +1,6 @@
 """
-Интеграционные тесты ActionHub и регистрации действий
-Проверяют корректную регистрацию и вызов действий через ActionHub
+Integration tests for ActionHub and action registration
+Verify correct registration and invocation of actions through ActionHub
 """
 import pytest
 
@@ -10,14 +10,14 @@ from tests.conftest import initialized_di_container  # noqa: F401
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_all_actions_registered(initialized_di_container):
-    """Проверка, что все actions из config.yaml видны в ActionHub"""
-    # Получаем ActionHub и PluginsManager через DI
+    """Verify that all actions from config.yaml are visible in ActionHub"""
+    # Get ActionHub and PluginsManager through DI
     action_hub = initialized_di_container.get_utility('action_hub')
     plugins_manager = initialized_di_container.get_utility('plugins_manager')
 
-    # Если по каким-то причинам action_hub не получен через DI – это уже повод падать
-    assert action_hub is not None, "Утилита action_hub должна быть доступна через DI"
-    assert plugins_manager is not None, "PluginsManager должен быть доступен через DI"
+    # If action_hub is not obtained through DI for some reason, this is already a reason to fail
+    assert action_hub is not None, "action_hub utility should be available through DI"
+    assert plugins_manager is not None, "PluginsManager should be available through DI"
     
     all_plugins = plugins_manager.get_all_plugins_info()
     missing_actions = []
@@ -25,14 +25,14 @@ async def test_all_actions_registered(initialized_di_container):
     for plugin_name, plugin_info in all_plugins.items():
         actions = plugin_info.get('actions', {})
         for action_name in actions.keys():
-            # В ActionRegistry ключом маппинга является ИМЯ ДЕЙСТВИЯ, а не plugin.action
+            # In ActionRegistry, the mapping key is the ACTION NAME, not plugin.action
             action_config = action_hub.get_action_config(action_name)
             if action_config is None:
                 missing_actions.append(f"{plugin_name}.{action_name}")
     
     if missing_actions:
         pytest.fail(
-            "Действия не найдены в ActionHub (по имени действия):\n"
+            "Actions not found in ActionHub (by action name):\n"
             + "\n".join(missing_actions)
         )
 
@@ -40,99 +40,99 @@ async def test_all_actions_registered(initialized_di_container):
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_action_call_with_validation(initialized_di_container):
-    """Проверка вызова действия с валидацией входных данных"""
+    """Verify action invocation with input data validation"""
     action_hub = initialized_di_container.get_utility('action_hub')
-    assert action_hub is not None, "Утилита action_hub должна быть доступна через DI"
+    assert action_hub is not None, "action_hub utility should be available through DI"
     
-    # Тестируем простое действие из scenario_helper (sleep)
-    # В ActionHub действие зарегистрировано под именем 'sleep'
+    # Test a simple action from scenario_helper (sleep)
+    # In ActionHub, the action is registered under the name 'sleep'
     result = await action_hub.execute_action(
         'sleep',
-        data={'seconds': 0.01}  # Минимальная задержка для теста
+        data={'seconds': 0.01}  # Minimum delay for test
     )
     
-    # Проверяем структуру ответа
-    assert isinstance(result, dict), "Результат должен быть словарем"
-    assert 'result' in result, "Результат должен содержать поле 'result'"
-    assert result['result'] == 'success', f"Действие должно выполниться успешно, получено: {result}"
+    # Verify response structure
+    assert isinstance(result, dict), "Result should be a dictionary"
+    assert 'result' in result, "Result should contain 'result' field"
+    assert result['result'] == 'success', f"Action should execute successfully, got: {result}"
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_action_config_retrieval(initialized_di_container):
-    """Проверка получения конфигурации действий"""
+    """Verify action configuration retrieval"""
     action_hub = initialized_di_container.get_utility('action_hub')
     plugins_manager = initialized_di_container.get_utility('plugins_manager')
 
-    assert action_hub is not None, "Утилита action_hub должна быть доступна через DI"
-    assert plugins_manager is not None, "PluginsManager должен быть доступен через DI"
+    assert action_hub is not None, "action_hub utility should be available through DI"
+    assert plugins_manager is not None, "PluginsManager should be available through DI"
     
     all_plugins = plugins_manager.get_all_plugins_info()
     
-    # Проверяем несколько случайных действий
+    # Check several random actions
     checked_count = 0
     for plugin_name, plugin_info in all_plugins.items():
         actions = plugin_info.get('actions', {})
         if not actions:
             continue
         
-        # Берем первое действие из каждого плагина
+        # Take the first action from each plugin
         first_action = list(actions.keys())[0]
         
         action_config = action_hub.get_action_config(first_action)
         assert action_config is not None, (
-            f"Конфигурация действия {plugin_name}.{first_action} должна быть доступна"
+            f"Action configuration {plugin_name}.{first_action} should be available"
         )
         
-        # Проверяем структуру конфигурации
+        # Verify configuration structure
         assert isinstance(
             action_config, dict
-        ), f"Конфигурация {plugin_name}.{first_action} должна быть словарем"
+        ), f"Configuration {plugin_name}.{first_action} should be a dictionary"
         
         checked_count += 1
-        if checked_count >= 5:  # Проверяем первые 5 плагинов
+        if checked_count >= 5:  # Check first 5 plugins
             break
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_action_hub_internal_actions(initialized_di_container):
-    """Проверка внутренних действий ActionHub"""
+    """Verify ActionHub internal actions"""
     action_hub = initialized_di_container.get_utility('action_hub')
-    assert action_hub is not None, "Утилита action_hub должна быть доступна через DI"
+    assert action_hub is not None, "action_hub utility should be available through DI"
     
-    # Проверяем внутреннее действие get_available_actions
+    # Check internal action get_available_actions
     result = await action_hub.execute_action('get_available_actions')
     
-    assert isinstance(result, dict), "Результат должен быть словарем"
-    assert 'result' in result, "Результат должен содержать поле 'result'"
+    assert isinstance(result, dict), "Result should be a dictionary"
+    assert 'result' in result, "Result should contain 'result' field"
     
-    # Если успешно, должно вернуться отображение доступных действий
+    # If successful, should return mapping of available actions
     if result.get('result') == 'success' and 'response_data' in result:
         actions_mapping = result.get('response_data', {})
-        assert isinstance(actions_mapping, dict), "response_data должен быть словарем с действиями"
-        # В системе реально есть actions, так что ожидаем хотя бы одно действие
-        assert len(actions_mapping) > 0, "Должно быть доступно хотя бы одно действие"
+        assert isinstance(actions_mapping, dict), "response_data should be a dictionary with actions"
+        # The system actually has actions, so we expect at least one action
+        assert len(actions_mapping) > 0, "At least one action should be available"
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_action_call_with_invalid_data(initialized_di_container):
-    """Проверка обработки невалидных данных при вызове действия"""
+    """Verify handling of invalid data when invoking an action"""
     action_hub = initialized_di_container.get_utility('action_hub')
-    assert action_hub is not None, "Утилита action_hub должна быть доступна через DI"
+    assert action_hub is not None, "action_hub utility should be available through DI"
     
-    # Пытаемся вызвать действие с невалидными данными
+    # Try to invoke action with invalid data
     result = await action_hub.execute_action(
         'sleep',
-        data={'seconds': -1}  # Отрицательное значение должно быть отклонено
+        data={'seconds': -1}  # Negative value should be rejected
     )
     
-    # Результат может быть success (если валидация не строгая) или error
-    assert isinstance(result, dict), "Результат должен быть словарем"
-    assert 'result' in result, "Результат должен содержать поле 'result'"
+    # Result can be success (if validation is not strict) or error
+    assert isinstance(result, dict), "Result should be a dictionary"
+    assert 'result' in result, "Result should contain 'result' field"
     
-    # Если ошибка, проверяем структуру error
+    # If error, verify error structure
     if result.get('result') == 'error':
-        assert 'error' in result, "При ошибке должно быть поле 'error'"
+        assert 'error' in result, "Error field should be present when there's an error"
 

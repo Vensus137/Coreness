@@ -1,6 +1,6 @@
 """
-Sync Orchestrator - оркестратор синхронизации тенантов
-Управляет синхронизацией системных и публичных тенантов через GitHub API
+Sync Orchestrator - orchestrator for tenant synchronization
+Manages synchronization of system and public tenants through GitHub API
 """
 
 from typing import Any, Dict
@@ -8,8 +8,8 @@ from typing import Any, Dict
 
 class SyncOrchestrator:
     """
-    Оркестратор синхронизации тенантов
-    Координирует синхронизацию системных (локально) и публичных (из GitHub) тенантов
+    Tenant synchronization orchestrator
+    Coordinates synchronization of system (locally) and public (from GitHub) tenants
     """
     
     def __init__(self, logger, smart_github_sync, github_sync, block_sync_executor, settings_manager, task_manager):
@@ -20,42 +20,42 @@ class SyncOrchestrator:
         self.settings_manager = settings_manager
         self.task_manager = task_manager
         
-        # Получаем настройки один раз при инициализации
+        # Get settings once on initialization
         global_settings = self.settings_manager.get_global_settings()
         self.max_system_tenant_id = global_settings.get('max_system_tenant_id', 100)
         
-        # Получаем путь к папке тенантов (она уже создана в tenant_hub)
+        # Get path to tenants folder (already created in tenant_hub)
         tenants_config_path = global_settings.get('tenants_config_path', 'config/tenant')
         from pathlib import Path
         project_root = self.settings_manager.get_project_root()
         self.tenants_path = Path(project_root) / tenants_config_path
         
-        # Флаг для предотвращения параллельных синхронизаций
+        # Flag to prevent parallel synchronizations
         self._sync_in_progress = False
     
     async def sync_all_tenants(self) -> Dict[str, Any]:
         """
-        Синхронизация всех тенантов: системных (локально) + публичных (из GitHub)
+        Synchronize all tenants: system (locally) + public (from GitHub)
         """
         try:
-            # Блок 1: Синхронизация системных тенантов из локальной папки
+            # Block 1: Synchronize system tenants from local folder
             system_result = await self.sync_system_tenants()
             
-            # Блок 2: Синхронизация публичных тенантов из GitHub
-            # Используем умную синхронизацию - она сама определит нужно ли делать полную синхронизацию
-            # Если SHA нет - она автоматически сделает полную синхронизацию всех публичных
+            # Block 2: Synchronize public tenants from GitHub
+            # Use smart synchronization - it will determine if full synchronization is needed
+            # If SHA is missing - it will automatically do full synchronization of all public tenants
             public_result = await self.sync_public_tenants()
             
-            # Определяем общий результат на основе результатов обоих блоков
+            # Determine overall result based on results of both blocks
             if system_result.get("result") == "error" or public_result.get("result") == "error":
-                # Если хотя бы один блок вернул ошибку - возвращаем error с саммари
+                # If at least one block returned error - return error with summary
                 errors = []
                 if system_result.get("result") == "error":
                     error_obj = system_result.get('error', {})
-                    errors.append(f"Системные: {error_obj.get('message', 'Неизвестная ошибка')}")
+                    errors.append(f"System: {error_obj.get('message', 'Unknown error')}")
                 if public_result.get("result") == "error":
                     error_obj = public_result.get('error', {})
-                    errors.append(f"Публичные: {error_obj.get('message', 'Неизвестная ошибка')}")
+                    errors.append(f"Public: {error_obj.get('message', 'Unknown error')}")
                 return {
                     "result": "error",
                     "error": {
@@ -64,22 +64,22 @@ class SyncOrchestrator:
                     }
                 }
             
-            # Оба блока успешно выполнены
+            # Both blocks completed successfully
             return {"result": "success"}
             
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации всех тенантов: {e}")
+            self.logger.error(f"Error synchronizing all tenants: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_system_tenants(self) -> Dict[str, Any]:
         """
-        Синхронизация системных тенантов из локальной папки (без GitHub, fire-and-forget, без ожидания выполнения)
+        Synchronize system tenants from local folder (without GitHub, fire-and-forget, without waiting for execution)
         """
         try:
             system_tenant_ids = []
@@ -93,10 +93,10 @@ class SyncOrchestrator:
                         continue
 
             if not system_tenant_ids:
-                self.logger.info("Нет системных тенантов для синхронизации")
+                self.logger.info("No system tenants to synchronize")
                 return {"result": "success", "response_data": {"updated_tenants": 0}}
 
-            self.logger.info(f"Запускаем синхронизацию {len(system_tenant_ids)} системных тенантов в фоне...")
+            self.logger.info(f"Starting synchronization of {len(system_tenant_ids)} system tenants in background...")
             errors = []
             for tenant_id in system_tenant_ids:
                 res = await self.task_manager.submit_task(
@@ -107,8 +107,8 @@ class SyncOrchestrator:
                 )
                 if res.get('result') != 'success':
                     error_obj = res.get('error', {})
-                    error_msg = error_obj.get('message', 'Неизвестная ошибка') if isinstance(error_obj, dict) else str(error_obj)
-                    self.logger.error(f"[Tenant-{tenant_id}] Не удалось отправить задачу синхронизации: {error_msg}")
+                    error_msg = error_obj.get('message', 'Unknown error') if isinstance(error_obj, dict) else str(error_obj)
+                    self.logger.error(f"[Tenant-{tenant_id}] Failed to submit synchronization task: {error_msg}")
                     errors.append(tenant_id)
 
             if not errors:
@@ -116,10 +116,10 @@ class SyncOrchestrator:
             else:
                 return {
                     "result": "partial_success",
-                    "error": f"Не отправлены задачи для: {errors}"
+                    "error": f"Tasks not submitted for: {errors}"
                 }
         except Exception as e:
-            self.logger.error(f"Ошибка массовой рассылки задач синхронизации: {e}")
+            self.logger.error(f"Error in bulk synchronization task distribution: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -130,7 +130,7 @@ class SyncOrchestrator:
     
     async def sync_tenant(self, tenant_id: int, pull_from_github: bool = True) -> Dict[str, Any]:
         """
-        Синхронизация одного тенанта (все блоки: bot + scenarios + storage)
+        Synchronize single tenant (all blocks: bot + scenarios + storage)
         """
         try:
             if not tenant_id:
@@ -138,11 +138,11 @@ class SyncOrchestrator:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "tenant_id не указан"
+                        "message": "tenant_id not specified"
                     }
                 }
             
-            # Синхронизируем все блоки
+            # Synchronize all blocks
             return await self.block_sync_executor.sync_blocks(
                 tenant_id,
                 {"bot": True, "scenarios": True, "storage": True, "config": True},
@@ -150,49 +150,49 @@ class SyncOrchestrator:
             )
             
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации тенанта {tenant_id}: {e}")
+            self.logger.error(f"Error synchronizing tenant {tenant_id}: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_public_tenants(self) -> Dict[str, Any]:
         """
-        Синхронизация публичных тенантов из GitHub с защитой от параллельных запусков
+        Synchronize public tenants from GitHub with protection against parallel runs
         """
         
         
         if self._sync_in_progress:
-            self.logger.warning("Синхронизация уже выполняется, пропускаем")
+            self.logger.warning("Synchronization already in progress, skipping")
             return {"result": "success"}
         
         try:
             self._sync_in_progress = True
             
-            # Используем умную синхронизацию через GitHub API
-            # Если SHA нет - она автоматически сделает полную синхронизацию
+            # Use smart synchronization through GitHub API
+            # If SHA is missing - it will automatically do full synchronization
             sync_result = await self._sync_public_tenants_incremental()          
             if sync_result.get("result") == "success":
                 response_data = sync_result.get("response_data", {})
                 updated_count = response_data.get("updated_tenants", 0)
                 if updated_count > 0:
-                    self.logger.info(f"Синхронизировано {updated_count} тенантов")
+                    self.logger.info(f"Synchronized {updated_count} tenants")
             elif sync_result.get("result") == "partial_success":
-                self.logger.warning("Синхронизация завершена с частичными ошибками")
+                self.logger.warning("Synchronization completed with partial errors")
             else:
-                # Для временных ошибок подключения (DNS, сеть) логируем как warning, не error
+                # For temporary connection errors (DNS, network) log as warning, not error
                 error_obj = sync_result.get('error', {})
                 error_msg = error_obj.get('message', '') if isinstance(error_obj, dict) else str(error_obj)
-                if 'Не удалось получить текущий коммит' in error_msg or 'Не удалось определить изменения через API' in error_msg:
-                    # Это временная проблема с сетью/GitHub API - не критично
-                    # Детальная ошибка уже залогирована на нижнем уровне
-                    pass  # Не логируем повторно, warning уже был на среднем уровне
+                if 'Failed to get current commit' in error_msg or 'Failed to determine changes via API' in error_msg:
+                    # This is a temporary network/GitHub API issue - not critical
+                    # Detailed error already logged at lower level
+                    pass  # Don't log again, warning already logged at medium level
                 else:
-                    # Другие ошибки логируем как error
-                    self.logger.error(f"Ошибка синхронизации тенантов: {error_msg}")
+                    # Other errors log as error
+                    self.logger.error(f"Error synchronizing tenants: {error_msg}")
             
             return sync_result
                 
@@ -203,15 +203,15 @@ class SyncOrchestrator:
 
     async def _sync_public_tenants_incremental(self) -> Dict[str, Any]:
         """
-        Выполняет инкрементальную синхронизацию: определяет изменения через GitHub API и синхронизирует только измененные тенанты
+        Performs incremental synchronization: determines changes through GitHub API and synchronizes only changed tenants
         """
         try:
-            # 1. Определяем измененные тенанты через GitHub Compare API
+            # 1. Determine changed tenants through GitHub Compare API
             changed_result = await self.smart_github_sync.get_changed_tenants()
 
             if changed_result.get("result") != "success":
-                # Если не удалось определить изменения - просто пропускаем
-                self.logger.warning("Не удалось определить изменения через API, пропускаем синхронизацию")
+                # If failed to determine changes - just skip
+                self.logger.warning("Failed to determine changes via API, skipping synchronization")
                 error_obj = changed_result.get("error", {})
                 if isinstance(error_obj, dict):
                     return {
@@ -222,17 +222,17 @@ class SyncOrchestrator:
                     "result": "error",
                     "error": {
                         "code": "API_ERROR",
-                        "message": str(error_obj) if error_obj else "Не удалось определить изменения через API"
+                        "message": str(error_obj) if error_obj else "Failed to determine changes via API"
                     }
                 }
             
             response_data = changed_result.get("response_data", {})
             current_sha = response_data.get("current_sha")
             changed_tenants_data = response_data.get("changed_tenants", {})
-            sync_all = response_data.get("sync_all", False)  # Явный флаг полной синхронизации
+            sync_all = response_data.get("sync_all", False)  # Explicit full synchronization flag
             has_changes = response_data.get("has_changes", False)
             
-            # 2. Если изменений нет и это не первая синхронизация - возвращаем успех
+            # 2. If no changes and this is not first synchronization - return success
             if not has_changes and not sync_all:
                 return {
                     "result": "success",
@@ -241,11 +241,11 @@ class SyncOrchestrator:
                     }
                 }
             
-            # 3. Обработка первой синхронизации (sync_all = True)
+            # 3. Handle first synchronization (sync_all = True)
             if sync_all:
                 return await self._sync_all_public_tenants(current_sha)
             
-            # 4. Обновляем файлы из GitHub (только измененные тенанты)
+            # 4. Update files from GitHub (only changed tenants)
             changed_tenant_ids = list(changed_tenants_data.keys())
             
             sync_files_result = await self.smart_github_sync.sync_changed_tenants(
@@ -259,7 +259,7 @@ class SyncOrchestrator:
             sync_response_data = sync_files_result.get("response_data", {})
             updated_files_count = sync_response_data.get("updated_tenants", 0)
             
-            # 5. Если нет измененных тенантов для синхронизации - завершаем
+            # 5. If no changed tenants to synchronize - finish
             if updated_files_count == 0:
                 return {
                     "result": "success",
@@ -268,23 +268,23 @@ class SyncOrchestrator:
                     }
                 }
             
-            # 6. Синхронизируем только измененные блоки для каждого тенанта
+            # 6. Synchronize only changed blocks for each tenant
             return await self.sync_changed_blocks(changed_tenants_data)
                 
         except Exception as e:
-            self.logger.error(f"Ошибка умной синхронизации: {e}")
+            self.logger.error(f"Error in smart synchronization: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_changed_blocks(self, changed_tenants_data: Dict[int, Dict[str, bool]]) -> Dict[str, Any]:
         """
-        Синхронизирует только измененные блоки для указанных тенантов с БД
-        Оптимизация: если изменились только сценарии - не перезапускаем пуллинг
+        Synchronizes only changed blocks for specified tenants with DB
+        Optimization: if only scenarios changed - don't restart polling
         """
         try:
             errors: list[int] = []
@@ -297,35 +297,35 @@ class SyncOrchestrator:
                     fire_and_forget=True
                 )
                 if res.get("result") != "success":
-                    self.logger.error(f"[Tenant-{tenant_id}] Не удалось отправить задачу синхронизации: {res.get('error')}")
+                    self.logger.error(f"[Tenant-{tenant_id}] Failed to submit synchronization task: {res.get('error')}")
                     errors.append(tenant_id)
 
             if not errors:
                 return {"result": "success"}
             else:
-                return {"result": "partial_success", "error": f"Не отправлены задачи для: {errors}"}
+                return {"result": "partial_success", "error": f"Tasks not submitted for: {errors}"}
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации конкретных тенантов: {e}")
+            self.logger.error(f"Error synchronizing specific tenants: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def _sync_all_public_tenants(self, current_sha: str) -> Dict[str, Any]:
         """
-        Полная синхронизация всех публичных тенантов (для первой синхронизации)
+        Full synchronization of all public tenants (for first synchronization)
         """
         try:
-            # 1. Обновляем все публичные тенанты из GitHub (клонируем и копируем)
-            self.logger.info("Первая синхронизация - обновление всех публичных тенантов из GitHub...")
+            # 1. Update all public tenants from GitHub (clone and copy)
+            self.logger.info("First synchronization - updating all public tenants from GitHub...")
             updated_files_count = await self.github_sync.clone_and_copy_tenants(sync_all=True)
             
             if updated_files_count == 0:
-                self.logger.info("Нет публичных тенантов для синхронизации")
-                # Обновляем SHA даже если нечего обновлять
+                self.logger.info("No public tenants to synchronize")
+                # Update SHA even if nothing to update
                 self.smart_github_sync.update_processed_sha(current_sha)
                 return {
                     "result": "success",
@@ -334,13 +334,13 @@ class SyncOrchestrator:
                     }
                 }
             
-            # Обновляем SHA в памяти после успешной синхронизации
+            # Update SHA in memory after successful synchronization
             self.smart_github_sync.update_processed_sha(current_sha)
             
-            # 2. Получаем список всех публичных тенантов из локальной папки
-            # Папка уже создана при инициализации, проверка не нужна
+            # 2. Get list of all public tenants from local folder
+            # Folder already created on initialization, no check needed
             
-            # Собираем список ID всех публичных тенантов
+            # Collect list of IDs of all public tenants
             public_tenant_ids = []
             max_system_id = self.max_system_tenant_id
             
@@ -348,14 +348,14 @@ class SyncOrchestrator:
                 if tenant_dir.is_dir() and tenant_dir.name.startswith('tenant_'):
                     try:
                         tenant_id = int(tenant_dir.name.replace('tenant_', ''))
-                        # Фильтруем только публичные тенанты
+                        # Filter only public tenants
                         if tenant_id > max_system_id:
                             public_tenant_ids.append(tenant_id)
                     except ValueError:
                         continue
             
             if not public_tenant_ids:
-                self.logger.info("Нет публичных тенантов для синхронизации")
+                self.logger.info("No public tenants to synchronize")
                 return {
                     "result": "success",
                     "response_data": {
@@ -363,8 +363,8 @@ class SyncOrchestrator:
                     }
                 }
             
-            # 3. Синхронизируем все публичные тенанты с БД (асинхронно — fire_and_forget)
-            self.logger.info(f"Запускаем синхронизацию {len(public_tenant_ids)} публичных тенантов в фоне...")
+            # 3. Synchronize all public tenants with DB (asynchronously - fire_and_forget)
+            self.logger.info(f"Starting synchronization of {len(public_tenant_ids)} public tenants in background...")
             errors = []
             for tenant_id in public_tenant_ids:
                 blocks = {"bot": True, "scenarios": True, "storage": True, "config": True}
@@ -375,7 +375,7 @@ class SyncOrchestrator:
                     fire_and_forget=True
                 )
                 if res.get("result") != "success":
-                    self.logger.error(f"[Tenant-{tenant_id}] Не удалось отправить задачу sync: {res.get('error')}")
+                    self.logger.error(f"[Tenant-{tenant_id}] Failed to submit sync task: {res.get('error')}")
                     errors.append(tenant_id)
 
             if not errors:
@@ -385,16 +385,16 @@ class SyncOrchestrator:
             else:
                 return {
                     "result": "partial_success",
-                    "error": f"Не отправлены задачи для: {errors}"
+                    "error": f"Tasks not submitted for: {errors}"
                 }
             
         except Exception as e:
-            self.logger.error(f"Ошибка полной синхронизации тенантов: {e}")
+            self.logger.error(f"Error in full tenant synchronization: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
 

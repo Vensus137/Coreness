@@ -9,7 +9,7 @@ from .modules.view_operations import ViewOperations
 
 
 class DatabaseManager:
-    # Доступные базы данных
+    # Available databases
     AVAILABLE_DATABASES = ['sqlite', 'postgresql']
     
     def __init__(self, **kwargs):
@@ -18,87 +18,87 @@ class DatabaseManager:
         self.datetime_formatter = kwargs['datetime_formatter']
         self.data_converter = kwargs['data_converter']
 
-        # Сохраняем kwargs для передачи в менеджеры
+        # Save kwargs for passing to managers
         self._kwargs = kwargs
 
-        # Инициализируем внутренний data_preparer вместо внешней зависимости
+        # Initialize internal data_preparer instead of external dependency
         self.data_preparer = DataPreparer(**kwargs)
 
-        # Добавляем data_preparer в kwargs для передачи в репозитории
+        # Add data_preparer to kwargs for passing to repositories
         self._kwargs['data_preparer'] = self.data_preparer
         
-        # Переменные для хранения текущего менеджера
+        # Variables for storing current manager
         self.current_manager = None
         self.engine = None
         self.session_factory = None
         
-        # ViewOperations будет создан после инициализации подключения
+        # ViewOperations will be created after connection initialization
         self.view_ops = None
         
-        # BackupOperations будет создан после инициализации подключения
+        # BackupOperations will be created after connection initialization
         self.backup_ops = None
         
-        # Инициализируем подключение к базе данных
+        # Initialize database connection
         self._initialize_database_connection()
 
     def shutdown(self):
-        """Корректное завершение database_manager"""
+        """Correct shutdown of database_manager"""
         try:
-            # Закрываем все соединения из пула SQLAlchemy
+            # Close all connections from SQLAlchemy pool
             if hasattr(self, 'engine') and self.engine is not None:
                 self.engine.dispose()
-                self.logger.info("Соединения из пула закрыты")
+                self.logger.info("Connections from pool closed")
         except Exception as e:
-            self.logger.warning(f"Ошибка при закрытии соединений: {e}")
+            self.logger.warning(f"Error closing connections: {e}")
     
     def _shutdown_application(self, reason: str):
-        """Останавливает все приложение при критической ошибке базы данных."""
-        self.logger.critical(f"КРИТИЧЕСКАЯ ОШИБКА БАЗЫ ДАННЫХ: {reason}")
-        self.logger.critical("Приложение не может работать без базы данных. Запускаем graceful shutdown...")
+        """Stops entire application on critical database error."""
+        self.logger.critical(f"CRITICAL DATABASE ERROR: {reason}")
+        self.logger.critical("Application cannot work without database. Starting graceful shutdown...")
         
-        # Импортируем os для принудительного завершения
+        # Import os for forced termination
         import os
         
-        # Логируем критическую ошибку
-        self.logger.critical("=== ПРИЛОЖЕНИЕ ОСТАНОВЛЕНО ИЗ-ЗА ОШИБКИ БАЗЫ ДАННЫХ ===")
+        # Log critical error
+        self.logger.critical("=== APPLICATION STOPPED DUE TO DATABASE ERROR ===")
         
-        # Принудительное завершение процесса
+        # Force process termination
         os._exit(1)
 
     def get_master_repository(self):
-        """Получить мастер-репозиторий - единую точку входа для всех операций с БД"""
+        """Get master repository - single entry point for all DB operations"""
         if not hasattr(self, '_master_repository'):
             from .repositories.master import MasterRepository
             self._master_repository = MasterRepository(self)
         return self._master_repository
 
     def create_all(self):
-        """Создаёт все таблицы в БД согласно моделям и view для PostgreSQL."""
+        """Creates all tables in DB according to models and views for PostgreSQL."""
         try:
-            # Для SQLite исключаем таблицу vector_storage (она только для PostgreSQL с pgvector)
+            # For SQLite exclude vector_storage table (it's only for PostgreSQL with pgvector)
             if self.db_type == 'sqlite':
-                # Получаем все таблицы кроме vector_storage
+                # Get all tables except vector_storage
                 tables_to_create = [
                     table for table in Base.metadata.tables.values()
                     if table.name != 'vector_storage'
                 ]
                 Base.metadata.create_all(self.engine, tables=tables_to_create)
-                self.logger.info("Все таблицы успешно созданы (vector_storage пропущена для SQLite).")
+                self.logger.info("All tables successfully created (vector_storage skipped for SQLite).")
             else:
-                # Для PostgreSQL создаем все таблицы включая vector_storage
+                # For PostgreSQL create all tables including vector_storage
                 Base.metadata.create_all(self.engine)
-                self.logger.info("Все таблицы успешно созданы.")
+                self.logger.info("All tables successfully created.")
             
-            # Создаём view для PostgreSQL (для SQLite игнорируется)
+            # Create views for PostgreSQL (ignored for SQLite)
             self.create_all_views()
             
         except Exception as e:
-            self.logger.error(f"Ошибка при создании таблиц: {e}")
-            self._shutdown_application(f"Критическая ошибка создания таблиц: {e}")
+            self.logger.error(f"Error creating tables: {e}")
+            self._shutdown_application(f"Critical error creating tables: {e}")
     
     def drop_all_views(self) -> bool:
         """
-        Удаляет все системные view для PostgreSQL (для SQLite игнорируется)
+        Drops all system views for PostgreSQL (ignored for SQLite)
         """
         if not self.view_ops:
             return True
@@ -107,7 +107,7 @@ class DatabaseManager:
     
     def create_all_views(self) -> bool:
         """
-        Создаёт все view для PostgreSQL (для SQLite игнорируется)
+        Creates all views for PostgreSQL (ignored for SQLite)
         """
         if not self.view_ops:
             return True
@@ -115,10 +115,10 @@ class DatabaseManager:
         return self.view_ops.create_all_views()
     
     def get_table_class_map(self):
-        """Получает карту таблиц: имя таблицы -> класс модели."""
+        """Gets table map: table name -> model class."""
         table_class_map = {}
         for table_name, _table in Base.metadata.tables.items():
-            # Находим соответствующую модель
+            # Find corresponding model
             for model_class in Base.registry._class_registry.values():
                 if hasattr(model_class, '__tablename__') and model_class.__tablename__ == table_name:
                     table_class_map[table_name] = model_class
@@ -126,13 +126,13 @@ class DatabaseManager:
         return table_class_map
 
     def get_available_databases(self):
-        """Возвращает список доступных баз данных"""
+        """Returns list of available databases"""
         return self.AVAILABLE_DATABASES.copy()
 
     def get_database_config(self) -> dict:
         """
-        Возвращает полную конфигурацию текущей базы данных
-        Включает: type, url и параметры подключения (host, port, username, password, database для PostgreSQL или db_path для SQLite)
+        Returns full configuration of current database
+        Includes: type, url and connection parameters (host, port, username, password, database for PostgreSQL or db_path for SQLite)
         """
         config = self.current_manager.get_config()
         config['type'] = self.db_type
@@ -140,25 +140,25 @@ class DatabaseManager:
         return config
     
     def _initialize_database_connection(self):
-        """Инициализирует подключение к базе данных."""
-        # Получаем настройки
+        """Initializes database connection."""
+        # Get settings
         settings = self.settings_manager.get_plugin_settings("database_manager")
         self.db_type = settings.get('database_preset', 'sqlite')
         
-        # Создаем менеджер для нужной базы данных
+        # Create manager for required database
         self.current_manager = self._create_database_manager(self.db_type)
         
-        # Получаем engine и session_factory от текущего менеджера
+        # Get engine and session_factory from current manager
         self.engine = self.current_manager.get_engine()
         self.session_factory = self.current_manager.get_session_factory()
         
-        # Инициализируем ViewOperations для PostgreSQL
+        # Initialize ViewOperations for PostgreSQL
         if self.db_type == 'postgresql':
             self.view_ops = ViewOperations(self.engine, self.db_type, self.logger)
         else:
             self.view_ops = None
         
-        # Инициализируем BackupOperations
+        # Initialize BackupOperations
         self.backup_ops = BackupOperations(
             logger=self.logger,
             db_config=self.get_database_config(),
@@ -166,20 +166,20 @@ class DatabaseManager:
             settings_manager=self.settings_manager
         )
         
-        # Создаём таблицы при инициализации
+        # Create tables on initialization
         self.create_all()
     
     def _create_database_manager(self, db_type: str):
-        """Создает менеджер для указанного типа базы данных."""
+        """Creates manager for specified database type."""
         if db_type == 'postgresql':
             return PostgreSQLManager(**self._kwargs)
         else:
             return SQLiteManager(**self._kwargs)
     
     async def create_backup(self, backup_filename: Optional[str] = None) -> Optional[str]:
-        """Создает бэкап базы данных в формате plain SQL + gzip для PostgreSQL или .bak.gz для SQLite"""
+        """Creates database backup in plain SQL + gzip format for PostgreSQL or .bak.gz for SQLite"""
         return await self.backup_ops.create_backup(backup_filename)
     
     async def restore_backup(self, backup_filename: Optional[str] = None) -> bool:
-        """Восстанавливает базу данных из бэкапа"""
+        """Restores database from backup"""
         return await self.backup_ops.restore_backup(backup_filename)

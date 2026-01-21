@@ -1,33 +1,33 @@
 """
-Базовые модификаторы для работы со строками
+Basic modifiers for working with strings
 """
 from typing import Any
 
 
 class BasicModifiers:
-    """Класс с базовыми модификаторами для работы со строками"""
+    """Class with basic modifiers for working with strings"""
     
     def __init__(self, logger):
         self.logger = logger
     
     def modifier_upper(self, value: Any, param: str) -> str:
-        """Верхний регистр: {field|upper}"""
+        """Uppercase: {field|upper}"""
         return str(value).upper() if value is not None else ""
     
     def modifier_lower(self, value: Any, param: str) -> str:
-        """Нижний регистр: {field|lower}"""
+        """Lowercase: {field|lower}"""
         return str(value).lower() if value is not None else ""
     
     def modifier_title(self, value: Any, param: str) -> str:
-        """Заглавные буквы: {field|title}"""
+        """Title case: {field|title}"""
         return str(value).title() if value is not None else ""
     
     def modifier_capitalize(self, value: Any, param: str) -> str:
-        """Первая заглавная: {field|capitalize}"""
+        """First letter uppercase: {field|capitalize}"""
         return str(value).capitalize() if value is not None else ""
     
     def modifier_truncate(self, value: Any, param: str) -> str:
-        """Обрезка текста: {field|truncate:length}"""
+        """Text truncation: {field|truncate:length}"""
         if not value or not param:
             return str(value) if value is not None else ""
         try:
@@ -40,17 +40,17 @@ class BasicModifiers:
             return str(value)
     
     def modifier_length(self, value: Any, param: str) -> int:
-        """Подсчет длины строки или массива: {field|length}"""
+        """Count length of string or array: {field|length}"""
         if value is None:
             return 0
-        # Для массивов возвращаем количество элементов
+        # For arrays return number of elements
         if isinstance(value, list):
             return len(value)
-        # Для строк и других типов возвращаем длину строкового представления
+        # For strings and other types return length of string representation
         return len(str(value))
     
     def modifier_case(self, value: Any, param: str) -> str:
-        """Преобразование регистра: {field|case:type}"""
+        """Case conversion: {field|case:type}"""
         if not value or not param:
             return str(value) if value is not None else ""
         
@@ -67,44 +67,44 @@ class BasicModifiers:
         return text
     
     def modifier_regex(self, value: Any, param: str) -> str:
-        """Извлечение данных по regex: {field|regex:pattern}"""
+        """Data extraction by regex: {field|regex:pattern}"""
         if not value or not param:
             return str(value) if value is not None else ""
         
         try:
             import re
 
-            # Компилируем регулярное выражение
+            # Compile regular expression
             pattern = re.compile(param)
             
-            # Ищем совпадение
+            # Search for match
             match = pattern.search(str(value))
             
             if match:
-                # Возвращаем первую группу (группа 1), если она есть, иначе всю строку (группа 0)
+                # Return first group (group 1) if exists, otherwise entire string (group 0)
                 if match.groups():
                     return match.group(1)
                 else:
                     return match.group(0)
             else:
-                # Если совпадение не найдено, возвращаем пустую строку
+                # If match not found, return empty string
                 return ""
                 
         except Exception as e:
-            self.logger.warning(f"Ошибка применения regex модификатора с паттерном '{param}': {e}")
+            self.logger.warning(f"Error applying regex modifier with pattern '{param}': {e}")
             return str(value)
     
     def modifier_code(self, value: Any, param: str) -> str:
         """
-        Оборачивание значения в code блок: {field|code}
-        Возвращает значение обернутое в <code>...</code>
-        Порядок модификаторов имеет значение:
-        - {items|list|code} - сначала список, потом обертка: <code>• a\n• b</code>
-        - {items|code|list} - сначала обертка каждого элемента, потом список: • <code>a</code>\n• <code>b</code>
+        Wrapping value in code block: {field|code}
+        Returns value wrapped in <code>...</code>
+        Modifier order matters:
+        - {items|list|code} - first list, then wrap: <code>• a\n• b</code>
+        - {items|code|list} - first wrap each element, then list: • <code>a</code>\n• <code>b</code>
         """
         if value is None:
             return '<code></code>'
         if isinstance(value, list):
-            # Если это список, обрабатываем каждый элемент
+            # If it's a list, process each element
             return '\n'.join(f'<code>{str(item)}</code>' for item in value)
         return f'<code>{str(value)}</code>'

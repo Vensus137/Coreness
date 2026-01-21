@@ -9,17 +9,17 @@ services:
       - ENVIRONMENT=test
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
-    # Для test: код через volume (для разработки), данные и конфиги тоже через volumes
+    # For test: code via volume (for development), data and configs also via volumes
     volumes:
-      - ..:/workspace  # Весь проект (для разработки)
+      - ..:/workspace  # Entire project (for development)
       - ./supervisord.conf:/etc/supervisor/conf.d/supervisord.conf:ro
-      # Данные и конфиги монтируются через общий volume выше, но можно переопределить отдельно
+      # Data and configs mounted via common volume above, but can be overridden separately
       # - ../data:/workspace/data:rw
       # - ../config:/workspace/config:rw
       # - ../logs:/workspace/logs:rw
-    # Проброс порта для вебхуков (GitHub и Telegram) - test окружение
+    # Port forwarding for webhooks (GitHub and Telegram) - test environment
     ports:
-      - "8443:8443"  # HTTPS сервер для вебхуков (test) - порт 8443 разрешен Telegram
+      - "8443:8443"  # HTTPS server for webhooks (test) - port 8443 allowed by Telegram
     depends_on:
       postgres-test:
         condition: service_healthy
@@ -35,12 +35,12 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_TEST:-coreness1234}
       PGDATA: /var/lib/postgresql/data
     volumes:
-      # Переопределяем volumes для монтирования test конфига
+      # Override volumes for mounting test config
       - ../data/postgresql:/var/lib/postgresql/data
-      # Скрипт инициализации для автоматической установки расширения pgvector
+      # Initialization script for automatic pgvector extension installation
       - ./init-pgvector.sql:/docker-entrypoint-initdb.d/01-init-pgvector.sql:ro
       - ./postgresql.test.conf:/etc/postgresql/postgresql.conf:ro
       - ./pg_hba.test.conf:/etc/postgresql/pg_hba.conf:ro
     ports:
-      - "5433:5432"  # Test окружение использует порт 5433
+      - "5433:5432"  # Test environment uses port 5433
 

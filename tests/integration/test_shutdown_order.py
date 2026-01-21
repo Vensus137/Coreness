@@ -1,6 +1,6 @@
 """
-Тесты для проверки порядка shutdown приложения
-Проверяют, что плагины останавливаются перед отменой фоновых задач
+Tests for verifying application shutdown order
+Verify that plugins stop before background tasks are cancelled
 """
 import asyncio
 from unittest.mock import Mock, patch, MagicMock
@@ -14,24 +14,24 @@ from app.di_container import DIContainer
 @pytest.mark.asyncio
 async def test_shutdown_order_plugins_before_background_tasks(settings_manager):
     """
-    Проверка порядка shutdown:
-    1. Сначала shutdown всех плагинов (через di_container.shutdown())
-    2. Потом отмена фоновых задач приложения (_background_tasks)
+    Verify shutdown order:
+    1. First shutdown all plugins (through di_container.shutdown())
+    2. Then cancel application background tasks (_background_tasks)
     """
-    # Создаем моки для отслеживания порядка вызовов
+    # Create mocks to track call order
     shutdown_call_order = []
     di_shutdown_called = False
     tasks_cancelled = False
     
-    # Создаем мок DI-контейнера
+    # Create mock DI container
     mock_di_container = Mock(spec=DIContainer)
     
-    # Мокаем shutdown DI-контейнера - он должен вызываться первым
+    # Mock DI container shutdown - it should be called first
     def mock_di_shutdown():
         nonlocal di_shutdown_called
         di_shutdown_called = True
         shutdown_call_order.append('di_container_shutdown')
-        # Имитируем shutdown плагинов
+        # Simulate plugin shutdown
         shutdown_call_order.append('telegram_polling_shutdown')
         shutdown_call_order.append('task_manager_shutdown')
         shutdown_call_order.append('cache_manager_shutdown')
@@ -39,17 +39,17 @@ async def test_shutdown_order_plugins_before_background_tasks(settings_manager):
     
     mock_di_container.shutdown = Mock(side_effect=mock_di_shutdown)
     
-    # Создаем мок Application с settings_manager для использования переопределенных настроек shutdown
+    # Create mock Application with settings_manager to use overridden shutdown settings
     app = Application()
-    app.settings_manager = settings_manager  # Используем settings_manager из фикстуры (с патчем)
+    app.settings_manager = settings_manager  # Use settings_manager from fixture (with patch)
     app.di_container = mock_di_container
     app.is_running = True
     app._background_tasks = []
     
-    # Создаем фоновые задачи для теста
+    # Create background tasks for test
     async def mock_service_task():
         try:
-            await asyncio.sleep(10)  # Долгая задача
+            await asyncio.sleep(10)  # Long-running task
         except asyncio.CancelledError:
             nonlocal tasks_cancelled
             if not tasks_cancelled:
@@ -61,55 +61,55 @@ async def test_shutdown_order_plugins_before_background_tasks(settings_manager):
     task2 = asyncio.create_task(mock_service_task())
     app._background_tasks = [task1, task2]
     
-    # Запускаем shutdown
+    # Start shutdown
     await app._async_shutdown()
     
-    # Даем немного времени для обработки отмены
+    # Give some time for cancellation processing
     await asyncio.sleep(0.1)
     
-    # Проверяем порядок вызовов
-    # 1. Сначала должен быть вызван di_container.shutdown()
+    # Verify call order
+    # 1. di_container.shutdown() should be called first
     assert shutdown_call_order[0] == 'di_container_shutdown', \
-        f"di_container.shutdown() должен вызываться первым, но порядок: {shutdown_call_order}"
+        f"di_container.shutdown() should be called first, but order: {shutdown_call_order}"
     
-    # 2. Потом shutdown плагинов
+    # 2. Then plugin shutdown
     assert 'telegram_polling_shutdown' in shutdown_call_order, \
-        f"telegram_polling.shutdown() должен вызываться, порядок: {shutdown_call_order}"
+        f"telegram_polling.shutdown() should be called, order: {shutdown_call_order}"
     
-    # 3. Потом отмена фоновых задач
+    # 3. Then background tasks cancellation
     assert 'background_tasks_cancelled' in shutdown_call_order, \
-        f"Отмена фоновых задач должна происходить, порядок: {shutdown_call_order}"
+        f"Background tasks cancellation should occur, order: {shutdown_call_order}"
     
-    # Проверяем, что shutdown DI-контейнера вызван до отмены задач
+    # Verify that DI container shutdown is called before task cancellation
     di_shutdown_index = shutdown_call_order.index('di_container_shutdown')
     task_cancel_index = shutdown_call_order.index('background_tasks_cancelled')
     assert di_shutdown_index < task_cancel_index, \
-        f"di_container.shutdown() должен вызываться до отмены фоновых задач. " \
-        f"Порядок: {shutdown_call_order}"
+        f"di_container.shutdown() should be called before background tasks cancellation. " \
+        f"Order: {shutdown_call_order}"
     
-    # Проверяем, что shutdown плагинов происходит до отмены задач
+    # Verify that plugin shutdown occurs before task cancellation
     plugin_shutdown_index = shutdown_call_order.index('telegram_polling_shutdown')
     assert plugin_shutdown_index < task_cancel_index, \
-        f"shutdown плагинов должен вызываться до отмены фоновых задач. " \
-        f"Порядок: {shutdown_call_order}"
+        f"Plugin shutdown should be called before background tasks cancellation. " \
+        f"Order: {shutdown_call_order}"
     
-    # Проверяем, что shutdown был вызван
-    assert di_shutdown_called, "di_container.shutdown() должен быть вызван"
+    # Verify that shutdown was called
+    assert di_shutdown_called, "di_container.shutdown() should be called"
     
-    # Проверяем, что задачи были отменены
+    # Verify that tasks were cancelled
     assert all(task.cancelled() or task.done() for task in app._background_tasks), \
-        "Все фоновые задачи должны быть отменены или завершены"
+        "All background tasks should be cancelled or completed"
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_shutdown_plugins_stop_internal_tasks():
     """
-    Проверка, что shutdown плагинов останавливает их внутренние задачи
+    Verify that plugin shutdown stops their internal tasks
     """
     shutdown_calls = {}
     
-    # Создаем моки плагинов с отслеживанием вызовов shutdown
+    # Create plugin mocks with shutdown call tracking
     mock_telegram_polling = Mock()
     mock_telegram_polling.shutdown = Mock(side_effect=lambda: shutdown_calls.update({'telegram_polling': True}))
     
@@ -119,7 +119,7 @@ async def test_shutdown_plugins_stop_internal_tasks():
     mock_cache_manager = Mock()
     mock_cache_manager.shutdown = Mock(side_effect=lambda: shutdown_calls.update({'cache_manager': True}))
     
-    # Создаем мок DI-контейнера с плагинами
+    # Create mock DI container with plugins
     mock_di_container = Mock(spec=DIContainer)
     mock_di_container._utilities = {
         'telegram_polling': mock_telegram_polling,
@@ -129,21 +129,21 @@ async def test_shutdown_plugins_stop_internal_tasks():
     mock_di_container._services = {}
     
     def mock_di_shutdown():
-        # Имитируем shutdown утилит
+        # Simulate utility shutdown
         for utility_name, utility_instance in mock_di_container._utilities.items():
             if hasattr(utility_instance, 'shutdown'):
                 utility_instance.shutdown()
     
     mock_di_container.shutdown = Mock(side_effect=mock_di_shutdown)
     
-    # Вызываем shutdown DI-контейнера
+    # Call DI container shutdown
     mock_di_container.shutdown()
     
-    # Проверяем, что shutdown всех плагинов был вызван
+    # Verify that shutdown of all plugins was called
     assert shutdown_calls.get('telegram_polling'), \
-        "telegram_polling.shutdown() должен быть вызван"
+        "telegram_polling.shutdown() should be called"
     assert shutdown_calls.get('task_manager'), \
-        "task_manager.shutdown() должен быть вызван"
+        "task_manager.shutdown() should be called"
     assert shutdown_calls.get('cache_manager'), \
-        "cache_manager.shutdown() должен быть вызван"
+        "cache_manager.shutdown() should be called"
 

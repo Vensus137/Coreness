@@ -1,5 +1,5 @@
 """
-Модуль для генерации случайных чисел и выбора элементов
+Module for random number generation and element selection
 """
 
 import random
@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 class RandomManager:
     """
-    Класс для генерации случайных чисел и выбора элементов
+    Class for random number generation and element selection
     """
     
     def __init__(self, logger):
@@ -16,7 +16,7 @@ class RandomManager:
     
     async def generate_int(self, data: dict) -> Dict[str, Any]:
         """
-        Генерация случайного целого числа в заданном диапазоне
+        Generate random integer in specified range
         """
         try:
             if not data:
@@ -24,7 +24,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Нет данных для генерации"
+                        "message": "No data for generation"
                     }
                 }
             
@@ -32,13 +32,13 @@ class RandomManager:
             max_val = data.get('max')
             seed = data.get('seed')
             
-            # Валидация параметров
+            # Parameter validation
             if min_val is None:
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр min обязателен"
+                        "message": "min parameter is required"
                     }
                 }
             
@@ -47,7 +47,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр max обязателен"
+                        "message": "max parameter is required"
                     }
                 }
             
@@ -56,7 +56,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр min должен быть целым числом"
+                        "message": "min parameter must be an integer"
                     }
                 }
             
@@ -65,7 +65,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр max должен быть целым числом"
+                        "message": "max parameter must be an integer"
                     }
                 }
             
@@ -74,20 +74,20 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "min не может быть больше max"
+                        "message": "min cannot be greater than max"
                     }
                 }
             
-            # Создаем генератор с seed или без
+            # Create generator with seed or without
             if seed is not None:
                 rng = random.Random(seed)
             else:
                 rng = random.Random()
             
-            # Генерируем случайное число
+            # Generate random number
             value = rng.randint(min_val, max_val)
             
-            # Формируем результат
+            # Form result
             result = {
                 "result": "success",
                 "response_data": {
@@ -95,14 +95,14 @@ class RandomManager:
                 }
             }
             
-            # Добавляем seed в ответ, если он был передан (конвертируем в строку для консистентности)
+            # Add seed to response if provided (convert to string for consistency)
             if seed is not None:
                 result["response_data"]["random_seed"] = str(seed)
             
             return result
             
         except Exception as e:
-            self.logger.error(f"Ошибка генерации случайного числа: {e}")
+            self.logger.error(f"Error generating random number: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -113,8 +113,8 @@ class RandomManager:
     
     async def generate_array(self, data: dict) -> Dict[str, Any]:
         """
-        Генерация массива случайных чисел в заданном диапазоне
-        По умолчанию без повторений, можно разрешить повторения через allow_duplicates=True
+        Generate array of random numbers in specified range
+        By default without repetitions, can allow repetitions via allow_duplicates=True
         """
         try:
             if not data:
@@ -122,7 +122,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Нет данных для генерации"
+                        "message": "No data for generation"
                     }
                 }
             
@@ -130,15 +130,15 @@ class RandomManager:
             max_val = data.get('max')
             count = data.get('count')
             seed = data.get('seed')
-            allow_duplicates = data.get('allow_duplicates', False)  # По умолчанию без повторений
+            allow_duplicates = data.get('allow_duplicates', False)  # By default without repetitions
             
-            # Валидация параметров
+            # Parameter validation
             if min_val is None:
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр min обязателен"
+                        "message": "min parameter is required"
                     }
                 }
             
@@ -147,7 +147,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр max обязателен"
+                        "message": "max parameter is required"
                     }
                 }
             
@@ -156,7 +156,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр count обязателен"
+                        "message": "count parameter is required"
                     }
                 }
             
@@ -165,7 +165,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр min должен быть целым числом"
+                        "message": "min parameter must be an integer"
                     }
                 }
             
@@ -174,7 +174,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр max должен быть целым числом"
+                        "message": "max parameter must be an integer"
                     }
                 }
             
@@ -183,7 +183,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр count должен быть целым числом"
+                        "message": "count parameter must be an integer"
                     }
                 }
             
@@ -192,7 +192,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "min не может быть больше max"
+                        "message": "min cannot be greater than max"
                     }
                 }
             
@@ -201,7 +201,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр count не может быть отрицательным"
+                        "message": "count parameter cannot be negative"
                     }
                 }
             
@@ -213,33 +213,33 @@ class RandomManager:
                     }
                 }
             
-            # Проверяем возможность генерации без повторений
+            # Check possibility of generation without repetitions
             range_size = max_val - min_val + 1
             if not allow_duplicates and count > range_size:
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": f"Невозможно сгенерировать {count} уникальных чисел в диапазоне [{min_val}, {max_val}] (доступно только {range_size} уникальных значений). Используйте allow_duplicates=True для разрешения повторений"
+                        "message": f"Cannot generate {count} unique numbers in range [{min_val}, {max_val}] (only {range_size} unique values available). Use allow_duplicates=True to allow repetitions"
                     }
                 }
             
-            # Создаем генератор с seed или без
+            # Create generator with seed or without
             if seed is not None:
                 rng = random.Random(seed)
             else:
                 rng = random.Random()
             
-            # Генерируем массив случайных чисел
+            # Generate array of random numbers
             if allow_duplicates:
-                # С повторениями - обычная генерация
+                # With repetitions - normal generation
                 values = [rng.randint(min_val, max_val) for _ in range(count)]
             else:
-                # Без повторений - используем sample для гарантии уникальности
+                # Without repetitions - use sample to guarantee uniqueness
                 all_possible_values = list(range(min_val, max_val + 1))
                 values = rng.sample(all_possible_values, count)
             
-            # Формируем результат
+            # Form result
             result = {
                 "result": "success",
                 "response_data": {
@@ -247,14 +247,14 @@ class RandomManager:
                 }
             }
             
-            # Добавляем seed в ответ, если он был передан (конвертируем в строку для консистентности)
+            # Add seed to response if provided (convert to string for consistency)
             if seed is not None:
                 result["response_data"]["random_seed"] = str(seed)
             
             return result
             
         except Exception as e:
-            self.logger.error(f"Ошибка генерации массива случайных чисел: {e}")
+            self.logger.error(f"Error generating random number array: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -265,8 +265,8 @@ class RandomManager:
     
     async def choose_from_array(self, data: dict) -> Dict[str, Any]:
         """
-        Выбор случайных элементов из массива без повторений
-        Возвращает выбранные элементы и их порядковые номера (индексы) в исходном массиве
+        Choose random elements from array without repetition
+        Returns selected elements and their ordinal numbers (indices) in original array
         """
         try:
             if not data:
@@ -274,7 +274,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Нет данных для выбора"
+                        "message": "No data for selection"
                     }
                 }
             
@@ -282,13 +282,13 @@ class RandomManager:
             count = data.get('count')
             seed = data.get('seed')
             
-            # Валидация параметров
+            # Parameter validation
             if array is None:
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр array обязателен"
+                        "message": "array parameter is required"
                     }
                 }
             
@@ -297,7 +297,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр array должен быть массивом"
+                        "message": "array parameter must be an array"
                     }
                 }
             
@@ -306,7 +306,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр count обязателен"
+                        "message": "count parameter is required"
                     }
                 }
             
@@ -315,7 +315,7 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр count должен быть целым числом"
+                        "message": "count parameter must be an integer"
                     }
                 }
             
@@ -324,21 +324,21 @@ class RandomManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр count не может быть отрицательным"
+                        "message": "count parameter cannot be negative"
                     }
                 }
             
-            # Проверяем, достаточно ли элементов в массиве
+            # Check if enough elements in array
             if count > len(array):
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": f"Недостаточно элементов в массиве: запрошено {count}, доступно {len(array)}"
+                        "message": f"Not enough elements in array: requested {count}, available {len(array)}"
                     }
                 }
             
-            # Если запрошено 0 элементов, возвращаем пустой массив
+            # If 0 elements requested, return empty array
             if count == 0:
                 return {
                     "result": "success",
@@ -347,17 +347,17 @@ class RandomManager:
                     }
                 }
             
-            # Создаем генератор с seed или без
+            # Create generator with seed or without
             if seed is not None:
                 rng = random.Random(seed)
             else:
                 rng = random.Random()
             
-            # Выбираем случайные элементы без повторений
-            # Используем sample для гарантии отсутствия повторений
+            # Choose random elements without repetition
+            # Use sample to guarantee no repetition
             selected_values = rng.sample(array, count)
             
-            # Формируем результат
+            # Form result
             result = {
                 "result": "success",
                 "response_data": {
@@ -365,14 +365,14 @@ class RandomManager:
                 }
             }
             
-            # Добавляем seed в ответ, если он был передан (конвертируем в строку для консистентности)
+            # Add seed to response if provided (convert to string for consistency)
             if seed is not None:
                 result["response_data"]["random_seed"] = str(seed)
             
             return result
             
         except Exception as e:
-            self.logger.error(f"Ошибка выбора элементов из массива: {e}")
+            self.logger.error(f"Error choosing elements from array: {e}")
             return {
                 "result": "error",
                 "error": {

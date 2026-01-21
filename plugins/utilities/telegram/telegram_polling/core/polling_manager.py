@@ -1,5 +1,5 @@
 """
-PollingManager - управление пулингом множественных ботов
+PollingManager - management of polling for multiple bots
 """
 
 import asyncio
@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, Type
 
 class PollingManager:
     """
-    Простое управление пулингом множественных ботов без мониторинга
+    Simple management of polling for multiple bots without monitoring
     """
     
     def __init__(self, settings: dict, logger, bot_poller_class: Type, datetime_formatter):
@@ -17,78 +17,78 @@ class PollingManager:
         self.bot_poller_class = bot_poller_class
         self.datetime_formatter = datetime_formatter
         
-        # Активные пуллеры
+        # Active pollers
         self.active_pollers: Dict[int, Any] = {}  # bot_id -> poller
         
-        # Отслеживание ботов, для которых уже был выполнен сброс настроек
-        # Это глобальная настройка бота на сервере Telegram, не нужно делать при каждом перезапуске пулинга
+        # Track bots for which settings reset was already performed
+        # This is a global bot setting on Telegram server, don't need to do on every polling restart
         self._bots_settings_reset: set[int] = set()
     
     async def start_bot_polling(self, bot_id: int, token: str, event_callback: Callable) -> bool:
-        """Запуск пулинга для конкретного бота"""
+        """Start polling for specific bot"""
         try:
-            # Останавливаем существующий пулинг если есть
+            # Stop existing polling if any
             if bot_id in self.active_pollers:
                 await self.stop_bot_polling(bot_id)
             
-            # Сбрасываем настройки бота только при первом запуске (глобальная настройка на сервере Telegram)
-            # Это нужно делать один раз при старте приложения, а не при каждом перезапуске пулинга
+            # Reset bot settings only on first startup (global setting on Telegram server)
+            # This should be done once on application startup, not on every polling restart
             if bot_id not in self._bots_settings_reset:
-                # Создаем временный пуллер только для сброса настроек
+                # Create temporary poller only for resetting settings
                 temp_poller = self.bot_poller_class(bot_id, token, self.settings, self.logger, self.datetime_formatter)
                 try:
                     await temp_poller.reset_bot_settings()
                     self._bots_settings_reset.add(bot_id)
-                    self.logger.info(f"[Bot-{bot_id}] Настройки бота установлены (один раз при запуске)")
+                    self.logger.info(f"[Bot-{bot_id}] Bot settings set (once on startup)")
                 except Exception as e:
-                    # Если не удалось установить настройки - логируем, но продолжаем работу
-                    # Возможно, настройки уже установлены или есть временная проблема
-                    self.logger.warning(f"[Bot-{bot_id}] Не удалось установить настройки бота (продолжаем работу): {e}")
+                    # If failed to set settings - log, but continue work
+                    # Settings may already be set or there's a temporary problem
+                    self.logger.warning(f"[Bot-{bot_id}] Failed to set bot settings (continuing work): {e}")
             
-            # Создаем новый пуллер и сразу добавляем в active_pollers
+            # Create new poller and immediately add to active_pollers
             poller = self.bot_poller_class(bot_id, token, self.settings, self.logger, self.datetime_formatter)
             self.active_pollers[bot_id] = poller
             
-            # Запускаем пулинг в фоновой задаче (не блокируем)
-            # Пулинг будет в бесконечном цикле, если токен валиден - работает, если нет - остановится сам
-            self.logger.info(f"[Bot-{bot_id}] Пулинг запущен в фоне")
+            # Start polling in background task (non-blocking)
+            # Polling will be in infinite loop, if token is valid - works, if not - stops itself
+            self.logger.info(f"[Bot-{bot_id}] Polling started in background")
             asyncio.create_task(poller.start_polling(event_callback))
             
             return True
             
         except Exception as e:
-            self.logger.error(f"Ошибка запуска пулинга: {e}")
+            self.logger.error(f"Error starting polling: {e}")
             return False
 
     async def stop_bot_polling(self, bot_id: int) -> bool:
-        """Остановка пулинга для конкретного бота"""
+        """Stop polling for specific bot"""
         try:
             if bot_id not in self.active_pollers:
                 return True
             
             poller = self.active_pollers[bot_id]
             
-            # Останавливаем пулинг с таймаутом
+            # Stop polling with timeout
             stop_timeout = self.settings.get('stop_polling_manager_timeout', 3.0)
             try:
                 await asyncio.wait_for(poller.stop_polling(), timeout=stop_timeout)
             except asyncio.TimeoutError:
-                self.logger.warning(f"[Bot-{bot_id}] Пулинг не остановился за {stop_timeout} секунд, принудительное удаление")
+                self.logger.warning(f"[Bot-{bot_id}] Polling didn't stop within {stop_timeout} seconds, forcing removal")
             
-            # Удаляем из active_pollers ТОЛЬКО после остановки
+            # Remove from active_pollers ONLY after stopping
             del self.active_pollers[bot_id]
             return True
             
         except Exception as e:
-            self.logger.error(f"Ошибка остановки пулинга: {e}")
+            self.logger.error(f"Error stopping polling: {e}")
             return False
     
     async def stop_all_polling(self) -> bool:
-        """Остановка пулинга всех ботов"""
+        """Stop polling for all bots"""
         try:
-            self.logger.info("Остановка пулинга всех ботов")
+            self.logger.info("Stopping polling for all bots")
             
-            # Останавливаем все пуллеры
+            # Stop all pollers
             tasks = []
             for bot_id in list(self.active_pollers.keys()):
                 tasks.append(self.stop_bot_polling(bot_id))
@@ -96,24 +96,24 @@ class PollingManager:
             if tasks:
                 await asyncio.gather(*tasks, return_exceptions=True)
             
-            self.logger.info("Пулинг всех ботов остановлен")
+            self.logger.info("Polling for all bots stopped")
             return True
             
         except Exception as e:
-            self.logger.error(f"Ошибка остановки пулинга всех ботов: {e}")
+            self.logger.error(f"Error stopping polling for all bots: {e}")
             return False
     
     def shutdown(self):
-        """Синхронный graceful shutdown менеджера пулинга"""
-        # Останавливаем все пуллеры синхронно
+        """Synchronous graceful shutdown of polling manager"""
+        # Stop all pollers synchronously
         for bot_id in list(self.active_pollers.keys()):
             try:
                 if bot_id in self.active_pollers:
                     poller = self.active_pollers[bot_id]
-                    # Используем синхронный метод остановки пуллера
+                    # Use synchronous method to stop poller
                     poller.stop_polling_sync()
                     del self.active_pollers[bot_id]
             except Exception as e:
-                self.logger.error(f"Ошибка остановки пулинга: {e}")
+                self.logger.error(f"Error stopping polling: {e}")
     
     

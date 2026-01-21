@@ -13,28 +13,28 @@ COLORS = {
     'RESET': '\033[0m'      # Reset
 }
 
-# Цвета для тегов
+# Colors for tags
 TAG_COLORS = {
-    'square': '\033[36m',   # Cyan - контекст [Bot-1], [Tenant-2]
-    'round': '\033[33m',    # Yellow - статус (error), (warning)  
-    'curly': '\033[32m',   # Green - данные {config}, {data}
-    'http': '\033[35m',    # Magenta - HTTP коды (200, 404, 500)
+    'square': '\033[36m',   # Cyan - context [Bot-1], [Tenant-2]
+    'round': '\033[33m',    # Yellow - status (error), (warning)  
+    'curly': '\033[32m',    # Green - data {config}, {data}
+    'http': '\033[35m',     # Magenta - HTTP codes (200, 404, 500)
     'RESET': '\033[0m'
 }
 
 class TimezoneFormatter(logging.Formatter):
-    """Базовый форматтер с правильной таймзоной"""
+    """Base formatter with correct timezone"""
     
     def __init__(self, fmt, datefmt=None, style='%', timezone='Europe/Moscow'):
         super().__init__(fmt, datefmt, style)
         try:
             self._timezone = ZoneInfo(timezone)
         except Exception:
-            # Fallback на UTC если указана неверная таймзона
+            # Fallback to UTC if invalid timezone specified
             self._timezone = ZoneInfo('UTC')
     
     def formatTime(self, record, datefmt=None):
-        """Переопределяем formatTime для использования правильной таймзоны"""
+        """Override formatTime to use correct timezone"""
         ct = datetime.fromtimestamp(record.created, tz=self._timezone)
         if datefmt:
             s = ct.strftime(datefmt)
@@ -46,33 +46,33 @@ class TimezoneFormatter(logging.Formatter):
 
 
 class ColoredFormatter(TimezoneFormatter):
-    """Форматтер с поддержкой цветов для консоли"""
+    """Formatter with color support for console"""
     
     def __init__(self, fmt, datefmt=None, style='%', use_colors=True, smart_format=False, timezone='Europe/Moscow'):
         super().__init__(fmt, datefmt, style, timezone=timezone)
         self.use_colors = use_colors
         self.smart_format = smart_format
         
-        # Предкомпилируем regex паттерны для умного форматирования
+        # Precompile regex patterns for smart formatting
         if self.smart_format:
             self._compile_regex_patterns()
     
     def _compile_regex_patterns(self):
-        """Предкомпиляция regex паттернов для повышения производительности"""
-        # Компилируем паттерны один раз при инициализации
+        """Precompile regex patterns for better performance"""
+        # Compile patterns once on initialization
         self._http_pattern = re.compile(r'(HTTP \d{3})')
         self._square_pattern = re.compile(r'(\[[^\]]+\])')
         self._round_pattern = re.compile(r'(\([^)]+\))')
         self._curly_pattern = re.compile(r'(\{[^}]+\})')
         
-        # Создаем функции замены с предкомпилированными паттернами
+        # Create replacement functions with precompiled patterns
         self._http_replacer = lambda m: f'{TAG_COLORS["http"]}{m.group(1)}{TAG_COLORS["RESET"]}'
         self._square_replacer = lambda m: f'{TAG_COLORS["square"]}{m.group(1)}{TAG_COLORS["RESET"]}'
         self._round_replacer = lambda m: f'{TAG_COLORS["round"]}{m.group(1)}{TAG_COLORS["RESET"]}'
         self._curly_replacer = lambda m: f'{TAG_COLORS["curly"]}{m.group(1)}{TAG_COLORS["RESET"]}'
     
     def format(self, record):
-        # Создаем сообщение полностью с нуля
+        # Create message from scratch
         if self._fmt:
             message = self._fmt % {
                 'asctime': self.formatTime(record, self.datefmt),
@@ -86,9 +86,9 @@ class ColoredFormatter(TimezoneFormatter):
         if not self.use_colors:
             return message
         
-        # СНАЧАЛА применяем умное форматирование тегов (до окрашивания уровня)
+        # FIRST apply smart tag formatting (before level coloring)
         if self.smart_format:
-            # Используем предкомпилированные паттерны для максимальной скорости
+            # Use precompiled patterns for maximum speed
             if 'HTTP' in message:
                 message = self._http_pattern.sub(self._http_replacer, message)
             
@@ -99,10 +99,10 @@ class ColoredFormatter(TimezoneFormatter):
             if '{' in message:
                 message = self._curly_pattern.sub(self._curly_replacer, message)
 
-        # ПОТОМ применяем цвета для уровней логирования
+        # THEN apply colors for log levels
         levelname = record.levelname
         if levelname in COLORS:
-            # Заменяем только первое вхождение (которое добавляет logging)
+            # Replace only first occurrence (which logging adds)
             message = message.replace(levelname, f"{COLORS[levelname]}{levelname}{COLORS['RESET']}", 1)
 
         return message

@@ -1,13 +1,13 @@
 """
-Базовые тесты PlaceholderProcessor
-Тесты 1-3: Базовые плейсхолдеры, вложенность, массивы
+Basic PlaceholderProcessor tests
+Tests 1-3: Basic placeholders, nesting, arrays
 """
 
 from conftest import assert_equal
 
 
 def test_basic_placeholders(processor):
-    """Тест 1: Базовые плейсхолдеры"""
+    """Test 1: Basic placeholders"""
     values_dict = {
         'name': 'John',
         'age': 30,
@@ -17,39 +17,39 @@ def test_basic_placeholders(processor):
         'none': None,
     }
     
-    # Простая замена
+    # Simple replacement
     result = processor.process_text_placeholders("{name}", values_dict)
-    assert_equal(result, "John", "Простая замена строки")
+    assert_equal(result, "John", "Simple string replacement")
     
     result = processor.process_text_placeholders("{age}", values_dict)
-    assert_equal(result, 30, "Простая замена числа")
+    assert_equal(result, 30, "Simple number replacement")
     
     result = processor.process_text_placeholders("{active}", values_dict)
-    assert_equal(result, True, "Простая замена булева")
+    assert_equal(result, True, "Simple boolean replacement")
     
-    # Неразрешенный плейсхолдер
+    # Unresolved placeholder
     result = processor.process_text_placeholders("{nonexistent}", values_dict)
-    assert "{nonexistent}" in str(result), "Неразрешенный плейсхолдер возвращается как строка"
+    assert "{nonexistent}" in str(result), "Unresolved placeholder returned as string"
     
-    # Смешанный текст
+    # Mixed text
     result = processor.process_text_placeholders("Hello {name}, age {age}", values_dict)
-    assert result == "Hello John, age 30", "Смешанный текст"
+    assert result == "Hello John, age 30", "Mixed text"
     
-    # Пустое значение
+    # Empty value
     result = processor.process_text_placeholders("{empty}", values_dict)
-    assert_equal(result, "", "Пустое значение")
+    assert_equal(result, "", "Empty value")
     
-    # None значение
+    # None value
     result = processor.process_text_placeholders("{none}", values_dict)
-    assert "{none}" in str(result), "None значение возвращает плейсхолдер"
+    assert "{none}" in str(result), "None value returns placeholder"
     
-    # Ноль
+    # Zero
     result = processor.process_text_placeholders("{count}", values_dict)
-    assert_equal(result, 0, "Ноль как валидное значение")
+    assert_equal(result, 0, "Zero as valid value")
 
 
 def test_nested_access(processor):
-    """Тест 2: Точечная нотация и вложенный доступ"""
+    """Test 2: Dot notation and nested access"""
     values_dict = {
         'user': {
             'name': 'John',
@@ -69,28 +69,28 @@ def test_nested_access(processor):
         }
     }
     
-    # Простая точечная нотация
+    # Simple dot notation
     result = processor.process_text_placeholders("{user.name}", values_dict)
-    assert_equal(result, "John", "Простая точечная нотация")
+    assert_equal(result, "John", "Simple dot notation")
     
-    # Глубокая вложенность
+    # Deep nesting
     result = processor.process_text_placeholders("{user.profile.age}", values_dict)
-    assert_equal(result, 30, "Глубокая вложенность")
+    assert_equal(result, 30, "Deep nesting")
     
     result = processor.process_text_placeholders("{user.profile.settings.theme}", values_dict)
-    assert_equal(result, "dark", "Очень глубокая вложенность")
+    assert_equal(result, "dark", "Very deep nesting")
     
-    # Несуществующий путь
+    # Non-existent path
     result = processor.process_text_placeholders("{user.nonexistent}", values_dict)
-    assert "{user.nonexistent}" in str(result), "Несуществующий путь"
+    assert "{user.nonexistent}" in str(result), "Non-existent path"
     
-    # Вложенный доступ в словаре
+    # Nested access in dictionary
     result = processor.process_text_placeholders("{data.meta.count}", values_dict)
-    assert_equal(result, 42, "Вложенный доступ в словаре")
+    assert_equal(result, 42, "Nested access in dictionary")
 
 
 def test_array_access(processor):
-    """Тест 3: Доступ к массивам"""
+    """Test 3: Array access"""
     values_dict = {
         'items': [10, 20, 30, 40, 50],
         'users': [
@@ -102,36 +102,36 @@ def test_array_access(processor):
         'empty': [],
     }
     
-    # Положительный индекс
+    # Positive index
     result = processor.process_text_placeholders("{items[0]}", values_dict)
-    assert_equal(result, 10, "Доступ по положительному индексу")
+    assert_equal(result, 10, "Access by positive index")
     
     result = processor.process_text_placeholders("{items[2]}", values_dict)
-    assert_equal(result, 30, "Доступ по среднему индексу")
+    assert_equal(result, 30, "Access by middle index")
     
-    # Отрицательный индекс
+    # Negative index
     result = processor.process_text_placeholders("{items[-1]}", values_dict)
-    assert_equal(result, 50, "Доступ по отрицательному индексу (-1")
+    assert_equal(result, 50, "Access by negative index (-1")
     
     result = processor.process_text_placeholders("{items[-2]}", values_dict)
-    assert_equal(result, 40, "Доступ по отрицательному индексу (-2")
+    assert_equal(result, 40, "Access by negative index (-2")
     
-    # Доступ к полю объекта в массиве
+    # Access to object field in array
     result = processor.process_text_placeholders("{users[0].name}", values_dict)
-    assert_equal(result, "John", "Доступ к полю объекта в массиве")
+    assert_equal(result, "John", "Access to object field in array")
     
     result = processor.process_text_placeholders("{users[-1].id}", values_dict)
-    assert_equal(result, 3, "Доступ к полю последнего объекта")
+    assert_equal(result, 3, "Access to last object field")
     
-    # Множественные индексы
+    # Multiple indices
     result = processor.process_text_placeholders("{matrix[0][1]}", values_dict)
-    assert_equal(result, 2, "Множественные индексы")
+    assert_equal(result, 2, "Multiple indices")
     
-    # Выход за границы
+    # Out of bounds
     result = processor.process_text_placeholders("{items[10]}", values_dict)
-    assert "{items[10]}" in str(result), "Выход за границы массива"
+    assert "{items[10]}" in str(result), "Array out of bounds"
     
-    # Пустой массив
+    # Empty array
     result = processor.process_text_placeholders("{empty[0]}", values_dict)
-    assert "{empty[0]}" in str(result), "Доступ к пустому массиву"
+    assert "{empty[0]}" in str(result), "Access to empty array"
 

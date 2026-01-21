@@ -1,13 +1,13 @@
 """
-Тесты граничных случаев PlaceholderProcessor
-Тесты 13, 25: Граничные случаи
+Edge case tests for PlaceholderProcessor
+Tests 13, 25: Edge cases
 """
 
 from conftest import assert_equal
 
 
 def test_edge_cases(processor):
-    """Тест 13: Граничные случаи"""
+    """Test 13: Edge cases"""
     values_dict = {
         'empty': '',
         'zero': 0,
@@ -17,13 +17,13 @@ def test_edge_cases(processor):
         'empty_dict': {},
     }
     
-    # Пустая строка
+    # Empty string
     result = processor.process_text_placeholders("{empty}", values_dict)
-    assert_equal(result, "", "Пустая строка")
+    assert_equal(result, "", "Empty string")
     
-    # Ноль
+    # Zero
     result = processor.process_text_placeholders("{zero}", values_dict)
-    assert_equal(result, 0, "Ноль")
+    assert_equal(result, 0, "Zero")
     
     # False
     result = processor.process_text_placeholders("{false}", values_dict)
@@ -31,88 +31,88 @@ def test_edge_cases(processor):
     
     # None
     result = processor.process_text_placeholders("{none}", values_dict)
-    assert "{none}" in str(result), "None возвращает плейсхолдер"
+    assert "{none}" in str(result), "None returns placeholder"
     
-    # Пустой список (process_text_placeholders возвращает строковое представление)
+    # Empty list (process_text_placeholders returns string representation)
     result = processor.process_text_placeholders("{empty_list}", values_dict)
-    assert result == "[]", "Пустой список возвращается как строка"
+    assert result == "[]", "Empty list returned as string"
     
-    # Пустой словарь (process_text_placeholders возвращает строковое представление)
+    # Empty dictionary (process_text_placeholders returns string representation)
     result = processor.process_text_placeholders("{empty_dict}", values_dict)
-    assert result == "{}", "Пустой словарь возвращается как строка"
+    assert result == "{}", "Empty dictionary returned as string"
     
-    # Пустой плейсхолдер
+    # Empty placeholder
     result = processor.process_text_placeholders("{}", values_dict)
-    # Просто проверяем что не падает
-    assert result is not None, "Пустой плейсхолдер"
+    # Just check it doesn't crash
+    assert result is not None, "Empty placeholder"
     
-    # Только открывающая скобка
+    # Only opening brace
     result = processor.process_text_placeholders("{", values_dict)
-    assert_equal(result, "{", "Только открывающая скобка")
+    assert_equal(result, "{", "Only opening brace")
     
-    # Только закрывающая скобка
+    # Only closing brace
     result = processor.process_text_placeholders("}", values_dict)
-    assert_equal(result, "}", "Только закрывающая скобка")
+    assert_equal(result, "}", "Only closing brace")
     
-    # Текст без плейсхолдеров
+    # Text without placeholders
     result = processor.process_text_placeholders("Just text", values_dict)
-    assert_equal(result, "Just text", "Текст без плейсхолдеров")
+    assert_equal(result, "Just text", "Text without placeholders")
 
 
 def test_edge_cases_advanced(processor):
-    """Тест 25: Расширенные граничные случаи"""
-    # Очень длинная цепочка модификаторов
+    """Test 25: Advanced edge cases"""
+    # Very long modifier chain
     values_dict = {
         'text': 'hello world',
     }
     result = processor.process_text_placeholders("{text|upper|truncate:5|code}", values_dict)
-    assert "<code>" in result, "Очень длинная цепочка модификаторов"
+    assert "<code>" in result, "Very long modifier chain"
     
-    # Плейсхолдер с множественными вложенностями
+    # Placeholder with multiple nesting
     values_dict2 = {
         'a': 'field',
         'field': 'value',
         'value': 'final',
     }
     result = processor.process_text_placeholders("{{{{a}}}}", values_dict2)
-    # Просто проверяем что не падает
-    assert result is not None, "Множественные вложенности"
+    # Just check it doesn't crash
+    assert result is not None, "Multiple nesting"
     
-    # Пустой плейсхолдер с fallback
+    # Empty placeholder with fallback
     result = processor.process_text_placeholders("{|fallback:default}", {})
-    assert_equal(result, "default", "Пустой плейсхолдер с fallback")
+    assert_equal(result, "default", "Empty placeholder with fallback")
     
-    # Плейсхолдер с только модификаторами без поля
+    # Placeholder with only modifiers without field
     result = processor.process_text_placeholders("{|upper}", {})
-    # Просто проверяем что не падает
-    assert result is not None, "Плейсхолдер только с модификаторами"
+    # Just check it doesn't crash
+    assert result is not None, "Placeholder with only modifiers"
     
-    # Специальные символы в значениях
+    # Special characters in values
     values_dict3 = {
         'text': 'Hello "world" & <tags>',
     }
     result = processor.process_text_placeholders("{text|code}", values_dict3)
-    assert "<code>" in result, "Специальные символы в значениях"
+    assert "<code>" in result, "Special characters in values"
     
-    # Очень большое число
+    # Very large number
     values_dict4 = {
         'big_number': 999999999999,
     }
     result = processor.process_text_placeholders("{big_number|format:number}", values_dict4)
-    assert isinstance(result, str), "Очень большое число форматируется"
+    assert isinstance(result, str), "Very large number is formatted"
     
-    # Отрицательные числа
+    # Negative numbers
     values_dict5 = {
         'negative': -100,
     }
     result = processor.process_text_placeholders("{negative|abs}", values_dict5)
-    # abs может не быть модификатором, проверим что не падает
-    assert result is not None, "Отрицательные числа"
+    # abs may not be a modifier, check it doesn't crash
+    assert result is not None, "Negative numbers"
     
-    # Unicode символы
+    # Unicode characters
     values_dict6 = {
-        'unicode': 'Привет 世界 🌍',
+        'unicode': 'Hello 世界 🌍',
     }
     result = processor.process_text_placeholders("{unicode|upper}", values_dict6)
-    assert "ПРИВЕТ" in result, "Unicode символы обрабатываются"
+    assert "HELLO" in result, "Unicode characters are processed"
 

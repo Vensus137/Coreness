@@ -1,6 +1,6 @@
 """
-Репозиторий для работы с данными tenant'а
-Содержит методы для получения конфигурации tenant'а, бота и команд
+Repository for working with tenant data
+Contains methods for getting tenant, bot and command configuration
 """
 
 from typing import Any, Dict, List, Optional
@@ -13,7 +13,7 @@ from .base import BaseRepository
 
 class TenantRepository(BaseRepository):
     """
-    Репозиторий для работы с данными tenant'а
+    Repository for working with tenant data
     """
     
     def __init__(self, session_factory, **kwargs):
@@ -21,7 +21,7 @@ class TenantRepository(BaseRepository):
     
     async def get_all_tenant_ids(self) -> Optional[List[int]]:
         """
-        Получить список всех ID тенантов
+        Get list of all tenant IDs
         """
         try:
             with self._get_session() as session:
@@ -31,12 +31,12 @@ class TenantRepository(BaseRepository):
                 return list(result)
                 
         except Exception as e:
-            self.logger.error(f"Ошибка получения списка тенантов: {e}")
+            self.logger.error(f"Error getting tenant list: {e}")
             return None
     
     async def get_tenant_by_id(self, tenant_id: int) -> Optional[Dict[str, Any]]:
         """
-        Получить тенанта по ID
+        Get tenant by ID
         """
         try:
             with self._get_session() as session:
@@ -46,16 +46,16 @@ class TenantRepository(BaseRepository):
                 return await self._to_dict(result)
                 
         except Exception:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения тенанта")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting tenant")
             return None
     
     async def create_tenant(self, tenant_data: Dict[str, Any]) -> Optional[int]:
         """
-        Создать тенанта
+        Create tenant
         """
         try:
             with self._get_session() as session:
-                # Подготавливаем данные для вставки через data_preparer
+                # Prepare data for insertion via data_preparer
                 prepared_fields = await self.data_preparer.prepare_for_insert(
                     model=Tenant,
                     fields={
@@ -73,18 +73,18 @@ class TenantRepository(BaseRepository):
                 return tenant_id
                 
         except Exception as e:
-            self.logger.error(f"Ошибка создания тенанта: {e}")
+            self.logger.error(f"Error creating tenant: {e}")
             return None
     
     async def update_tenant(self, tenant_id: int, tenant_data: Dict[str, Any]) -> Optional[bool]:
         """
-        Обновить тенанта
+        Update tenant
         """
         try:
             with self._get_session() as session:
                 from sqlalchemy import update
                 
-                # Подготавливаем данные для обновления через data_preparer
+                # Prepare data for update via data_preparer
                 prepared_fields = await self.data_preparer.prepare_for_update(
                     model=Tenant,
                     fields=tenant_data,
@@ -92,7 +92,7 @@ class TenantRepository(BaseRepository):
                 )
                 
                 if not prepared_fields:
-                    self.logger.warning(f"[Tenant-{tenant_id}] Нет полей для обновления тенанта")
+                    self.logger.warning(f"[Tenant-{tenant_id}] No fields to update tenant")
                     return False
                 
                 stmt = update(Tenant).where(Tenant.id == tenant_id).values(**prepared_fields)
@@ -102,10 +102,10 @@ class TenantRepository(BaseRepository):
                 if result.rowcount > 0:
                     return True
                 else:
-                    self.logger.warning(f"Тенант {tenant_id} не найден для обновления")
+                    self.logger.warning(f"Tenant {tenant_id} not found for update")
                     return False
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка обновления тенанта: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error updating tenant: {e}")
             return None
     

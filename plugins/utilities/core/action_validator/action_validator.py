@@ -1,5 +1,5 @@
 """
-Утилита для валидации входных данных действий по схемам из config.yaml
+Utility for validating action input data according to schemas from config.yaml
 """
 
 from typing import Any, Dict, List, Literal, Optional, Union, get_args, get_origin
@@ -9,64 +9,64 @@ from pydantic import ConfigDict, Field, ValidationError, create_model
 
 class ActionValidator:
     """
-    Утилита для валидации входных данных действий по схемам из config.yaml
+    Utility for validating action input data according to schemas from config.yaml
     
-    Использует Pydantic для валидации данных на основе схем, описанных в config.yaml сервисов.
-    Кэширует созданные Pydantic модели для производительности.
+    Uses Pydantic for data validation based on schemas described in service config.yaml files.
+    Caches created Pydantic models for performance.
     """
     
     def __init__(self, **kwargs):
         self.logger = kwargs['logger']
         self.settings_manager = kwargs['settings_manager']
         
-        # Кэш Pydantic моделей (ключ: "service_name.action_name")
+        # Pydantic models cache (key: "service_name.action_name")
         self._validation_models: Dict[str, Any] = {}
     
     def validate_action_input(self, service_name: str, action_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Валидация входных данных действия по схеме из config.yaml
+        Validate action input data according to schema from config.yaml
         """
         try:
-            # Получаем схему из config.yaml (уже кэшировано в PluginsManager)
+            # Get schema from config.yaml (already cached in PluginsManager)
             input_schema = self._get_input_schema(service_name, action_name)
             
             if not input_schema:
-                # Нет схемы - пропускаем валидацию, возвращаем исходные данные
+                # No schema - skip validation, return original data
                 return {
                     "result": "success",
                     "validated_data": data
                 }
             
-            # Получаем или создаем Pydantic модель
+            # Get or create Pydantic model
             model = self._get_or_create_model(service_name, action_name, input_schema)
             
             if not model:
-                # Не удалось создать модель - пропускаем, возвращаем исходные данные
+                # Failed to create model - skip, return original data
                 return {
                     "result": "success",
                     "validated_data": data
                 }
             
-            # Предобработка данных: извлекаем значения из _config для полей с from_config
+            # Data preprocessing: extract values from _config for fields with from_config
             processed_data = self._extract_from_config(data, input_schema)
             
-            # Предобработка данных: для опциональных параметров преобразуем пустые строки в None
-            # если тип параметра не string (например, array, integer и т.д.)
+            # Data preprocessing: for optional parameters convert empty strings to None
+            # if parameter type is not string (e.g., array, integer, etc.)
             processed_data = self._preprocess_data(processed_data, input_schema)
             
-            # Приведение типов к целевому (модифицируем данные "на лету")
-            # Это гарантирует, что преобразованные значения сохраняются
+            # Type coercion to target type (modify data "on the fly")
+            # This ensures that converted values are preserved
             self._coerce_types(processed_data, input_schema)
             
-            # Валидируем данные через Pydantic (только для проверки ограничений: min/max, pattern, enum и т.д.)
-            # Pydantic НЕ преобразует типы автоматически, поэтому мы делаем это сами выше
+            # Validate data through Pydantic (only for constraint checking: min/max, pattern, enum, etc.)
+            # Pydantic does NOT convert types automatically, so we do it ourselves above
             validated_model = model(**processed_data)
             
-            # Получаем валидированные данные из модели (для default значений, если поле не было передано)
+            # Get validated data from model (for default values if field was not provided)
             validated_data_dict = validated_model.model_dump(exclude_unset=True)
             
-            # Объединяем: processed_data (с преобразованными типами) имеет приоритет
-            # validated_data_dict нужен только для default значений полей, которые не были переданы
+            # Merge: processed_data (with converted types) has priority
+            # validated_data_dict is only needed for default values of fields that were not provided
             final_data = {**validated_data_dict, **processed_data}
             
             return {
@@ -75,7 +75,7 @@ class ActionValidator:
             }
             
         except ValidationError as e:
-            # Структурированные ошибки валидации
+            # Structured validation errors
             errors = []
             for error in e.errors():
                 field_path = ".".join(str(x) for x in error["loc"])
@@ -90,69 +90,69 @@ class ActionValidator:
                 "result": "error",
                 "error": {
                     "code": "VALIDATION_ERROR",
-                    "message": "Ошибка валидации входных данных",
+                    "message": "Input data validation error",
                     "details": errors
                 }
             }
             
         except Exception as e:
-            self.logger.error(f"Ошибка валидации для {service_name}.{action_name}: {e}")
+            self.logger.error(f"Validation error for {service_name}.{action_name}: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "VALIDATION_ERROR",
-                    "message": f"Ошибка валидации: {str(e)}"
+                    "message": f"Validation error: {str(e)}"
                 }
             }
     
     def _get_input_schema(self, service_name: str, action_name: str) -> Optional[Dict[str, Any]]:
         """
-        Получение схемы входных данных из config.yaml
+        Get input data schema from config.yaml
         """
         try:
-            # Получаем информацию о плагине (уже кэшировано в PluginsManager)
+            # Get plugin info (already cached in PluginsManager)
             plugin_info = self.settings_manager.get_plugin_info(service_name)
             
             if not plugin_info:
                 return None
             
-            # Извлекаем схему действия
+            # Extract action schema
             actions = plugin_info.get('actions', {})
             action_config = actions.get(action_name, {})
             
             if not action_config:
                 return None
             
-            # Получаем input схему
+            # Get input schema
             input_config = action_config.get('input', {})
             
             if not input_config:
                 return None
             
-            # Структура: input.data.properties (см. config.yaml)
+            # Structure: input.data.properties (see config.yaml)
             data_config = input_config.get('data', {})
             properties = data_config.get('properties', {})
             
             return properties if properties else None
             
         except Exception as e:
-            self.logger.error(f"Ошибка получения схемы для {service_name}.{action_name}: {e}")
+            self.logger.error(f"Error getting schema for {service_name}.{action_name}: {e}")
             return None
     
     def _get_or_create_model(self, service_name: str, action_name: str, schema: Dict[str, Any]):
         """
-        Получение или создание Pydantic модели с кэшированием
+        Get or create Pydantic model with caching
         """
         cache_key = f"{service_name}.{action_name}"
         
-        # Проверяем кэш
+        # Check cache
         if cache_key in self._validation_models:
             return self._validation_models[cache_key]
         
-        # Создаем модель
+        # Create model
         model = self._create_pydantic_model(schema)
         
-        # Кэшируем
+        # Cache it
         if model:
             self._validation_models[cache_key] = model
         
@@ -160,46 +160,46 @@ class ActionValidator:
     
     def _create_pydantic_model(self, schema: Dict[str, Any], model_name: str = 'ValidationModel'):
         """
-        Создание Pydantic модели из схемы config.yaml (рекурсивно для вложенных объектов)
+        Create Pydantic model from config.yaml schema (recursively for nested objects)
         """
         try:
             pydantic_fields = {}
             
             for field_name, field_config in schema.items():
-                # Определяем тип поля (может быть union через |)
+                # Determine field type (can be union via |)
                 type_str = field_config.get('type', 'string')
                 
-                # Определяем обязательность (по умолчанию обязательное для input схем)
+                # Determine required status (required by default for input schemas)
                 is_optional = field_config.get('optional', False)
                 
-                # Проверяем, есть ли None в типе
+                # Check if None is in type
                 has_none_in_type = isinstance(type_str, str) and 'none' in [p.strip().lower() for p in type_str.split('|')]
                 
-                # Парсим тип
+                # Parse type
                 field_type = self._parse_type_string(type_str, field_config)
                 
-                # Создаем Field с ограничениями
+                # Create Field with constraints
                 field_kwargs = {}
                 
-                # Проверяем, является ли тип Union для применения ограничений
+                # Check if type is Union for applying constraints
                 origin = get_origin(field_type)
                 is_union = origin == Union
                 
-                # Получаем аргументы Union
+                # Get Union arguments
                 union_args = get_args(field_type) if is_union else []
                 
-                # Определяем, есть ли в типе строка или число
+                # Determine if type contains string or number
                 has_string_type = (isinstance(field_type, type) and field_type is str) or (is_union and str in union_args)
                 has_integer_type = (isinstance(field_type, type) and field_type is int) or (is_union and int in union_args)
                 has_float_type = (isinstance(field_type, type) and field_type is float) or (is_union and float in union_args)
                 
-                # Для опциональных полей не применяем ограничения валидации
-                # Pydantic сам обработает None для Optional полей, но если передана пустая строка или 0,
-                # ограничения все равно применятся. Поэтому для опциональных полей ограничения не применяем.
-                # Для Union типов также не применяем ограничения - оставляем как есть
+                # For optional fields don't apply validation constraints
+                # Pydantic will handle None for Optional fields, but if empty string or 0 is passed,
+                # constraints will still apply. So for optional fields we don't apply constraints.
+                # For Union types also don't apply constraints - leave as is
                 if not is_optional and not is_union:
-                    # Применяем ограничения через Field только для НЕ-union типов
-                    # Ограничения для строк (если это строка)
+                    # Apply constraints via Field only for NON-union types
+                    # Constraints for strings (if it's a string)
                     if has_string_type:
                         if 'min_length' in field_config:
                             field_kwargs['min_length'] = field_config['min_length']
@@ -208,56 +208,56 @@ class ActionValidator:
                         if 'pattern' in field_config:
                             field_kwargs['regex'] = field_config['pattern']
                     
-                    # Ограничения для чисел (если это число)
+                    # Constraints for numbers (if it's a number)
                     if has_integer_type or has_float_type:
                         if 'min' in field_config:
                             field_kwargs['ge'] = field_config['min']
                         if 'max' in field_config:
                             field_kwargs['le'] = field_config['max']
                 
-                # Enum значения
+                # Enum values
                 if 'enum' in field_config:
                     enum_values = tuple(field_config['enum'])
                     literal_type = Literal[enum_values]
-                    # Если поле опциональное или есть None в типе, делаем Optional[Literal[...]]
+                    # If field is optional or None is in type, make Optional[Literal[...]]
                     if is_optional or has_none_in_type:
                         field_type = Optional[literal_type]
                     else:
                         field_type = literal_type
                 
-                # Создаем поле
+                # Create field
                 if is_optional:
-                    # Если еще не сделали Optional (для enum уже сделали выше)
+                    # If haven't made Optional yet (for enum already done above)
                     if 'enum' not in field_config:
-                        # Проверяем, не является ли уже Union/Optional
+                        # Check if already Union/Optional
                         origin = get_origin(field_type)
                         
-                        # Если None уже есть в типе (через |None), не добавляем Optional еще раз
+                        # If None already in type (via |None), don't add Optional again
                         if not has_none_in_type:
-                            # Проверяем, не является ли уже Optional
+                            # Check if already Optional
                             if origin == Union:
-                                # Проверяем, есть ли уже None в Union
+                                # Check if None already in Union
                                 args = get_args(field_type)
                                 if type(None) not in args:
-                                    # Добавляем None в union только если его там еще нет
+                                    # Add None to union only if it's not there yet
                                     field_type = Union[tuple(list(args) + [type(None)])]
                             elif origin is None:
-                                # Простой тип (не Union, не Optional) - делаем Optional
+                                # Simple type (not Union, not Optional) - make Optional
                                 field_type = Optional[field_type]
                     field_kwargs['default'] = None
                     pydantic_fields[field_name] = (field_type, Field(**field_kwargs))
                 else:
-                    # Required field - без default
-                    # Если None в типе, оставляем как есть (Union[Type, None])
-                    # Если нет None в типе, просто Type
+                    # Required field - no default
+                    # If None in type, leave as is (Union[Type, None])
+                    # If no None in type, just Type
                     pydantic_fields[field_name] = (field_type, Field(**field_kwargs))
             
-            # Создаем динамическую Pydantic модель
+            # Create dynamic Pydantic model
             if not pydantic_fields:
                 return None
             
-            # Создаем модель с явным указанием игнорирования лишних полей
-            # Это гарантирует, что поля, не описанные в схеме, будут проигнорированы
+            # Create model with explicit extra fields ignore
+            # This ensures that fields not described in schema will be ignored
             Model = create_model(
                 model_name,
                 __config__=ConfigDict(extra='ignore'),
@@ -266,28 +266,28 @@ class ActionValidator:
             return Model
             
         except Exception as e:
-            self.logger.error(f"Ошибка создания Pydantic модели: {e}")
+            self.logger.error(f"Error creating Pydantic model: {e}")
             return None
     
     def _extract_from_config(self, data: Dict[str, Any], schema: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Извлечение значений из _config для полей с from_config: true
-        Если поле не передано в data, но указано from_config: true, берем значение из data.get('_config', {}).get(field_name)
+        Extract values from _config for fields with from_config: true
+        If field not provided in data, but from_config: true is specified, take value from data.get('_config', {}).get(field_name)
         """
         processed_data = data.copy()
         tenant_config = data.get('_config', {})
         
         for field_name, field_config in schema.items():
-            # Пропускаем, если поле уже есть в data (явно передано)
+            # Skip if field already in data (explicitly provided)
             if field_name in processed_data:
                 continue
             
-            # Проверяем, нужно ли брать из _config
+            # Check if need to take from _config
             from_config = field_config.get('from_config', False)
             if not from_config:
                 continue
             
-            # Извлекаем значение из _config
+            # Extract value from _config
             config_value = tenant_config.get(field_name)
             if config_value is not None:
                 processed_data[field_name] = config_value
@@ -296,9 +296,9 @@ class ActionValidator:
     
     def _preprocess_data(self, data: Dict[str, Any], schema: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Предобработка данных перед валидацией:
-        - Для опциональных параметров не-строкового типа преобразуем пустые строки в None
-        - Это позволяет корректно обрабатывать fallback: для опциональных параметров
+        Data preprocessing before validation:
+        - For optional non-string type parameters convert empty strings to None
+        - This allows correct handling of fallback: for optional parameters
         """
         processed_data = data.copy()
         
@@ -308,31 +308,31 @@ class ActionValidator:
             
             value = processed_data[field_name]
             
-            # Пропускаем, если значение уже None
+            # Skip if value is already None
             if value is None:
                 continue
             
-            # Проверяем, является ли поле опциональным
+            # Check if field is optional
             is_optional = field_config.get('optional', False)
             
             if not is_optional:
                 continue
             
-            # Получаем тип поля
+            # Get field type
             type_str = field_config.get('type', 'string')
             
-            # Если это пустая строка и тип не string (или не содержит string в union)
+            # If it's empty string and type is not string (or doesn't contain string in union)
             if value == "":
-                # Проверяем, является ли тип строкой
+                # Check if type is string
                 is_string_type = False
                 if isinstance(type_str, str):
-                    # Разбираем union типы (например, "string|array")
+                    # Parse union types (e.g., "string|array")
                     type_parts = [t.strip().lower() for t in type_str.split('|')]
                     is_string_type = 'string' in type_parts
                 elif type_str == 'string':
                     is_string_type = True
                 
-                # Если тип не строка (например, array, integer и т.д.), преобразуем пустую строку в None
+                # If type is not string (e.g., array, integer, etc.), convert empty string to None
                 if not is_string_type:
                     processed_data[field_name] = None
         
@@ -340,18 +340,18 @@ class ActionValidator:
     
     def _coerce_types(self, data: Dict[str, Any], schema: Dict[str, Any]) -> None:
         """
-        Приведение типов к указанному в схеме (только для НЕ-union типов)
-        Модифицирует данные "на лету" в переданном словаре
+        Type coercion to schema-specified type (only for NON-union types)
+        Modifies data "on the fly" in the passed dictionary
         
-        Правила преобразования:
-        - Если указан type: string, а пришло что-то другое (кроме None) → преобразуем в str
-        - Если указан type: integer, а пришло str (только цифры) → преобразуем в int
-        - Если указан type: integer, а пришло float (целое) → преобразуем в int
-        - Если указан type: float, а пришло int/str → преобразуем в float
-        - Если указан type: boolean, а пришло 'true'/'false' → преобразуем в bool
+        Conversion rules:
+        - If type: string specified, but something else received (except None) → convert to str
+        - If type: integer specified, but str received (digits only) → convert to int
+        - If type: integer specified, but float received (whole number) → convert to int
+        - If type: float specified, but int/str received → convert to float
+        - If type: boolean specified, but 'true'/'false' received → convert to bool
         
-        Union типы (string|integer) - НЕ обрабатываем, оставляем как есть
-        None - пропускаем (не преобразуем)
+        Union types (string|integer) - NOT processed, leave as is
+        None - skip (don't convert)
         """
         for field_name, field_config in schema.items():
             if field_name not in data:
@@ -359,126 +359,126 @@ class ActionValidator:
             
             value = data[field_name]
             
-            # Пропускаем None
+            # Skip None
             if value is None:
                 continue
             
             type_str = field_config.get('type', 'string')
             
-            # Пропускаем Union типы - их не трогаем
+            # Skip Union types - don't touch them
             if isinstance(type_str, str) and '|' in type_str:
                 continue
             
-            # Обрабатываем только простые типы
+            # Process only simple types
             target_type = type_str.lower().strip() if isinstance(type_str, str) else None
             
             if not target_type:
                 continue
             
-            # Преобразуем только если тип значения не совпадает с целевым
+            # Convert only if value type doesn't match target
             try:
                 if target_type == 'string':
-                    # Если указан string, а пришло что-то другое (кроме None) - преобразуем в строку
+                    # If string specified, but something else received (except None) - convert to string
                     if not isinstance(value, str):
-                        # Преобразуем любые типы в строку (int, float, bool и т.д.)
-                        # None пропускаем (уже обработано выше)
+                        # Convert any types to string (int, float, bool, etc.)
+                        # None skipped (already handled above)
                         data[field_name] = str(value)
                 
                 elif target_type == 'integer':
-                    # Если указан integer, а пришло что-то другое - пытаемся преобразовать
+                    # If integer specified, but something else received - try to convert
                     if isinstance(value, float):
-                        # Проверяем, целое ли число
+                        # Check if whole number
                         if value == int(value):
                             data[field_name] = int(value)
                     elif isinstance(value, str):
-                        # Пробуем преобразовать строку в int (если состоит из цифр)
+                        # Try to convert string to int (if consists of digits)
                         if value.strip().lstrip('-+').isdigit():
                             data[field_name] = int(value)
-                    # Если уже int - оставляем как есть
+                    # If already int - leave as is
                 
                 elif target_type == 'float':
-                    # Если указан float, а пришло int или str - преобразуем
+                    # If float specified, but int or str received - convert
                     if isinstance(value, (int, str)):
                         try:
                             data[field_name] = float(value)
                         except (ValueError, TypeError):
-                            # Не удалось преобразовать - оставляем как есть
+                            # Failed to convert - leave as is
                             pass
-                    # Если уже float - оставляем как есть
+                    # If already float - leave as is
                 
                 elif target_type == 'boolean':
-                    # Если указан boolean, а пришло строка - проверяем явные значения
+                    # If boolean specified, but string received - check explicit values
                     if isinstance(value, str):
                         value_lower = value.lower().strip()
                         if value_lower == 'true':
                             data[field_name] = True
                         elif value_lower == 'false':
                             data[field_name] = False
-                        # Иначе оставляем как есть (Pydantic проверит)
-                    # Если уже bool - оставляем как есть
+                        # Otherwise leave as is (Pydantic will check)
+                    # If already bool - leave as is
                         
             except (ValueError, TypeError, OverflowError):
-                # Не удалось преобразовать - оставляем как есть, Pydantic выдаст ошибку валидации
+                # Failed to convert - leave as is, Pydantic will raise validation error
                 pass
     
     def _parse_type_string(self, type_str: Any, field_config: Dict[str, Any]):
         """
-        Парсинг типа из схемы с поддержкой union типов (string|None, integer|array|None)
-        и вложенных объектов в массивах (items.properties)
+        Parse type from schema with support for union types (string|None, integer|array|None)
+        and nested objects in arrays (items.properties)
         """
         if not type_str:
             return str
         
-        # Если это строка с | - это union тип
+        # If it's a string with | - it's a union type
         if isinstance(type_str, str) and '|' in type_str:
             type_parts = [part.strip() for part in type_str.split('|')]
             python_types = []
             
             for part in type_parts:
                 if part.lower() == 'none':
-                    # None уже будет обработан через Optional
+                    # None will be handled through Optional
                     continue
                 python_type = self._get_pydantic_type(part)
                 python_types.append(python_type)
             
-            # Если есть None в union - добавляем в типы
+            # If None is in union - add to types
             has_none = 'none' in [p.strip().lower() for p in type_str.split('|')]
             
             if len(python_types) == 1:
-                # Простой случай: string|None -> Optional[str]
+                # Simple case: string|None -> Optional[str]
                 if has_none:
                     return Optional[python_types[0]]
                 return python_types[0]
             elif len(python_types) > 1:
-                # Множественный union: integer|array|None -> Union[int, list, None]
+                # Multiple union: integer|array|None -> Union[int, list, None]
                 if has_none:
-                    # Добавляем None в union
+                    # Add None to union
                     python_types.append(type(None))
                 return Union[tuple(python_types)]
             else:
-                # Только None - возвращаем None
+                # Only None - return None
                 return type(None)
         
-        # Если это массив с items - проверяем вложенные объекты
+        # If it's an array with items - check nested objects
         if isinstance(type_str, str) and type_str.lower() in ('array', 'list'):
             items_config = field_config.get('items', {})
             if isinstance(items_config, dict) and 'properties' in items_config:
-                # Вложенный объект в массиве - создаем модель для items
+                # Nested object in array - create model for items
                 items_schema = items_config.get('properties', {})
                 if items_schema:
-                    # Создаем модель для элемента массива
+                    # Create model for array element
                     item_model = self._create_pydantic_model(items_schema, f'ItemModel_{id(items_schema)}')
                     if item_model:
                         return List[item_model]
-            # Обычный массив без вложенных объектов
+            # Regular array without nested objects
             return list
         
-        # Обычный тип
+        # Regular type
         return self._get_pydantic_type(type_str)
     
     def _get_pydantic_type(self, type_str: str):
         """
-        Преобразование простого типа из схемы в Pydantic тип
+        Convert simple type from schema to Pydantic type
         """
         type_mapping = {
             'string': str,
@@ -497,17 +497,17 @@ class ActionValidator:
     
     def invalidate_cache(self, service_name: Optional[str] = None, action_name: Optional[str] = None):
         """
-        Инвалидация кэша моделей валидации
+        Invalidate validation models cache
         """
         if service_name and action_name:
-            # Инвалидируем конкретную модель
+            # Invalidate specific model
             cache_key = f"{service_name}.{action_name}"
             if cache_key in self._validation_models:
                 del self._validation_models[cache_key]
-                self.logger.info(f"Кэш модели {cache_key} очищен")
+                self.logger.info(f"Model cache {cache_key} cleared")
         else:
-            # Очищаем весь кэш
+            # Clear entire cache
             count = len(self._validation_models)
             self._validation_models.clear()
-            self.logger.info(f"Весь кэш моделей очищен (удалено {count} моделей)")
+            self.logger.info(f"Entire model cache cleared ({count} models removed)")
 

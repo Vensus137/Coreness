@@ -1,5 +1,5 @@
 """
-BotPoller - индивидуальный пулинг для одного бота
+BotPoller - individual polling for one bot
 """
 
 import asyncio
@@ -10,7 +10,7 @@ import aiohttp
 
 class BotPoller:
     """
-    Простой пулинг для одного бота без метрик и health check
+    Simple polling for one bot without metrics and health check
     """
     
     def __init__(self, bot_id: int, token: str, settings: dict, logger, datetime_formatter):
@@ -19,208 +19,208 @@ class BotPoller:
         self.logger = logger
         self.datetime_formatter = datetime_formatter
         
-        # Настройки пулинга (стандартные для Telegram Bot API)
+        # Polling settings (standard for Telegram Bot API)
         self.polling_timeout = settings.get('polling_timeout', 20)
         self.polling_relax = settings.get('polling_relax', 0.1)
         self.polling_limit = settings.get('polling_limit', 100)
         self.polling_start_delay = settings.get('polling_start_delay', 0.5)
         self.allowed_updates = settings.get('allowed_updates', ['message', 'callback_query'])
         
-        # Retry настройки
+        # Retry settings
         self.retry_delay = settings.get('retry_delay', 5)
         self.retry_after_rate_limit = settings.get('retry_after_rate_limit', 30)
         
-        # HTTP клиент
+        # HTTP client
         self.request_timeout = settings.get('request_timeout', 35)
         
-        # Таймауты остановки пулинга
+        # Polling stop timeouts
         self.stop_polling_timeout = settings.get('stop_polling_timeout', 2.0)
         self.session_close_timeout = settings.get('session_close_timeout', 0.5)
         
-        # Состояние
+        # State
         self.session: Optional[aiohttp.ClientSession] = None
         self.is_running = False
         self.offset = 0
         
-        # Время запуска пуллинга для фильтрации событий
+        # Polling start time for event filtering
         self.polling_start_time = None
         
-        # Callback для событий
+        # Callback for events
         self.event_callback: Optional[Callable] = None
         
-        # Задача основного цикла пулинга
+        # Main polling loop task
         self._polling_task: Optional[asyncio.Task] = None
         
-        # Счетчик критических ошибок
+        # Critical errors counter
         self.consecutive_critical_errors = 0
         self.max_critical_errors = settings.get('max_critical_errors', 3)
         self.critical_error_codes = settings.get('critical_error_codes', [401, 403])
     
     async def reset_bot_settings(self):
         """
-        КРИТИЧЕСКИ ВАЖНО: Сброс настроек бота и установка allowed_updates для пулинга
+        CRITICALLY IMPORTANT: Reset bot settings and set allowed_updates for polling
         
-        Telegram кэширует настройки allowed_updates из предыдущих вебхуков.
-        Без явной установки через setWebhook с пустым URL мы можем не получать
-        нужные события (например, pre_checkout_query) даже если передаем их в getUpdates.
+        Telegram caches allowed_updates settings from previous webhooks.
+        Without explicit setting via setWebhook with empty URL we may not receive
+        needed events (e.g., pre_checkout_query) even if we pass them in getUpdates.
         
-        Этот метод должен вызываться ОДИН РАЗ при первом запуске бота, а не при каждом перезапуске пулинга.
+        This method should be called ONCE on first bot startup, not on every polling restart.
         """
         try:
             api_url = f"https://api.telegram.org/bot{self.token}"
             
-            self.logger.info(f"[Bot-{self.bot_id}] 🔄 Установка allowed_updates для пулинга: {self.allowed_updates}")
+            self.logger.info(f"[Bot-{self.bot_id}] 🔄 Setting allowed_updates for polling: {self.allowed_updates}")
             
-            # Создаем временную сессию для сброса настроек
+            # Create temporary session for resetting settings
             async with aiohttp.ClientSession() as session:
-                # 1. Удаляем вебхук БЕЗ drop_pending_updates, чтобы сохранить накопленные обновления
+                # 1. Delete webhook WITHOUT drop_pending_updates to preserve accumulated updates
                 delete_url = f"{api_url}/deleteWebhook"
                 async with session.post(delete_url, json={}) as response:
                     data = await response.json()
                     if not data.get('ok'):
-                        self.logger.warning(f"[Bot-{self.bot_id}] Предупреждение при удалении вебхука: {data.get('description', 'Неизвестная ошибка')}")
+                        self.logger.warning(f"[Bot-{self.bot_id}] Warning when deleting webhook: {data.get('description', 'Unknown error')}")
                 
-                # 2. Устанавливаем allowed_updates через setWebhook с пустым URL
-                # Это устанавливает allowed_updates для режима getUpdates
-                # КРИТИЧЕСКИ ВАЖНО: без этого Telegram может игнорировать allowed_updates в getUpdates
+                # 2. Set allowed_updates via setWebhook with empty URL
+                # This sets allowed_updates for getUpdates mode
+                # CRITICALLY IMPORTANT: without this Telegram may ignore allowed_updates in getUpdates
                 set_webhook_url = f"{api_url}/setWebhook"
                 payload = {
-                    "url": "",  # Пустой URL отключит webhook и активирует getUpdates
+                    "url": "",  # Empty URL disables webhook and activates getUpdates
                     "allowed_updates": self.allowed_updates
                 }
                 async with session.post(set_webhook_url, json=payload) as response:
                     data = await response.json()
                     if data.get('ok'):
-                        self.logger.info(f"[Bot-{self.bot_id}] ✅ allowed_updates установлены: {self.allowed_updates}")
+                        self.logger.info(f"[Bot-{self.bot_id}] ✅ allowed_updates set: {self.allowed_updates}")
                     else:
-                        error_msg = data.get('description', 'Неизвестная ошибка')
-                        self.logger.error(f"[Bot-{self.bot_id}] ❌ ОШИБКА установки allowed_updates: {error_msg}")
-                        # Это критично - без правильных allowed_updates мы можем не получать события
-                        raise Exception(f"Не удалось установить allowed_updates: {error_msg}")
+                        error_msg = data.get('description', 'Unknown error')
+                        self.logger.error(f"[Bot-{self.bot_id}] ❌ ERROR setting allowed_updates: {error_msg}")
+                        # This is critical - without correct allowed_updates we may not receive events
+                        raise Exception(f"Failed to set allowed_updates: {error_msg}")
                         
         except Exception as e:
-            # Это критично - без правильных настроек мы можем не получать события
-            self.logger.error(f"[Bot-{self.bot_id}] ❌ КРИТИЧЕСКАЯ ОШИБКА при установке allowed_updates: {e}")
-            # Продолжаем работу, но логируем как критическую ошибку
+            # This is critical - without correct settings we may not receive events
+            self.logger.error(f"[Bot-{self.bot_id}] ❌ CRITICAL ERROR setting allowed_updates: {e}")
+            # Continue work, but log as critical error
             raise
     
     async def start_polling(self, event_callback: Callable):
         """
-        Запуск пулинга для этого бота
+        Start polling for this bot
         """
         try:
-            # Сохраняем callback
+            # Save callback
             self.event_callback = event_callback
             
-            # Устанавливаем время запуска пуллинга
+            # Set polling start time
             self.polling_start_time = await self.datetime_formatter.now_local()
             
-            # Сбрасываем счетчик критических ошибок при запуске
+            # Reset critical errors counter on startup
             self.consecutive_critical_errors = 0
             
-            # Создаем HTTP сессию
+            # Create HTTP session
             self.session = await self._create_session()
             
-            # Сразу помечаем как запущенный (защита от race condition)
+            # Mark as running immediately (race condition protection)
             self.is_running = True
             
-            # Задержка запуска для предотвращения конфликтов
+            # Startup delay to prevent conflicts
             start_delay = self.polling_start_delay
             if start_delay > 0:
                 await asyncio.sleep(start_delay)
             
-            # Запускаем основной цикл пулинга в отдельной задаче
+            # Start main polling loop in separate task
             self._polling_task = asyncio.create_task(self._polling_loop())
             
-            # Ждем завершения задачи
+            # Wait for task completion
             await self._polling_task
             
         except Exception as e:
-            self.logger.error(f"[Bot-{self.bot_id}] Ошибка запуска пулинга: {e}")
+            self.logger.error(f"[Bot-{self.bot_id}] Error starting polling: {e}")
             await self.stop_polling()
             raise
     
     def _handle_network_error(self, error: Exception, context: str):
-        """Обработка сетевых ошибок с детальным логированием"""
+        """Handle network errors with detailed logging"""
         error_str = str(error)
         if "APPLICATION_DATA_AFTER_CLOSE_NOTIFY" in error_str:
-            # Это ошибка при перезапуске - логируем как warning
-            self.logger.warning(f"[Bot-{self.bot_id}] SSL соединение закрыто при {context} (race condition)")
+            # This is an error on restart - log as warning
+            self.logger.warning(f"[Bot-{self.bot_id}] SSL connection closed at {context} (race condition)")
         elif "Errno 1" in error_str:
-            # Errno 1 - операция запрещена, обычно при закрытии соединения
-            self.logger.warning(f"[Bot-{self.bot_id}] Соединение закрыто системой при {context} (race condition)")
+            # Errno 1 - operation not permitted, usually when closing connection
+            self.logger.warning(f"[Bot-{self.bot_id}] Connection closed by system at {context} (race condition)")
         else:
-            # Другие сетевые ошибки - логируем как warning
-            self.logger.warning(f"[Bot-{self.bot_id}] Сетевая ошибка при {context}: {error}")
+            # Other network errors - log as warning
+            self.logger.warning(f"[Bot-{self.bot_id}] Network error at {context}: {error}")
     
     def _handle_critical_error(self, error_code: int, description: str):
-        """Обработка критических ошибок с автоматическим отключением пулинга"""
+        """Handle critical errors with automatic polling shutdown"""
         self.consecutive_critical_errors += 1
         
         if self.consecutive_critical_errors >= self.max_critical_errors:
-            self.logger.error(f"[Bot-{self.bot_id}] Критическая ошибка HTTP {error_code}: {description}, пулинг остановлен после {self.consecutive_critical_errors} попыток")
-            # Отключаем пулинг ДО выброса исключения
+            self.logger.error(f"[Bot-{self.bot_id}] Critical HTTP error {error_code}: {description}, polling stopped after {self.consecutive_critical_errors} attempts")
+            # Disable polling BEFORE raising exception
             self.is_running = False
 
     async def _create_session(self) -> aiohttp.ClientSession:
-        """Создание новой HTTP сессии"""
+        """Create new HTTP session"""
         timeout = aiohttp.ClientTimeout(total=self.request_timeout)
         return aiohttp.ClientSession(timeout=timeout)
     
     async def _recreate_session(self):
-        """Пересоздание сессии после сетевых ошибок"""
+        """Recreate session after network errors"""
         if self.session:
             try:
                 if not self.session.closed:
                     await self._close_session_safely(self.session)
             except Exception as e:
-                # Логируем только если произошла неожиданная ошибка при закрытии
-                self.logger.warning(f"[Bot-{self.bot_id}] Ошибка при закрытии старой сессии перед пересозданием: {e}")
+                # Log only if unexpected error occurred when closing
+                self.logger.warning(f"[Bot-{self.bot_id}] Error closing old session before recreation: {e}")
             finally:
                 self.session = None
         
-        # Создаем новую сессию (всегда создаем новую, даже если старая не закрылась)
+        # Create new session (always create new, even if old didn't close)
         try:
             self.session = await self._create_session()
         except Exception as e:
-            # Не удалось создать новую сессию - это критично
-            self.logger.error(f"[Bot-{self.bot_id}] Критическая ошибка: не удалось создать новую сессию: {e}")
+            # Failed to create new session - this is critical
+            self.logger.error(f"[Bot-{self.bot_id}] Critical error: failed to create new session: {e}")
             raise
 
     async def _close_session_safely(self, session, timeout=None):
-        """Безопасное закрытие сессии с обработкой ошибок"""
+        """Safely close session with error handling"""
         if timeout is None:
             timeout = self.session_close_timeout
         
-        # Проверяем, не закрыта ли уже сессия
+        # Check if session is already closed
         if session.closed:
             return
             
-        # Пытаемся закрыть сессию
+        # Try to close session
         try:
             await asyncio.wait_for(session.close(), timeout=timeout)
-            return  # Успешно закрыли
+            return  # Successfully closed
         except asyncio.TimeoutError:
-            # Сессия не закрылась в срок, пытаемся закрыть коннектор
+            # Session didn't close in time, try to close connector
             pass
         except Exception:
-            # Ошибка при закрытии, пытаемся закрыть коннектор
+            # Error when closing, try to close connector
             pass
         
-        # Если сессия не закрылась, пытаемся закрыть коннектор принудительно
+        # If session didn't close, try to close connector forcibly
         if hasattr(session, '_connector') and session._connector:
             try:
                 if not session._connector._closed:
                     session._connector.close()
-                    return  # Коннектор закрыт, проблема решена
+                    return  # Connector closed, problem solved
             except Exception:
-                pass  # Коннектор тоже не закрылся, проблема не решена
+                pass  # Connector also didn't close, problem not solved
         
-        # Не удалось закрыть ни сессию, ни коннектор - логируем
-        self.logger.warning(f"[Bot-{self.bot_id}] Не удалось закрыть сессию и коннектор")
+        # Failed to close both session and connector - log
+        self.logger.warning(f"[Bot-{self.bot_id}] Failed to close session and connector")
 
     def stop_polling_sync(self):
-        """Синхронная остановка пулинга (для shutdown)"""
+        """Synchronous polling stop (for shutdown)"""
         try:
             self.is_running = False
             
@@ -230,68 +230,68 @@ class BotPoller:
                     task = loop.create_task(self._close_session_safely(self.session))
                     loop.run_until_complete(task)
                 except RuntimeError:
-                    # Если нет event loop - создаем новый
+                    # If no event loop - create new one
                     asyncio.run(self._close_session_safely(self.session))
                 
                 self.session = None
             
-            self.logger.info(f"[Bot-{self.bot_id}] Пулинг остановлен")
+            self.logger.info(f"[Bot-{self.bot_id}] Polling stopped")
             
         except Exception as e:
-            self.logger.error(f"[Bot-{self.bot_id}] Ошибка синхронной остановки пулинга: {e}")
+            self.logger.error(f"[Bot-{self.bot_id}] Error in synchronous polling stop: {e}")
 
     async def stop_polling(self):
-        """Остановка пулинга"""
+        """Stop polling"""
         try:
             self.is_running = False
             
-            # Закрываем сессию ПЕРЕД ожиданием завершения задачи, чтобы избежать создания новых сессий
+            # Close session BEFORE waiting for task completion to avoid creating new sessions
             if self.session:
                 await self._close_session_safely(self.session)
                 self.session = None
             
-            # Ждем завершения основного цикла пулинга
+            # Wait for main polling loop completion
             if hasattr(self, '_polling_task') and self._polling_task and not self._polling_task.done():
                 try:
                     await asyncio.wait_for(self._polling_task, timeout=self.stop_polling_timeout)
                 except asyncio.TimeoutError:
-                    self.logger.warning(f"[Bot-{self.bot_id}] Пулинг не остановился за {self.stop_polling_timeout} секунд, принудительное завершение")
-                    # Принудительно отменяем задачу
+                    self.logger.warning(f"[Bot-{self.bot_id}] Polling didn't stop within {self.stop_polling_timeout} seconds, forcing termination")
+                    # Force cancel task
                     self._polling_task.cancel()
                     try:
                         await self._polling_task
                     except asyncio.CancelledError:
                         pass
                 except Exception as e:
-                    self.logger.warning(f"[Bot-{self.bot_id}] Ошибка при ожидании завершения пулинга: {e}")
+                    self.logger.warning(f"[Bot-{self.bot_id}] Error waiting for polling completion: {e}")
             
-            # КРИТИЧНО: После завершения задачи еще раз проверяем и закрываем сессию
-            # Это нужно, потому что в _polling_loop может быть создана новая сессия через _recreate_session()
+            # CRITICAL: After task completion check and close session again
+            # This is needed because _polling_loop may create new session via _recreate_session()
             if self.session and not self.session.closed:
                 try:
                     await self._close_session_safely(self.session)
                 except Exception as e:
-                    self.logger.warning(f"[Bot-{self.bot_id}] Ошибка при финальном закрытии сессии: {e}")
+                    self.logger.warning(f"[Bot-{self.bot_id}] Error in final session close: {e}")
                 finally:
                     self.session = None
             
-            self.logger.info(f"[Bot-{self.bot_id}] Пулинг остановлен")
+            self.logger.info(f"[Bot-{self.bot_id}] Polling stopped")
             
         except Exception as e:
-            self.logger.error(f"[Bot-{self.bot_id}] Ошибка остановки пулинга: {e}")
+            self.logger.error(f"[Bot-{self.bot_id}] Error stopping polling: {e}")
     
     async def _polling_loop(self):
-        """Основной цикл пулинга"""
+        """Main polling loop"""
         while self.is_running:
             try:
-                # Получаем обновления
+                # Get updates
                 updates = await self._get_updates()
                 
-                # Обрабатываем каждое обновление
+                # Process each update
                 for update in updates:
                     self.offset = update['update_id'] + 1
                     
-                    # Добавляем системные данные с временем запуска пуллинга
+                    # Add system data with polling start time
                     if 'system' not in update:
                         update['system'] = {}
                     
@@ -300,7 +300,7 @@ class BotPoller:
                         'polling_start_time': self.polling_start_time
                     })
                     
-                    # Передаем событие в callback
+                    # Pass event to callback
                     if self.event_callback:
                         try:
                             if asyncio.iscoroutinefunction(self.event_callback):
@@ -308,77 +308,77 @@ class BotPoller:
                             else:
                                 self.event_callback(update)
                         except Exception as e:
-                            self.logger.error(f"[Bot-{self.bot_id}] Ошибка обработки события: {e}")
-                            # Продолжаем обработку других событий
+                            self.logger.error(f"[Bot-{self.bot_id}] Error processing event: {e}")
+                            # Continue processing other events
                 
-                # Задержка между запросами (стандартная для Telegram Bot API)
+                # Delay between requests (standard for Telegram Bot API)
                 if self.is_running:
                     try:
                         await asyncio.sleep(self.polling_relax)
                     except asyncio.CancelledError:
-                        self.logger.info(f"[Bot-{self.bot_id}] Получен сигнал отмены во время задержки")
+                        self.logger.info(f"[Bot-{self.bot_id}] Cancellation signal received during delay")
                         break
                 
             except asyncio.CancelledError:
-                self.logger.info(f"[Bot-{self.bot_id}] Получен сигнал отмены, завершаем пулинг")
+                self.logger.info(f"[Bot-{self.bot_id}] Cancellation signal received, finishing polling")
                 break
                 
             except aiohttp.ClientError as e:
-                # Обрабатываем сетевые ошибки
-                self._handle_network_error(e, "получении обновлений")
+                # Handle network errors
+                self._handle_network_error(e, "getting updates")
                 
-                # Пересоздаем сессию после сетевой ошибки
+                # Recreate session after network error
                 try:
                     await self._recreate_session()
                 except Exception as recreate_error:
-                    self.logger.warning(f"[Bot-{self.bot_id}] Ошибка пересоздания сессии: {recreate_error}")
-                    # Продолжаем работу, возможно сессия все еще рабочая
+                    self.logger.warning(f"[Bot-{self.bot_id}] Error recreating session: {recreate_error}")
+                    # Continue work, session may still be working
                 
-                # Ждем перед повторной попыткой
+                # Wait before retry
                 if self.is_running:
                     await asyncio.sleep(self.retry_delay)
                 
             except Exception as e:
-                # Не логируем критические ошибки здесь - они логируются в _handle_critical_error при достижении лимита
+                # Don't log critical errors here - they are logged in _handle_critical_error when limit is reached
                 error_msg = str(e)
                 if not error_msg.startswith("Critical error"):
-                    # Проверяем, что ошибка не пустая и содержит информацию
+                    # Check that error is not empty and contains information
                     if error_msg:
-                        self.logger.error(f"[Bot-{self.bot_id}] Неожиданная ошибка в пулинге: {error_msg}")
+                        self.logger.error(f"[Bot-{self.bot_id}] Unexpected error in polling: {error_msg}")
                     else:
-                        # Если ошибка пустая, выводим тип исключения
+                        # If error is empty, output exception type
                         exception_type = type(e).__name__
-                        self.logger.error(f"[Bot-{self.bot_id}] Неожиданная ошибка в пулинге ({exception_type}): {repr(e)}")
+                        self.logger.error(f"[Bot-{self.bot_id}] Unexpected error in polling ({exception_type}): {repr(e)}")
                 
-                # Если пулинг отключен из-за критических ошибок, не ждем
+                # If polling disabled due to critical errors, don't wait
                 if not self.is_running:
                     break
-                # Ждем перед повторной попыткой только если пулинг еще активен
+                # Wait before retry only if polling is still active
                 if self.is_running:
                     await asyncio.sleep(self.retry_delay)
     
     async def _get_updates(self):
-        """Получение обновлений через Telegram API с фильтрацией"""
+        """Get updates via Telegram API with filtering"""
         try:
-            # Проверяем состояние сессии перед использованием
+            # Check session state before use
             if not self.session or self.session.closed:
                 self.session = await self._create_session()
             
             url = f"https://api.telegram.org/bot{self.token}/getUpdates"
-            # ВАЖНО: Явно указываем allowed_updates с pre_checkout_query для получения платежных событий
-            # По документации Telegram, если не указать allowed_updates, могут не приходить некоторые типы событий
+            # IMPORTANT: Explicitly specify allowed_updates with pre_checkout_query to receive payment events
+            # According to Telegram docs, if allowed_updates not specified, some event types may not arrive
             params = {
                 'offset': self.offset,
                 'timeout': self.polling_timeout,
                 'limit': self.polling_limit,
-                'allowed_updates': ['message', 'callback_query', 'pre_checkout_query']  # Явно указываем типы событий
+                'allowed_updates': ['message', 'callback_query', 'pre_checkout_query']  # Explicitly specify event types
             }
             
             async with self.session.get(url, params=params) as response:
                 try:
                     data = await response.json()
                 except Exception:
-                    # Если JSON не парсится, но HTTP статус критический - обрабатываем как критическую ошибку
+                    # If JSON doesn't parse but HTTP status is critical - handle as critical error
                     if response.status in self.critical_error_codes:
                         status_code = response.status
                         description = f'HTTP {status_code} - {response.reason}'
@@ -388,37 +388,37 @@ class BotPoller:
                 
                 if data.get('ok'):
                     updates = data.get('result', [])
-                    # Сбрасываем счетчик ошибок при успешном запросе
+                    # Reset error counter on successful request
                     self.consecutive_critical_errors = 0
                     return updates
                 else:
-                    # Обработка специфичных ошибок Telegram API
+                    # Handle specific Telegram API errors
                     error_code = data.get('error_code')
                     description = data.get('description', 'Unknown error')
                     
-                    # Проверяем критичность по error_code (основной случай для Telegram API)
+                    # Check criticality by error_code (main case for Telegram API)
                     if error_code in self.critical_error_codes:
                         self._handle_critical_error(error_code, description)
                         raise Exception(f"Critical error {error_code}: {description}")
                     elif error_code == 429:
                         self.logger.warning(f"[Bot-{self.bot_id}] Rate limit: {description}")
                         
-                        # Получаем retry_after из ответа (если есть)
+                        # Get retry_after from response (if exists)
                         retry_after = data.get('retry_after', self.retry_after_rate_limit)
-                        self.logger.info(f"[Bot-{self.bot_id}] Ждем {retry_after} секунд перед повторной попыткой")
+                        self.logger.info(f"[Bot-{self.bot_id}] Waiting {retry_after} seconds before retry")
                         
-                        # Ждем указанное время
+                        # Wait specified time
                         await asyncio.sleep(retry_after)
                         raise Exception(f"Rate limited: {description}")
                     elif error_code == 409:
-                        self.logger.warning(f"[Bot-{self.bot_id}] Конфликт webhook: {description}")
+                        self.logger.warning(f"[Bot-{self.bot_id}] Webhook conflict: {description}")
                         raise Exception(f"Webhook conflict: {description}")
                     else:
-                        self.logger.error(f"[Bot-{self.bot_id}] API ошибка: {error_code} - {description}")
+                        self.logger.error(f"[Bot-{self.bot_id}] API error: {error_code} - {description}")
                         raise Exception(f"API Error {error_code}: {description}")
                     
         except aiohttp.ClientError as e:
-            # Обрабатываем сетевые ошибки
-            self._handle_network_error(e, "получении обновлений")
+            # Handle network errors
+            self._handle_network_error(e, "getting updates")
             raise
             

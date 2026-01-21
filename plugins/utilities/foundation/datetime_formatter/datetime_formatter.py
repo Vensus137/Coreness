@@ -7,14 +7,14 @@ class DatetimeFormatter:
         self.logger = kwargs['logger']
         self.settings_manager = kwargs['settings_manager']
         
-        # Получаем настройки через settings_manager
+        # Get settings via settings_manager
         settings = self.settings_manager.get_plugin_settings("datetime_formatter")
         self.timezone = settings.get('timezone', 'Europe/Moscow')
         self.format_name = settings.get('format', 'iso')
-        self._tz = None  # Ленивая инициализация
+        self._tz = None  # Lazy initialization
 
     def _get_timezone(self):
-        """Ленивая инициализация timezone"""
+        """Lazy timezone initialization"""
         if self._tz is None:
             from zoneinfo import ZoneInfo
             self._tz = ZoneInfo(self.timezone)
@@ -22,91 +22,91 @@ class DatetimeFormatter:
 
     def _normalize_to_utc_datetime(self, dt):
         """
-        Нормализовать datetime или Unix timestamp в UTC datetime.
+        Normalize datetime or Unix timestamp to UTC datetime.
         
-        ВАЖНО: Если передан naive datetime, считаем что это локальное время (не UTC).
-        Это позволяет корректно обрабатывать datetime из to_local() и now_local(),
-        которые возвращают naive datetime в локальной временной зоне.
+        IMPORTANT: If naive datetime is passed, consider it local time (not UTC).
+        This allows correct processing of datetime from to_local() and now_local(),
+        which return naive datetime in local timezone.
         """
         import datetime
         
-        # Если передан Unix timestamp (int или float)
+        # If Unix timestamp is passed (int or float)
         if isinstance(dt, (int, float)):
-            # Преобразуем timestamp в UTC datetime
+            # Convert timestamp to UTC datetime
             return datetime.datetime.fromtimestamp(dt, tz=datetime.timezone.utc)
         
-        # Если naive datetime, считаем что это локальное время (не UTC!)
-        # Конвертируем в UTC через локальную временную зону
+        # If naive datetime, consider it local time (not UTC!)
+        # Convert to UTC via local timezone
         if dt.tzinfo is None:
-            # Сначала добавляем локальную таймзону
+            # First add local timezone
             local_dt = dt.replace(tzinfo=self._get_timezone())
-            # Затем конвертируем в UTC
+            # Then convert to UTC
             return local_dt.astimezone(datetime.timezone.utc)
         
-        # Если уже timezone-aware, преобразуем в UTC
+        # If already timezone-aware, convert to UTC
         return dt.astimezone(datetime.timezone.utc)
 
     async def now_utc(self):
-        """Получить текущее время в UTC (naive datetime)"""
+        """Get current time in UTC (naive datetime)"""
         import datetime
-        # Возвращает naive UTC, но получает время через timezone-aware способ
+        # Returns naive UTC, but gets time via timezone-aware method
         return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
     async def now_utc_tz(self):
-        """Получить текущее время в UTC (timezone-aware datetime)"""
+        """Get current time in UTC (timezone-aware datetime)"""
         import datetime
         return datetime.datetime.now(datetime.timezone.utc)
 
     async def now_local(self):
-        """Получить текущее время в локальной временной зоне (naive datetime)"""
+        """Get current time in local timezone (naive datetime)"""
         import datetime
         return datetime.datetime.now(self._get_timezone()).replace(tzinfo=None)
 
     async def now_local_tz(self):
-        """Получить текущее время в локальной временной зоне (timezone-aware datetime)"""
+        """Get current time in local timezone (timezone-aware datetime)"""
         import datetime
         return datetime.datetime.now(self._get_timezone())
 
     async def to_utc(self, dt):
-        """Преобразовать datetime или Unix timestamp в UTC (naive)"""
-        # Нормализуем в UTC datetime
+        """Convert datetime or Unix timestamp to UTC (naive)"""
+        # Normalize to UTC datetime
         utc_dt = self._normalize_to_utc_datetime(dt)
         
-        # Убираем tzinfo для naive UTC
+        # Remove tzinfo for naive UTC
         return utc_dt.replace(tzinfo=None)
 
     async def to_utc_tz(self, dt):
-        """Преобразовать datetime или Unix timestamp в UTC (timezone-aware)"""
-        # Нормализуем в UTC datetime
+        """Convert datetime or Unix timestamp to UTC (timezone-aware)"""
+        # Normalize to UTC datetime
         return self._normalize_to_utc_datetime(dt)
 
     async def to_local(self, dt):
-        """Преобразовать datetime или Unix timestamp в локальную временную зону (naive)"""
-        # Нормализуем в UTC datetime
+        """Convert datetime or Unix timestamp to local timezone (naive)"""
+        # Normalize to UTC datetime
         utc_dt = self._normalize_to_utc_datetime(dt)
         
-        # Преобразуем в локальную временную зону и убираем tzinfo
+        # Convert to local timezone and remove tzinfo
         return utc_dt.astimezone(self._get_timezone()).replace(tzinfo=None)
 
     async def to_local_tz(self, dt):
-        """Преобразовать datetime или Unix timestamp в локальную временную зону (timezone-aware)"""
-        # Нормализуем в UTC datetime
+        """Convert datetime or Unix timestamp to local timezone (timezone-aware)"""
+        # Normalize to UTC datetime
         utc_dt = self._normalize_to_utc_datetime(dt)
         
-        # Преобразуем в локальную временную зону
+        # Convert to local timezone
         return utc_dt.astimezone(self._get_timezone())
 
     async def format(self, dt) -> str:
-        """Форматировать datetime в строку по настройкам"""
+        """Format datetime to string according to settings"""
         if self.format_name == 'iso':
             return dt.isoformat()
-        # Можно добавить другие форматы по необходимости
+        # Can add other formats as needed
         return dt.isoformat()
 
     async def to_string(self, dt, fmt: Optional[str] = None) -> str:
         """
-        Преобразует datetime в строку по формату (по умолчанию ISO).
-        fmt: 'iso' (default), либо любой формат strftime.
+        Convert datetime to string by format (ISO by default).
+        fmt: 'iso' (default), or any strftime format.
         """
         if fmt is None:
             fmt = self.format_name
@@ -116,58 +116,58 @@ class DatetimeFormatter:
 
     async def to_iso_string(self, dt) -> str:
         """
-        Короткий алиас для ISO-строки в UTC.
-        Поддерживает datetime и Unix timestamp.
+        Short alias for ISO string in UTC.
+        Supports datetime and Unix timestamp.
         """
-        # Нормализуем в UTC datetime
+        # Normalize to UTC datetime
         utc_dt = self._normalize_to_utc_datetime(dt)
         return utc_dt.isoformat()
     
     async def to_iso_local_string(self, dt) -> str:
         """
-        Преобразует datetime в ISO строку в локальном часовом поясе.
-        Поддерживает datetime и Unix timestamp.
-        Полезно для event_date, чтобы плейсхолдеры корректно форматировали дату.
+        Convert datetime to ISO string in local timezone.
+        Supports datetime and Unix timestamp.
+        Useful for event_date, so placeholders correctly format the date.
         """
-        # Нормализуем в UTC datetime
+        # Normalize to UTC datetime
         utc_dt = self._normalize_to_utc_datetime(dt)
-        # Конвертируем в локальную временную зону
+        # Convert to local timezone
         local_dt = utc_dt.astimezone(self._get_timezone())
         return local_dt.isoformat()
 
     async def to_datetime_string(self, dt: Union[Any, str]) -> str:
         """
-        Преобразует datetime или ISO-строку в читаемый формат ДДДД-ММ-ГГ ЧЧ:ММ:СС.
-        Универсальный метод: принимает datetime.datetime или строку ISO формата.
+        Convert datetime or ISO string to readable format YYYY-MM-DD HH:MM:SS.
+        Universal method: accepts datetime.datetime or ISO format string.
         """
         import datetime
         if isinstance(dt, str):
-            # Если передана строка - парсим её в datetime
+            # If string is passed - parse it to datetime
             dt = await self.parse(dt)
         elif not isinstance(dt, datetime.datetime):
-            self.logger.error(f"Ожидается datetime или строка ISO, получено: {type(dt)}")
+            self.logger.error(f"Expected datetime or ISO string, got: {type(dt)}")
             return None
         
         return dt.strftime('%Y-%m-%d %H:%M:%S')
 
     async def to_date_string(self, dt: Union[Any, str]) -> str:
         """
-        Преобразует datetime или ISO-строку в формат даты ДДДД-ММ-ГГ.
-        Универсальный метод: принимает datetime.datetime или строку ISO формата.
+        Convert datetime or ISO string to date format YYYY-MM-DD.
+        Universal method: accepts datetime.datetime or ISO format string.
         """
         import datetime
         if isinstance(dt, str):
-            # Если передана строка - парсим её в datetime
+            # If string is passed - parse it to datetime
             dt = await self.parse(dt)
         elif not isinstance(dt, datetime.datetime):
-            self.logger.error(f"Ожидается datetime или строка ISO, получено: {type(dt)}")
+            self.logger.error(f"Expected datetime or ISO string, got: {type(dt)}")
             return None
         
         return dt.strftime('%Y-%m-%d')
 
     async def to_serializable(self, obj: Union[Dict, List, Any]) -> Union[Dict, List, str, Any]:
         """
-        Рекурсивно преобразует все datetime в строку (ISO) для сериализации в JSON.
+        Recursively convert all datetime to string (ISO) for JSON serialization.
         """
         import datetime
         if isinstance(obj, dict):
@@ -182,111 +182,111 @@ class DatetimeFormatter:
         return obj
 
     async def parse(self, dt_str: str) -> Any:
-        """Парсить ISO строку в datetime"""
+        """Parse ISO string to datetime"""
         import datetime
         dt = datetime.datetime.fromisoformat(dt_str)
-        # Возвращаем как есть: если в строке есть tzinfo — будет aware, если нет — naive
+        # Return as is: if string has tzinfo - will be aware, if not - naive
         return dt
 
     async def parse_to_local(self, dt_str: str) -> Any:
         """
-        Парсит строку с датой и возвращает datetime в локальном времени (naive).
-        Предполагает, что входная строка в локальном времени.
-        Поддерживает форматы: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, ISO формат.
+        Parse date string and return datetime in local time (naive).
+        Assumes input string is in local time.
+        Supports formats: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, ISO format.
         """
-        dt = await self.parse_date_string(dt_str)  # Используем универсальный парсер
-        # Если datetime naive - считаем его локальным
+        dt = await self.parse_date_string(dt_str)  # Use universal parser
+        # If datetime naive - consider it local
         if dt.tzinfo is None:
             return dt
-        # Если datetime aware - конвертируем в локальное время
+        # If datetime aware - convert to local time
         return await self.to_local(dt)
 
     async def parse_to_local_tz(self, dt_str: str) -> Any:
         """
-        Парсит строку с датой и возвращает datetime в локальном времени с timezone.
-        Предполагает, что входная строка в локальном времени.
-        Поддерживает форматы: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, ISO формат.
+        Parse date string and return datetime in local time with timezone.
+        Assumes input string is in local time.
+        Supports formats: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, ISO format.
         """
-        dt = await self.parse_date_string(dt_str)  # Используем универсальный парсер
-        # Если datetime naive - считаем его локальным и добавляем timezone
+        dt = await self.parse_date_string(dt_str)  # Use universal parser
+        # If datetime naive - consider it local and add timezone
         if dt.tzinfo is None:
             return dt.replace(tzinfo=self._get_timezone())
-        # Если datetime aware - конвертируем в локальное время
+        # If datetime aware - convert to local time
         return await self.to_local_tz(dt)
 
     async def parse_to_utc(self, dt_str: str) -> Any:
         """
-        Парсит строку с датой и возвращает datetime в UTC (naive).
-        Если datetime naive - считаем его ЛОКАЛЬНЫМ временем и конвертируем в UTC.
-        Если datetime aware - конвертируем в UTC.
-        Поддерживает форматы: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, ISO формат.
+        Parse date string and return datetime in UTC (naive).
+        If datetime naive - consider it LOCAL time and convert to UTC.
+        If datetime aware - convert to UTC.
+        Supports formats: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, ISO format.
         """
-        dt = await self.parse_date_string(dt_str)  # Используем универсальный парсер
-        # Если datetime naive - считаем его ЛОКАЛЬНЫМ временем и конвертируем в UTC
+        dt = await self.parse_date_string(dt_str)  # Use universal parser
+        # If datetime naive - consider it LOCAL time and convert to UTC
         import datetime
         if dt.tzinfo is None:
-            # Добавляем локальную таймзону и конвертируем в UTC
+            # Add local timezone and convert to UTC
             dt_local = dt.replace(tzinfo=self._get_timezone())
             return dt_local.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-        # Если datetime aware - конвертируем в UTC
+        # If datetime aware - convert to UTC
         return await self.to_utc(dt)
 
     async def parse_to_utc_tz(self, dt_str: str) -> Any:
         """
-        Парсит строку с датой и возвращает datetime в UTC с timezone.
-        Если datetime naive - считаем его ЛОКАЛЬНЫМ временем и конвертируем в UTC.
-        Если datetime aware - конвертируем в UTC.
-        Поддерживает форматы: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, ISO формат.
+        Parse date string and return datetime in UTC with timezone.
+        If datetime naive - consider it LOCAL time and convert to UTC.
+        If datetime aware - convert to UTC.
+        Supports formats: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, ISO format.
         """
-        dt = await self.parse_date_string(dt_str)  # Используем универсальный парсер
-        # Если datetime naive - считаем его ЛОКАЛЬНЫМ временем и конвертируем в UTC
+        dt = await self.parse_date_string(dt_str)  # Use universal parser
+        # If datetime naive - consider it LOCAL time and convert to UTC
         import datetime
         if dt.tzinfo is None:
-            # Добавляем локальную таймзону и конвертируем в UTC
+            # Add local timezone and convert to UTC
             dt_local = dt.replace(tzinfo=self._get_timezone())
             return dt_local.astimezone(datetime.timezone.utc)
-        # Если datetime aware - конвертируем в UTC
+        # If datetime aware - convert to UTC
         return await self.to_utc_tz(dt)
 
     async def parse_date_string(self, date_str: str) -> Any:
         """
-        Универсальный метод для парсинга дат из строк в различных форматах.
+        Universal method for parsing dates from strings in various formats.
         
-        Поддерживаемые форматы:
-        - ГГГГ-ММ-ДД (например, "2025-01-15")
-        - ГГГГ-ММ-ДД ЧЧ:ММ:СС (например, "2025-01-15 14:30:00")
-        - ISO формат с таймзоной (например, "2025-01-15T14:30:00+03:00")
-        - ISO формат без таймзоны (например, "2025-01-15T14:30:00")
-        - ISO формат с микросекундами (например, "2025-01-15T14:30:00.123456")
+        Supported formats:
+        - YYYY-MM-DD (e.g., "2025-01-15")
+        - YYYY-MM-DD HH:MM:SS (e.g., "2025-01-15 14:30:00")
+        - ISO format with timezone (e.g., "2025-01-15T14:30:00+03:00")
+        - ISO format without timezone (e.g., "2025-01-15T14:30:00")
+        - ISO format with microseconds (e.g., "2025-01-15T14:30:00.123456")
         """
         if not date_str or not isinstance(date_str, str):
-            self.logger.error(f"Ожидается непустая строка, получено: {date_str}")
+            self.logger.error(f"Expected non-empty string, got: {date_str}")
             return None
         
         date_str = date_str.strip()
         
-        # Список форматов для попытки парсинга (в порядке приоритета)
+        # List of formats to try parsing (in priority order)
         formats = [
-            # ISO формат с таймзоной и микросекундами
+            # ISO format with timezone and microseconds
             "%Y-%m-%dT%H:%M:%S.%f%z",
             "%Y-%m-%dT%H:%M:%S.%f",
-            # ISO формат с таймзоной
+            # ISO format with timezone
             "%Y-%m-%dT%H:%M:%S%z",
             "%Y-%m-%dT%H:%M:%S",
-            # Обычный формат с секундами
+            # Regular format with seconds
             "%Y-%m-%d %H:%M:%S",
-            # Только дата
+            # Date only
             "%Y-%m-%d",
         ]
         
         import datetime
-        # Сначала пробуем стандартный ISO парсер (он лучше обрабатывает таймзоны)
+        # First try standard ISO parser (it handles timezones better)
         try:
             return datetime.datetime.fromisoformat(date_str)
         except ValueError:
             pass
         
-        # Затем пробуем наши форматы
+        # Then try our formats
         for fmt in formats:
             try:
                 dt = datetime.datetime.strptime(date_str, fmt)
@@ -294,31 +294,31 @@ class DatetimeFormatter:
             except ValueError:
                 continue
         
-        # Если ничего не подошло, пробуем более гибкие варианты
+        # If nothing matched, try more flexible options
         try:
-            # Пробуем парсить как ISO, но с заменой пробела на T
+            # Try parsing as ISO, but with space replaced by T
             if ' ' in date_str and 'T' not in date_str:
                 iso_str = date_str.replace(' ', 'T')
                 return datetime.datetime.fromisoformat(iso_str)
         except ValueError:
             pass
         
-        # Если все попытки не удались
-        self.logger.error(f"Не удалось распарсить дату '{date_str}'. "
-                         f"Поддерживаемые форматы: ГГГГ-ММ-ДД, ГГГГ-ММ-ДД ЧЧ:ММ:СС, ISO формат")
+        # If all attempts failed
+        self.logger.error(f"Failed to parse date '{date_str}'. "
+                         f"Supported formats: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, ISO format")
         return None
 
     async def time_diff(self, dt1: Union[Any, str], dt2: Union[Any, str]) -> Any:
         """
-        Вычисляет разность между двумя datetime объектами с учетом часовых поясов.
+        Calculate difference between two datetime objects considering timezones.
         """
-        # Парсим строки в datetime если нужно
+        # Parse strings to datetime if needed
         if isinstance(dt1, str):
             dt1 = await self.parse(dt1)
         if isinstance(dt2, str):
             dt2 = await self.parse(dt2)
         
-        # Приводим к UTC для корректного сравнения
+        # Convert to UTC for correct comparison
         dt1_utc = await self.to_utc_tz(dt1)
         dt2_utc = await self.to_utc_tz(dt2)
         
@@ -326,30 +326,30 @@ class DatetimeFormatter:
 
     async def is_older_than(self, dt: Union[Any, str], seconds: int) -> bool:
         """
-        Проверяет, прошло ли больше указанного количества секунд с момента dt.
+        Check if more than specified seconds have passed since dt.
         """
         time_diff = await self.time_diff(dt, await self.now_local())
         return time_diff.total_seconds() > seconds
 
     async def is_newer_than(self, dt: Union[Any, str], seconds: int) -> bool:
         """
-        Проверяет, прошло ли меньше указанного количества секунд с момента dt.
+        Check if less than specified seconds have passed since dt.
         """
         time_diff = await self.time_diff(dt, await self.now_local())
         return time_diff.total_seconds() < seconds
 
     async def subtract_seconds(self, dt: Union[Any, str], seconds: int) -> Any:
         """
-        Вычитает указанное количество секунд из datetime.
-        Поддерживает datetime и строки ISO.
+        Subtract specified number of seconds from datetime.
+        Supports datetime and ISO strings.
         """
         import datetime
         
-        # Парсим строку в datetime если нужно
+        # Parse string to datetime if needed
         if isinstance(dt, str):
             dt = await self.parse(dt)
         
-        # Вычитаем секунды
+        # Subtract seconds
         return dt - datetime.timedelta(seconds=seconds)
 
 

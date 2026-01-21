@@ -1,12 +1,12 @@
 """
-InvoiceAction - действия с инвойсами через Telegram API
+InvoiceAction - actions with invoices via Telegram API
 """
 
 from typing import Any, Dict
 
 
 class InvoiceAction:
-    """Действия с инвойсами через Telegram API"""
+    """Actions with invoices via Telegram API"""
     
     def __init__(self, api_client, **kwargs):
         self.api_client = api_client
@@ -14,7 +14,7 @@ class InvoiceAction:
     
     async def send_invoice(self, bot_token: str, bot_id: int, data: dict) -> Dict[str, Any]:
         """
-        Отправка инвойса через Telegram API метод sendInvoice
+        Send invoice via Telegram API sendInvoice method
         """
         try:
             chat_id = data.get('chat_id')
@@ -23,7 +23,7 @@ class InvoiceAction:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Не указан chat_id для отправки инвойса"
+                        "message": "chat_id not specified for sending invoice"
                     }
                 }
             
@@ -33,7 +33,7 @@ class InvoiceAction:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Не указан title для инвойса"
+                        "message": "title not specified for invoice"
                     }
                 }
             
@@ -44,7 +44,7 @@ class InvoiceAction:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Не указан payload (ID инвойса)"
+                        "message": "payload (invoice ID) not specified"
                     }
                 }
             
@@ -54,14 +54,14 @@ class InvoiceAction:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Не указан amount (количество звезд) или он не является целым числом"
+                        "message": "amount (number of stars) not specified or is not an integer"
                     }
                 }
             
-            currency = data.get('currency', 'XTR')  # По умолчанию XTR для звезд
+            currency = data.get('currency', 'XTR')  # Default XTR for stars
             
-            # Формируем prices для Telegram API
-            # Для звезд нужен массив с одним элементом
+            # Build prices for Telegram API
+            # For stars, need an array with one element
             prices = [
                 {
                     "label": title,
@@ -73,12 +73,12 @@ class InvoiceAction:
                 'chat_id': chat_id,
                 'title': title,
                 'description': description,
-                'payload': str(payload),  # Telegram API требует строку
+                'payload': str(payload),  # Telegram API requires string
                 'currency': currency,
                 'prices': prices
             }
             
-            # Выполняем запрос
+            # Execute request
             result = await self.api_client.make_request_with_limit(
                 bot_token,
                 "sendInvoice",
@@ -87,7 +87,7 @@ class InvoiceAction:
                 chat_id=chat_id
             )
             
-            # Обрабатываем результат и возвращаем только нужные поля
+            # Process result and return only needed fields
             if result.get('result') == 'success':
                 response_data = result.get('response_data', {})
                 message_id = response_data.get('message_id')
@@ -99,14 +99,14 @@ class InvoiceAction:
                     }
                 }
             else:
-                # Возвращаем только result и error, без response_data
+                # Return only result and error, without response_data
                 error_data = result.get('error', {})
                 if isinstance(error_data, dict):
                     error_obj = error_data
                 else:
                     error_obj = {
                         "code": "API_ERROR",
-                        "message": str(error_data) if error_data else "Неизвестная ошибка"
+                        "message": str(error_data) if error_data else "Unknown error"
                     }
                 return {
                     "result": result.get('result', 'error'),
@@ -114,7 +114,7 @@ class InvoiceAction:
                 }
             
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка отправки инвойса: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error sending invoice: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -125,7 +125,7 @@ class InvoiceAction:
     
     async def create_invoice_link(self, bot_token: str, bot_id: int, data: dict) -> Dict[str, Any]:
         """
-        Создание ссылки на инвойс через Telegram API метод createInvoiceLink
+        Create invoice link via Telegram API createInvoiceLink method
         """
         try:
             title = data.get('title')
@@ -134,7 +134,7 @@ class InvoiceAction:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Не указан title для инвойса"
+                        "message": "title not specified for invoice"
                     }
                 }
             
@@ -145,7 +145,7 @@ class InvoiceAction:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Не указан payload (ID инвойса)"
+                        "message": "payload (invoice ID) not specified"
                     }
                 }
             
@@ -155,13 +155,13 @@ class InvoiceAction:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Не указан amount (количество звезд) или он не является целым числом"
+                        "message": "amount (number of stars) not specified or is not an integer"
                     }
                 }
             
-            currency = data.get('currency', 'XTR')  # По умолчанию XTR для звезд
+            currency = data.get('currency', 'XTR')  # Default XTR for stars
             
-            # Формируем prices для Telegram API
+            # Build prices for Telegram API
             prices = [
                 {
                     "label": title,
@@ -172,19 +172,19 @@ class InvoiceAction:
             payload_data = {
                 'title': title,
                 'description': description,
-                'payload': str(payload),  # Telegram API требует строку
+                'payload': str(payload),  # Telegram API requires string
                 'currency': currency,
                 'prices': prices
             }
             
-            # Выполняем запрос
+            # Execute request
             result = await self.api_client.make_request(
                 bot_token,
                 "createInvoiceLink",
                 payload_data
             )
             
-            # Обрабатываем результат и возвращаем только нужные поля
+            # Process result and return only needed fields
             if result.get('result') == 'success':
                 response_data = result.get('response_data', {})
                 invoice_link = response_data.get('invoice_link') if isinstance(response_data, dict) else response_data
@@ -196,14 +196,14 @@ class InvoiceAction:
                     }
                 }
             else:
-                # Возвращаем только result и error, без response_data
+                # Return only result and error, without response_data
                 error_data = result.get('error', {})
                 if isinstance(error_data, dict):
                     error_obj = error_data
                 else:
                     error_obj = {
                         "code": "API_ERROR",
-                        "message": str(error_data) if error_data else "Неизвестная ошибка"
+                        "message": str(error_data) if error_data else "Unknown error"
                     }
                 return {
                     "result": result.get('result', 'error'),
@@ -211,7 +211,7 @@ class InvoiceAction:
                 }
             
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка создания ссылки на инвойс: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error creating invoice link: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -222,7 +222,7 @@ class InvoiceAction:
     
     async def answer_pre_checkout_query(self, bot_token: str, bot_id: int, data: dict) -> Dict[str, Any]:
         """
-        Ответ на запрос подтверждения оплаты через Telegram API метод answerPreCheckoutQuery
+        Answer payment confirmation request via Telegram API answerPreCheckoutQuery method
         """
         try:
             pre_checkout_query_id = data.get('pre_checkout_query_id')
@@ -231,7 +231,7 @@ class InvoiceAction:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Не указан pre_checkout_query_id"
+                        "message": "pre_checkout_query_id not specified"
                     }
                 }
             
@@ -241,7 +241,7 @@ class InvoiceAction:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Не указан ok (true/false)"
+                        "message": "ok (true/false) not specified"
                     }
                 }
             
@@ -250,30 +250,30 @@ class InvoiceAction:
                 'ok': ok
             }
             
-            # Если отклоняем, можно указать сообщение об ошибке
+            # If rejecting, can specify error message
             if not ok and data.get('error_message'):
                 payload_data['error_message'] = data.get('error_message')
             
-            # Выполняем запрос
+            # Execute request
             result = await self.api_client.make_request(
                 bot_token,
                 "answerPreCheckoutQuery",
                 payload_data
             )
             
-            # Обрабатываем результат и возвращаем только нужные поля
+            # Process result and return only needed fields
             if result.get('result') == 'success':
-                # Согласно config.yaml, при успехе возвращаем только result без response_data
+                # According to config.yaml, on success return only result without response_data
                 return {"result": "success"}
             else:
-                # Возвращаем только result и error, без response_data
+                # Return only result and error, without response_data
                 error_data = result.get('error', {})
                 if isinstance(error_data, dict):
                     error_obj = error_data
                 else:
                     error_obj = {
                         "code": "API_ERROR",
-                        "message": str(error_data) if error_data else "Неизвестная ошибка"
+                        "message": str(error_data) if error_data else "Unknown error"
                     }
                 return {
                     "result": result.get('result', 'error'),
@@ -281,7 +281,7 @@ class InvoiceAction:
                 }
             
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка ответа на pre_checkout_query: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error answering pre_checkout_query: {e}")
             return {
                 "result": "error",
                 "error": {

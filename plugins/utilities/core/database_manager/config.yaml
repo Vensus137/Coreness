@@ -19,64 +19,64 @@ settings:
 
     sqlite:
       database_url: "sqlite:///data/core.db"
-      # Настройки пула соединений для SQLite (оптимизировано для 1GB RAM)
+      # Connection pool settings for SQLite (optimized for 1GB RAM)
       connection_pool:
-        pool_size: 35                # Сбалансированный пул
-        max_overflow: 15             # Умеренный overflow
+        pool_size: 35                # Balanced pool
+        max_overflow: 15             # Moderate overflow
         pool_pre_ping: true
         pool_recycle: 300
         connect_timeout: 1
-      # SQLite PRAGMA оптимизации (оптимизировано для операционной базы)
-      # Сбалансированные настройки памяти: ~200MB (cache + mmap) для оптимального соотношения скорость/память
+      # SQLite PRAGMA optimizations (optimized for operational database)
+      # Balanced memory settings: ~200MB (cache + mmap) for optimal speed/memory ratio
       pragma_settings:
-        journal_mode: "WAL"          # Write-Ahead Logging для лучшей параллельности (чтение/запись)
-        cache_size: 25000             # 100MB кэша (баланс между производительностью и памятью)
-        synchronous: "NORMAL"         # Баланс между производительностью и надежностью (FULL надежнее но медленнее)
-        temp_store: "MEMORY"          # Временные таблицы в памяти (быстрее чем на диск)
-        busy_timeout: 30000           # Таймаут ожидания блокировки (30 секунд)
-        foreign_keys: true            # Включены внешние ключи (проверка целостности)
-        mmap_size: 104857600          # 100MB memory-mapped I/O (баланс между скоростью и памятью)
-      # SQLite engine настройки
+        journal_mode: "WAL"           # Write-Ahead Logging for better concurrency (read/write)
+        cache_size: 25000             # 100MB cache (balance between performance and memory)
+        synchronous: "NORMAL"         # Balance between performance and reliability (FULL is more reliable but slower)
+        temp_store: "MEMORY"          # Temporary tables in memory (faster than disk)
+        busy_timeout: 30000           # Lock wait timeout (30 seconds)
+        foreign_keys: true            # Foreign keys enabled (integrity check)
+        mmap_size: 104857600          # 100MB memory-mapped I/O (balance between speed and memory)
+      # SQLite engine settings
       engine_settings:
         echo: false
         future: true
-        isolation_level: null  # null = автокоммит, "AUTOCOMMIT" = явный автокоммит
+        isolation_level: null  # null = autocommit, "AUTOCOMMIT" = explicit autocommit
         pool_pre_ping: true
         pool_reset_on_return: "commit"
       
       description: "Конфигурация SQLite с ограничениями пула и оптимизациями"
 
     postgresql:
-      # Компоненты подключения
-      # host: имя сервиса в docker-compose (postgres для prod, postgres-test для test)
-      # Переопределяется в config/settings.yaml каждого окружения
+      # Connection components
+      # host: service name in docker-compose (postgres for prod, postgres-test for test)
+      # Overridden in config/settings.yaml for each environment
       host: "postgres"
-      port: 5432  # Стандартный порт PostgreSQL (переопределяется через переменные окружения для test/prod)
+      port: 5432  # Standard PostgreSQL port (overridden via environment variables for test/prod)
       username: "postgres"
-      password: ""  # Пустой пароль для trust authentication внутри Docker сети
+      password: ""  # Empty password for trust authentication within Docker network
       database: "core_db"
       
-      # Настройки ожидания подключения
+      # Connection retry settings
       connection_retry:
-        max_retries: 3  # Максимальное количество попыток подключения
-        retry_interval: 1  # Интервал между попытками (в секундах)
+        max_retries: 3  # Maximum number of connection attempts
+        retry_interval: 1  # Interval between attempts (in seconds)
       
-      # Отключение SQLAlchemy логирования
+      # SQLAlchemy logging disabled
       echo: false
       echo_pool: false
       
-      # Настройки PostgreSQL задаются через postgresql.conf файлы в docker/
-      # (postgresql.test.conf для test, postgresql.prod.conf для prod)
+      # PostgreSQL settings are configured via postgresql.conf files in docker/
+      # (postgresql.test.conf for test, postgresql.prod.conf for prod)
       
-      # Настройки пула соединений
+      # Connection pool settings
       connection_pool:
         pool_size: 50
         max_overflow: 20
         pool_pre_ping: true
         pool_recycle: 600
-        connect_timeout: 2  # 2 секунды timeout подключения
+        connect_timeout: 2  # 2 seconds connection timeout
       
-      # PostgreSQL engine настройки
+      # PostgreSQL engine settings
       engine_settings:
         echo: false
         echo_pool: false

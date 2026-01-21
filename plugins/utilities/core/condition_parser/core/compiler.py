@@ -1,5 +1,5 @@
 """
-Компилятор условий в Python функции
+Condition compiler to Python functions
 """
 
 import re
@@ -10,7 +10,7 @@ from .tokens import Token, TokenType
 
 
 class ConditionCompiler:
-    """Компилятор условий в Python функции"""
+    """Condition compiler to Python functions"""
     
     def __init__(self, logger, tokenizer):
         self.logger = logger
@@ -18,30 +18,30 @@ class ConditionCompiler:
         self._operator_functions = get_operator_functions()
     
     def compile(self, condition_string: str) -> Optional[Callable]:
-        """Компилирует строку условия в Python функцию"""
+        """Compiles condition string to Python function"""
         try:
             condition_stripped = condition_string.strip()
             
-            # Специальная обработка для простых булевых значений
+            # Special handling for simple boolean values
             if condition_stripped.lower() == 'true':
                 return lambda data: True
             elif condition_stripped.lower() == 'false':
                 return lambda data: False
             
-            # Токенизируем выражение
+            # Tokenize expression
             tokens = self.tokenizer.tokenize(condition_stripped)
             
             if not tokens:
-                self.logger.error(f"Пустое условие после токенизации: {condition_string}")
+                self.logger.error(f"Empty condition after tokenization: {condition_string}")
                 return None
             
-            # Преобразуем токены в Python выражение
+            # Convert tokens to Python expression
             python_expr = self._tokens_to_python_expression(tokens)
             
             if python_expr is None:
                 return None
             
-            # Создаем функцию для выполнения выражения
+            # Create function to execute expression
             def compiled_function(data: Dict[str, Any]) -> bool:
                 try:
                     context = {
@@ -60,17 +60,17 @@ class ConditionCompiler:
                     
                     return eval(python_expr, {"__builtins__": {}}, context)
                 except Exception as e:
-                    self.logger.error(f"Ошибка выполнения выражения '{python_expr}': {e}")
+                    self.logger.error(f"Error executing expression '{python_expr}': {e}")
                     return False
             
             return compiled_function
             
         except Exception as e:
-            self.logger.error(f"Ошибка компиляции условия '{condition_string}': {e}")
+            self.logger.error(f"Error compiling condition '{condition_string}': {e}")
             return None
     
     def _tokens_to_python_expression(self, tokens: List[Token]) -> Optional[str]:
-        """Преобразует список токенов в Python выражение"""
+        """Converts list of tokens to Python expression"""
         result = []
         i = 0
         
@@ -78,30 +78,30 @@ class ConditionCompiler:
             token = tokens[i]
             
             if token.type == TokenType.FIELD:
-                # Поле с маркером: $user_id -> data.get("user_id")
+                # Field with marker: $user_id -> data.get("user_id")
                 field_name = self.tokenizer.get_field_name(token)
                 if field_name:
                     python_field = self._field_to_data_get(field_name)
                     result.append(python_field)
                 else:
-                    self.logger.error(f"Не удалось извлечь имя поля из токена: {token}")
+                    self.logger.error(f"Failed to extract field name from token: {token}")
                     return None
             
             elif token.type == TokenType.STRING:
-                # Строковое значение: "text" -> "text" (уже в кавычках)
-                # Если строка без кавычек (например, дата dd.mm.yyyy), добавляем кавычки
+                # String value: "text" -> "text" (already in quotes)
+                # If string without quotes (e.g., date dd.mm.yyyy), add quotes
                 if token.value.startswith('"') or token.value.startswith("'"):
                     result.append(token.value)
                 else:
-                    # Добавляем кавычки для строк без кавычек
+                    # Add quotes for strings without quotes
                     result.append(f"'{token.value}'")
             
             elif token.type == TokenType.NUMBER:
-                # Число: 123 -> 123
+                # Number: 123 -> 123
                 result.append(token.value)
             
             elif token.type == TokenType.BOOLEAN:
-                # Булево значение: True -> True
+                # Boolean value: True -> True
                 if token.value.lower() == 'true':
                     result.append('True')
                 elif token.value.lower() == 'false':
@@ -114,13 +114,13 @@ class ConditionCompiler:
                 result.append('None')
             
             elif token.type == TokenType.OPERATOR:
-                # Обрабатываем операторы
+                # Process operators
                 result_len_before = len(result)
                 expr, skip = self._process_operator(tokens, i, result)
                 if expr is None:
                     return None
                 
-                # Если результат изменился (оператор удалил операнды из результата)
+                # If result changed (operator removed operands from result)
                 if len(result) < result_len_before:
                     result.append(expr)
                     i += 1 + skip
@@ -132,32 +132,32 @@ class ConditionCompiler:
                 continue
             
             elif token.type == TokenType.LOGICAL:
-                # Логические операторы: and, or, not
+                # Logical operators: and, or, not
                 result.append(token.value)
             
             elif token.type == TokenType.BRACKET:
-                # Скобки: ( ) [ ]
+                # Brackets: ( ) [ ]
                 result.append(token.value)
             
             elif token.type == TokenType.COMMA:
-                # Запятая: ,
+                # Comma: ,
                 result.append(',')
             
             elif token.type == TokenType.UNKNOWN:
-                # Неизвестный токен - пропускаем с предупреждением
-                self.logger.warning(f"Неизвестный токен: {token.value}")
+                # Unknown token - skip with warning
+                self.logger.warning(f"Unknown token: {token.value}")
             
             i += 1
         
-        # Объединяем результат
+        # Join result
         expr = ' '.join(result)
-        # Нормализуем пробелы
+        # Normalize spaces
         expr = re.sub(r'\s+', ' ', expr)
-        # Добавляем пробелы вокруг логических операторов если их нет
+        # Add spaces around logical operators if missing
         expr = re.sub(r'\)\s*(and|or|not)\s*\(', r') \1 (', expr)
         expr = re.sub(r'\)\s*(and|or|not)\s*([a-zA-Z_$])', r') \1 \2', expr)
         expr = re.sub(r'([a-zA-Z_$])\s*(and|or|not)\s*\(', r'\1 \2 (', expr)
-        # Убираем лишние пробелы вокруг скобок
+        # Remove extra spaces around brackets
         expr = re.sub(r'\s*\(\s*', '(', expr)
         expr = re.sub(r'\s*\)\s*', ')', expr)
         expr = re.sub(r'\s*,\s*', ', ', expr)
@@ -169,11 +169,11 @@ class ConditionCompiler:
         index: int,
         result: List[str]
     ) -> tuple[Optional[str], int]:
-        """Обрабатывает оператор и возвращает Python выражение"""
+        """Processes operator and returns Python expression"""
         token = tokens[index]
         operator = token.value
         
-        # Операторы сравнения
+        # Comparison operators
         if operator == '==':
             return self._process_comparison_operator('safe_eq', tokens, index, result)
         elif operator == '!=':
@@ -187,13 +187,13 @@ class ConditionCompiler:
         elif operator == '<=':
             return self._process_comparison_operator('safe_lte', tokens, index, result)
         
-        # Операторы строк
+        # String operators
         elif operator == '~':
             return self._process_string_operator('~', tokens, index, result)
         elif operator == '!~':
             return self._process_string_operator('!~', tokens, index, result)
         
-        # Специальные операторы
+        # Special operators
         elif operator == 'regex':
             return self._process_regex_operator(tokens, index, result)
         elif operator == 'is_null':
@@ -201,7 +201,7 @@ class ConditionCompiler:
         elif operator == 'not is_null':
             return self._process_not_is_null_operator(tokens, index, result)
         
-        # Операторы списков
+        # List operators
         elif operator == 'in':
             if index + 1 < len(tokens) and tokens[index + 1].value == '[':
                 return self._process_in_list_operator(tokens, index, result)
@@ -214,7 +214,7 @@ class ConditionCompiler:
                 return ('not in', 0)
         
         else:
-            self.logger.error(f"Неизвестный оператор: {operator}")
+            self.logger.error(f"Unknown operator: {operator}")
             return (None, 0)
     
     def _process_comparison_operator(
@@ -224,7 +224,7 @@ class ConditionCompiler:
         index: int,
         result: List[str]
     ) -> tuple[str, int]:
-        """Обрабатывает оператор сравнения: ==, !=, >, <, >=, <="""
+        """Processes comparison operator: ==, !=, >, <, >=, <="""
         if index > 0 and index + 1 < len(tokens):
             left = result[-1] if result else ''
             right_token = tokens[index + 1]
@@ -243,13 +243,13 @@ class ConditionCompiler:
         index: int,
         result: List[str]
     ) -> tuple[str, int]:
-        """Обрабатывает операторы строк: ~, !~"""
+        """Processes string operators: ~, !~"""
         if index > 0 and index + 1 < len(tokens):
             left = result[-1] if result else ''
             right_token = tokens[index + 1]
             
             if right_token.type == TokenType.STRING:
-                value = right_token.value[1:-1]  # Убираем кавычки
+                value = right_token.value[1:-1]  # Remove quotes
                 
                 if result:
                     result.pop()
@@ -267,13 +267,13 @@ class ConditionCompiler:
         index: int,
         result: List[str]
     ) -> tuple[str, int]:
-        """Обрабатывает оператор regex"""
+        """Processes regex operator"""
         if index > 0 and index + 1 < len(tokens):
             left = result[-1] if result else ''
             right_token = tokens[index + 1]
             
             if right_token.type == TokenType.STRING:
-                pattern = right_token.value[1:-1]  # Убираем кавычки
+                pattern = right_token.value[1:-1]  # Remove quotes
                 
                 if result:
                     result.pop()
@@ -288,7 +288,7 @@ class ConditionCompiler:
         index: int,
         result: List[str]
     ) -> tuple[str, int]:
-        """Обрабатывает оператор is_null"""
+        """Processes is_null operator"""
         if index > 0:
             left = result[-1] if result else ''
             
@@ -305,7 +305,7 @@ class ConditionCompiler:
         index: int,
         result: List[str]
     ) -> tuple[str, int]:
-        """Обрабатывает оператор not is_null"""
+        """Processes not is_null operator"""
         if index > 0:
             left = result[-1] if result else ''
             
@@ -322,16 +322,16 @@ class ConditionCompiler:
         index: int,
         result: List[str]
     ) -> tuple[Optional[str], int]:
-        """Обрабатывает оператор in со списком: field in [value1, value2, ...]"""
+        """Processes in operator with list: field in [value1, value2, ...]"""
         if index > 0 and index + 1 < len(tokens) and tokens[index + 1].value == '[':
             left = result[-1] if result else ''
             if result:
                 result.pop()
             
-            # Собираем элементы списка
+            # Collect list items
             list_items = []
-            i = index + 2  # Пропускаем 'in' и '['
-
+            i = index + 2  # Skip 'in' and '['
+            
             while i < len(tokens) and tokens[i].value != ']':
                 if tokens[i].type == TokenType.COMMA:
                     i += 1
@@ -341,13 +341,13 @@ class ConditionCompiler:
                 list_items.append(item_value)
                 i += 1
             
-            # Пропускаем закрывающую скобку ']' если она есть
+            # Skip closing bracket ']' if present
             if i < len(tokens) and tokens[i].value == ']':
                 i += 1
             
-            # Формируем выражение
+            # Form expression
             list_expr = f'[{", ".join(list_items)}]'
-            skip_count = i - index - 1  # Пропускаем токены от index+1 до i-1 включительно
+            skip_count = i - index - 1  # Skip tokens from index+1 to i-1 inclusive
             
             return (f'{left} in {list_expr}', skip_count)
         
@@ -359,15 +359,15 @@ class ConditionCompiler:
         index: int,
         result: List[str]
     ) -> tuple[Optional[str], int]:
-        """Обрабатывает оператор not in со списком"""
+        """Processes not in operator with list"""
         if index + 1 < len(tokens) and tokens[index + 1].value == '[':
             left = result[-1] if result else ''
             if result:
                 result.pop()
             
-            # Собираем элементы списка
+            # Collect list items
             list_items = []
-            i = index + 2  # Пропускаем 'not in' (1 токен) и '[' (1 токен)
+            i = index + 2  # Skip 'not in' (1 token) and '[' (1 token)
             
             while i < len(tokens) and tokens[i].value != ']':
                 if tokens[i].type == TokenType.COMMA:
@@ -378,7 +378,7 @@ class ConditionCompiler:
                 list_items.append(item_value)
                 i += 1
             
-            # Пропускаем закрывающую скобку ']' если она есть
+            # Skip closing bracket ']' if present
             if i < len(tokens) and tokens[i].value == ']':
                 i += 1
             
@@ -390,16 +390,16 @@ class ConditionCompiler:
         return ('not in', 0)
     
     def _token_to_python_value(self, token: Token) -> str:
-        """Преобразует токен в Python значение"""
+        """Converts token to Python value"""
         if token.type == TokenType.FIELD:
             field_name = self.tokenizer.get_field_name(token)
             return self._field_to_data_get(field_name) if field_name else 'None'
         elif token.type == TokenType.STRING:
-            # Если строка без кавычек (например, дата dd.mm.yyyy), добавляем кавычки
+            # If string without quotes (e.g., date dd.mm.yyyy), add quotes
             if token.value.startswith('"') or token.value.startswith("'"):
-                return token.value  # Уже в кавычках
+                return token.value  # Already in quotes
             else:
-                return f"'{token.value}'"  # Добавляем кавычки для строк без кавычек
+                return f"'{token.value}'"  # Add quotes for strings without quotes
         elif token.type == TokenType.NUMBER:
             return token.value
         elif token.type == TokenType.BOOLEAN:
@@ -410,38 +410,38 @@ class ConditionCompiler:
             return token.value
     
     def _field_to_data_get(self, field_name: str) -> str:
-        """Преобразует имя поля в вызов data.get() с поддержкой массивов"""
+        """Converts field name to data.get() call with array support"""
         import re
         
-        # Обрабатываем массивы [0], [0].field, [0][1] и т.д.
-        # Ищем все массивы в поле: field[0][1].subfield
+        # Process arrays [0], [0].field, [0][1], etc.
+        # Find all arrays in field: field[0][1].subfield
         array_pattern = r'(\[[^\]]+\])'
         array_matches = list(re.finditer(array_pattern, field_name))
         
         if array_matches:
-            # Разделяем поле на части: base_field, массивы, остаток через точку
+            # Split field into parts: base_field, arrays, remainder via dot
             first_array_pos = array_matches[0].start()
             base_field = field_name[:first_array_pos]
             rest_with_arrays = field_name[first_array_pos:]
             
-            # Получаем базовое выражение
+            # Get base expression
             base_expr = self._field_to_data_get(base_field) if base_field else 'data'
             
-            # Обрабатываем все массивы и точки после них
+            # Process all arrays and dots after them
             current_expr = base_expr
             i = 0
             
             while i < len(rest_with_arrays):
-                # Ищем следующий массив
+                # Find next array
                 if rest_with_arrays[i] == '[':
-                    # Находим закрывающую скобку
+                    # Find closing bracket
                     end_bracket = rest_with_arrays.find(']', i)
                     if end_bracket == -1:
                         break
                     
-                    index = rest_with_arrays[i+1:end_bracket]  # Убираем скобки
+                    index = rest_with_arrays[i+1:end_bracket]  # Remove brackets
                     
-                    # Добавляем доступ к массиву с проверкой
+                    # Add array access with check
                     try:
                         index_int = int(index)
                         if index_int < 0:
@@ -454,26 +454,26 @@ class ConditionCompiler:
                     current_expr = array_expr
                     i = end_bracket + 1
                 
-                # Обрабатываем доступ через точку
+                # Process access via dot
                 elif rest_with_arrays[i] == '.':
-                    # Находим следующую точку или конец строки
+                    # Find next dot or end of string
                     next_dot = rest_with_arrays.find('.', i + 1)
                     next_bracket = rest_with_arrays.find('[', i + 1)
                     
                     if next_dot == -1 and next_bracket == -1:
-                        # Последняя часть
+                        # Last part
                         rest_field = rest_with_arrays[i+1:]
                         parts = rest_field.split('.')
                         for part in parts:
                             current_expr = f'({current_expr}.get("{part}", {{}}) if isinstance({current_expr}, dict) else None)'
                         break
                     elif next_bracket != -1 and (next_dot == -1 or next_bracket < next_dot):
-                        # Следующий массив
+                        # Next array
                         part = rest_with_arrays[i+1:next_bracket]
                         current_expr = f'({current_expr}.get("{part}", {{}}) if isinstance({current_expr}, dict) else None)'
                         i = next_bracket
                     else:
-                        # Следующая точка
+                        # Next dot
                         part = rest_with_arrays[i+1:next_dot]
                         current_expr = f'({current_expr}.get("{part}", {{}}) if isinstance({current_expr}, dict) else None)'
                         i = next_dot
@@ -482,13 +482,13 @@ class ConditionCompiler:
             
             return current_expr
         
-        # Обычная обработка вложенных полей через точку
+        # Regular processing of nested fields via dot
         parts = field_name.split('.')
         
         if len(parts) == 1:
             return f'data.get("{field_name}")'
         
-        # Вложенные поля: message.text -> data.get("message", {}).get("text")
+        # Nested fields: message.text -> data.get("message", {}).get("text")
         result = 'data'
         for part in parts:
             result = f'{result}.get("{part}", {{}})'

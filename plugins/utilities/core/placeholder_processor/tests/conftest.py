@@ -1,62 +1,62 @@
 """
-Локальные фикстуры для тестов placeholder_processor
+Local fixtures for placeholder_processor tests
 """
 import sys
 from pathlib import Path
 
 import pytest
 
-# Импорты из других плагинов (foundation) оставляем абсолютными
+# Imports from other plugins (foundation) remain absolute
 from plugins.utilities.foundation.plugins_manager.plugins_manager import PluginsManager
 from plugins.utilities.foundation.settings_manager.settings_manager import SettingsManager
 
-# Импортируем фикстуры из корневого tests/conftest через абсолютный путь
+# Import fixtures from root tests/conftest via absolute path
 _project_root = Path(__file__).parent.parent.parent.parent.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
     
 from tests.conftest import logger, module_logger  # noqa: F401
 
-# Добавляем родительскую директорию плагина в sys.path
-# Импортируем PlaceholderProcessor через полное имя модуля с сохранением структуры пакета
+# Add parent plugin directory to sys.path
+# Import PlaceholderProcessor via full module name preserving package structure
 _plugin_dir = Path(__file__).parent.parent.parent  # plugins/utilities/core/
 if str(_plugin_dir) not in sys.path:
     sys.path.insert(0, str(_plugin_dir))
 
-# Импортируем через подпапку, сохраняя структуру пакета для относительных импортов
+# Import through subfolder, preserving package structure for relative imports
 from placeholder_processor.placeholder_processor import PlaceholderProcessor
 
 
 @pytest.fixture(scope="session")
 def _plugins_manager(module_logger):
-    """Создает PluginsManager один раз на всю сессию тестов (максимальная оптимизация)"""
+    """Creates PluginsManager once per test session (maximum optimization)"""
     return PluginsManager(logger=module_logger.get_logger("plugins_manager"))
 
 
 @pytest.fixture(scope="session")
 def _settings_manager(_plugins_manager, module_logger):
-    """Создает SettingsManager один раз на всю сессию тестов (максимальная оптимизация)"""
+    """Creates SettingsManager once per test session (maximum optimization)"""
     return SettingsManager(logger=module_logger.get_logger("settings_manager"), plugins_manager=_plugins_manager)
 
 
 @pytest.fixture(scope="session")
 def processor(module_logger, _settings_manager):
-    """Создает PlaceholderProcessor один раз на всю сессию тестов (максимальная оптимизация)"""
+    """Creates PlaceholderProcessor once per test session (maximum optimization)"""
     return PlaceholderProcessor(logger=module_logger, settings_manager=_settings_manager)
 
 
 def assert_equal(actual, expected, message=""):
-    """Упрощённая проверка равенства с нормализацией типов для строковых результатов"""
-    # Если actual - строка, а expected - число или булево, нормализуем
+    """Simplified equality check with type normalization for string results"""
+    # If actual is string and expected is number or bool, normalize
     if isinstance(actual, str):
         if isinstance(expected, bool):
-            # Преобразуем строку "True"/"False" в булево
+            # Convert string "True"/"False" to bool
             if actual == "True":
                 actual = True
             elif actual == "False":
                 actual = False
         elif isinstance(expected, (int, float)):
-            # Преобразуем строку в число
+            # Convert string to number
             try:
                 actual = float(actual) if isinstance(expected, float) else int(actual)
             except (ValueError, TypeError):

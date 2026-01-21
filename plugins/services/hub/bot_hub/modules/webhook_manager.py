@@ -1,6 +1,6 @@
 """
-WebhookManager - подмодуль для управления вебхуками Telegram ботов
-Установка/удаление вебхуков через Telegram Bot API
+WebhookManager - submodule for managing Telegram bot webhooks
+Set/delete webhooks through Telegram Bot API
 """
 
 import hashlib
@@ -13,8 +13,8 @@ import aiohttp
 
 class WebhookManager:
     """
-    Менеджер вебхуков для Telegram ботов
-    Управляет установкой и удалением вебхуков через Telegram Bot API
+    Webhook manager for Telegram bots
+    Manages webhook setup and deletion through Telegram Bot API
     """
     
     def __init__(self, cache_manager, logger, settings_manager, http_server):
@@ -22,38 +22,38 @@ class WebhookManager:
         self.logger = logger
         self.http_server = http_server
         
-        # Получаем настройки из bot_hub
+        # Get settings from bot_hub
         bot_hub_settings = settings_manager.get_plugin_settings("bot_hub")
-        self.cache_ttl = bot_hub_settings.get('cache_ttl', 315360000)  # Вечный кэш
+        self.cache_ttl = bot_hub_settings.get('cache_ttl', 315360000)  # Eternal cache
         self.webhook_endpoint = bot_hub_settings.get('webhook_endpoint', '/webhooks/telegram')
         
-        # Получаем allowed_updates из telegram_polling (унификация настроек)
+        # Get allowed_updates from telegram_polling (settings unification)
         telegram_polling_settings = settings_manager.get_plugin_settings("telegram_polling")
         self.allowed_updates = telegram_polling_settings.get('allowed_updates', ['message', 'callback_query', 'pre_checkout_query'])
         
-        # Время запуска системы для генерации уникальных secret_token
+        # System startup time for generating unique secret_tokens
         self.startup_timestamp = str(int(time.time()))
     
     def _get_webhook_secret_cache_key(self, secret_token: str) -> str:
-        """Генерация ключа кэша для secret_token"""
+        """Generate cache key for secret_token"""
         return f"webhook_secret:{secret_token}"
     
     def _generate_secret_token(self, bot_id: int) -> str:
         """
-        Генерация secret_token для вебхука
-        Формат: MD5(bot_id:startup_timestamp)
+        Generate secret_token for webhook
+        Format: MD5(bot_id:startup_timestamp)
         """
         seed = f"{bot_id}:{self.startup_timestamp}"
         return hashlib.md5(seed.encode('utf-8')).hexdigest()
     
     async def _save_secret_token(self, secret_token: str, bot_id: int):
-        """Сохранение маппинга secret_token -> bot_id в кэш"""
+        """Save mapping secret_token -> bot_id to cache"""
         cache_key = self._get_webhook_secret_cache_key(secret_token)
         await self.cache_manager.set(cache_key, bot_id, ttl=self.cache_ttl)
     
     async def get_bot_id_by_secret_token(self, secret_token: str) -> Optional[int]:
         """
-        Получение bot_id по secret_token из кэша
+        Get bot_id by secret_token from cache
         """
         cache_key = self._get_webhook_secret_cache_key(secret_token)
         bot_id = await self.cache_manager.get(cache_key)
@@ -61,58 +61,58 @@ class WebhookManager:
     
     async def set_webhook(self, bot_id: int, bot_token: str) -> Dict[str, Any]:
         """
-        Установка вебхука для бота через Telegram Bot API
+        Set webhook for bot through Telegram Bot API
         """
         try:
-            # Проверяем наличие http_server (для безопасности, хотя он обязателен)
+            # Check http_server presence (for safety, though it's required)
             if not self.http_server:
                 return {
                     "result": "error",
                     "error": {
                         "code": "CONFIG_ERROR",
-                        "message": "http_server не найден. Убедитесь, что http_server включен в зависимостях"
+                        "message": "http_server not found. Make sure http_server is included in dependencies"
                     }
                 }
             
-            # Получаем URL вебхука от http_server
+            # Get webhook URL from http_server
             webhook_url = self.http_server.get_webhook_url(self.webhook_endpoint)
             if not webhook_url:
                 return {
                     "result": "error",
                     "error": {
                         "code": "CONFIG_ERROR",
-                        "message": "external_url не настроен в http_server. Укажите внешний URL сервера в настройках http_server"
+                        "message": "external_url not configured in http_server. Specify external server URL in http_server settings"
                     }
                 }
             
-            # Генерируем secret_token
+            # Generate secret_token
             secret_token = self._generate_secret_token(bot_id)
             
-            # Сохраняем маппинг в кэш
+            # Save mapping to cache
             await self._save_secret_token(secret_token, bot_id)
             
-            # Вызываем Telegram Bot API для установки вебхука
+            # Call Telegram Bot API to set webhook
             api_url = f"https://api.telegram.org/bot{bot_token}/setWebhook"
             
-            # Всегда используем самоподписанный сертификат (генерируется в http_server при инициализации)
+            # Always use self-signed certificate (generated in http_server on initialization)
             cert_result = self.http_server.get_certificate()
             if not cert_result:
                 return {
                     "result": "error",
                     "error": {
                         "code": "CONFIG_ERROR",
-                        "message": "Ошибка генерации SSL-сертификата. Проверьте настройку external_url в http_server"
+                        "message": "SSL certificate generation error. Check external_url setting in http_server"
                     }
                 }
             cert_pem, _ = cert_result
             
-            # Telegram API требует multipart/form-data для загрузки сертификата
+            # Telegram API requires multipart/form-data for certificate upload
             form_data = aiohttp.FormData()
             form_data.add_field('url', webhook_url)
             form_data.add_field('secret_token', secret_token)
-            # allowed_updates передаем как JSON массив (Telegram API принимает JSON строку)
+            # allowed_updates passed as JSON array (Telegram API accepts JSON string)
             form_data.add_field('allowed_updates', json.dumps(self.allowed_updates))
-            # certificate передаем как файл
+            # certificate passed as file
             form_data.add_field('certificate', cert_pem, filename='cert.pem', content_type='application/x-pem-file')
             
             async with aiohttp.ClientSession() as session:
@@ -120,7 +120,7 @@ class WebhookManager:
                     data = await response.json()
                 
                 if data.get('ok'):
-                    self.logger.info(f"[Bot-{bot_id}] Вебхук установлен: {webhook_url}")
+                    self.logger.info(f"[Bot-{bot_id}] Webhook set: {webhook_url}")
                     return {
                         "result": "success",
                         "response_data": {
@@ -129,21 +129,21 @@ class WebhookManager:
                         }
                     }
                 else:
-                    error_description = data.get('description', 'Неизвестная ошибка')
+                    error_description = data.get('description', 'Unknown error')
                     error_code = data.get('error_code', 0)
                     
-                    # Обработка конфликта вебхука (409)
+                    # Handle webhook conflict (409)
                     if error_code == 409:
-                        self.logger.warning(f"[Bot-{bot_id}] Конфликт вебхука, пытаемся удалить старый...")
-                        # Пытаемся удалить старый вебхук и установить новый
+                        self.logger.warning(f"[Bot-{bot_id}] Webhook conflict, trying to delete old one...")
+                        # Try to delete old webhook and set new one
                         delete_result = await self.delete_webhook(bot_token, bot_id)
                         if delete_result.get('result') == 'success':
-                            # Повторная попытка установки
+                            # Retry setup
                             async with session.post(api_url, data=form_data) as retry_response:
                                 retry_data = await retry_response.json()
                             
                             if retry_data.get('ok'):
-                                self.logger.info(f"[Bot-{bot_id}] Вебхук установлен после удаления старого")
+                                self.logger.info(f"[Bot-{bot_id}] Webhook set after deleting old one")
                                 return {
                                     "result": "success",
                                     "response_data": {
@@ -152,30 +152,30 @@ class WebhookManager:
                                     }
                                 }
                     
-                    self.logger.error(f"[Bot-{bot_id}] Ошибка установки вебхука: {error_description}")
+                    self.logger.error(f"[Bot-{bot_id}] Error setting webhook: {error_description}")
                     return {
                         "result": "error",
                         "error": {
                             "code": "API_ERROR",
-                            "message": f"Ошибка Telegram API: {error_description}",
+                            "message": f"Telegram API error: {error_description}",
                             "telegram_error_code": error_code
                         }
                     }
                         
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка установки вебхука: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error setting webhook: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def get_webhook_info(self, bot_token: str, bot_id: Optional[int] = None) -> Dict[str, Any]:
         """
-        Получение информации о вебхуке через Telegram Bot API getWebhookInfo
-        Возвращает True если вебхук установлен и URL совпадает с нашим
+        Get webhook information through Telegram Bot API getWebhookInfo
+        Returns True if webhook is set and URL matches ours
         """
         try:
             log_prefix = f"[Bot-{bot_id}]" if bot_id else "[Bot]"
@@ -190,15 +190,15 @@ class WebhookManager:
                         webhook_info = data.get('result', {})
                         webhook_url = webhook_info.get('url', '')
                         
-                        # Проверяем, установлен ли вебхук (URL не пустой)
+                        # Check if webhook is set (URL not empty)
                         is_webhook_active = bool(webhook_url)
                         
-                        # Если вебхук установлен, проверяем что URL совпадает с нашим
+                        # If webhook set, check that URL matches ours
                         if is_webhook_active:
                             expected_url = self.http_server.get_webhook_url(self.webhook_endpoint)
                             if expected_url and webhook_url != expected_url:
-                                # Вебхук установлен, но на другой URL - считаем неактивным
-                                self.logger.warning(f"{log_prefix} Вебхук установлен на другой URL: {webhook_url} (ожидается: {expected_url})")
+                                # Webhook set but on different URL - consider inactive
+                                self.logger.warning(f"{log_prefix} Webhook set on different URL: {webhook_url} (expected: {expected_url})")
                                 is_webhook_active = False
                         
                         return {
@@ -209,9 +209,9 @@ class WebhookManager:
                             }
                         }
                     else:
-                        error_description = data.get('description', 'Неизвестная ошибка')
-                        self.logger.warning(f"{log_prefix} Ошибка получения информации о вебхуке: {error_description}")
-                        # При ошибке считаем вебхук неактивным
+                        error_description = data.get('description', 'Unknown error')
+                        self.logger.warning(f"{log_prefix} Error getting webhook information: {error_description}")
+                        # On error consider webhook inactive
                         return {
                             "result": "success",
                             "response_data": {
@@ -222,8 +222,8 @@ class WebhookManager:
                         
         except Exception as e:
             log_prefix = f"[Bot-{bot_id}]" if bot_id else "[Bot]"
-            self.logger.error(f"{log_prefix} Ошибка получения информации о вебхуке: {e}")
-            # При исключении считаем вебхук неактивным
+            self.logger.error(f"{log_prefix} Error getting webhook information: {e}")
+            # On exception consider webhook inactive
             return {
                 "result": "success",
                 "response_data": {
@@ -234,15 +234,15 @@ class WebhookManager:
     
     async def delete_webhook(self, bot_token: str, bot_id: Optional[int] = None) -> Dict[str, Any]:
         """
-        Удаление вебхука для бота через Telegram Bot API
+        Delete webhook for bot through Telegram Bot API
         """
         try:
             log_prefix = f"[Bot-{bot_id}]" if bot_id else "[Bot]"
             
             api_url = f"https://api.telegram.org/bot{bot_token}/deleteWebhook"
             
-            # Telegram рекомендует использовать drop_pending_updates=false
-            # чтобы сохранить накопленные обновления для пулинга
+            # Telegram recommends using drop_pending_updates=false
+            # to preserve accumulated updates for polling
             payload = {
                 "drop_pending_updates": False
             }
@@ -252,22 +252,22 @@ class WebhookManager:
                     data = await response.json()
                     
                     if data.get('ok'):
-                        self.logger.info(f"{log_prefix} Вебхук удален")
+                        self.logger.info(f"{log_prefix} Webhook deleted")
                         return {"result": "success"}
                     else:
-                        error_description = data.get('description', 'Неизвестная ошибка')
-                        self.logger.warning(f"{log_prefix} Предупреждение при удалении вебхука: {error_description}")
-                        # Не считаем это ошибкой, т.к. вебхук может быть уже удален
+                        error_description = data.get('description', 'Unknown error')
+                        self.logger.warning(f"{log_prefix} Warning when deleting webhook: {error_description}")
+                        # Don't consider this an error, as webhook may already be deleted
                         return {"result": "success"}
                         
         except Exception as e:
             log_prefix = f"[Bot-{bot_id}]" if bot_id else "[Bot]"
-            self.logger.error(f"{log_prefix} Ошибка удаления вебхука: {e}")
+            self.logger.error(f"{log_prefix} Error deleting webhook: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
 

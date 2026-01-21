@@ -1,6 +1,6 @@
 """
-Интеграционные тесты жизненного цикла приложения
-Проверяют корректную инициализацию и shutdown приложения
+Integration tests for application lifecycle
+Verify correct application initialization and shutdown
 """
 import pytest
 
@@ -10,25 +10,25 @@ from tests.conftest import initialized_di_container, di_container  # noqa: F401
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_application_startup(initialized_di_container):
-    """Проверка корректной инициализации приложения"""
-    # Проверяем, что все утилиты инициализированы
-    # Foundation утилиты доступны через get_utility(), но могут не быть в get_all_utilities()
+    """Verify correct application initialization"""
+    # Verify that all utilities are initialized
+    # Foundation utilities are available through get_utility(), but may not be in get_all_utilities()
     utilities = initialized_di_container.get_all_utilities()
     
-    # Проверяем наличие критических foundation утилит через get_utility()
+    # Verify presence of critical foundation utilities through get_utility()
     logger = initialized_di_container.get_utility('logger')
-    assert logger is not None, "Logger должен быть инициализирован"
+    assert logger is not None, "Logger should be initialized"
     
     plugins_manager = initialized_di_container.get_utility('plugins_manager')
-    assert plugins_manager is not None, "PluginsManager должен быть инициализирован"
+    assert plugins_manager is not None, "PluginsManager should be initialized"
     
     settings_manager = initialized_di_container.get_utility('settings_manager')
-    assert settings_manager is not None, "SettingsManager должен быть инициализирован"
+    assert settings_manager is not None, "SettingsManager should be initialized"
     
-    # Проверяем, что есть другие утилиты (не только foundation)
-    # Foundation утилиты могут не попадать в get_all_utilities(), но другие должны быть
+    # Verify that there are other utilities (not just foundation)
+    # Foundation utilities may not appear in get_all_utilities(), but others should be
     if len(utilities) == 0:
-        # Если нет утилит в списке, проверяем, что хотя бы одна не-foundation утилита доступна
+        # If there are no utilities in the list, verify that at least one non-foundation utility is available
         test_utilities = ['action_hub', 'database_manager', 'cache_manager']
         found_utility = False
         for util_name in test_utilities:
@@ -36,70 +36,70 @@ async def test_application_startup(initialized_di_container):
             if util is not None:
                 found_utility = True
                 break
-        assert found_utility, "Должна быть хотя бы одна не-foundation утилита"
+        assert found_utility, "At least one non-foundation utility should be available"
     
-    # Проверяем, что все сервисы могут быть получены
+    # Verify that all services can be retrieved
     services = initialized_di_container.get_all_services()
-    assert len(services) > 0, "Должны быть инициализированы сервисы"
+    assert len(services) > 0, "Services should be initialized"
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_di_container_shutdown(di_container):
-    """Проверка корректного shutdown DI-контейнера"""
-    # Инициализируем контейнер для теста
+    """Verify correct DI container shutdown"""
+    # Initialize container for test
     di_container.initialize_all_plugins()
     
-    # Проверяем, что контейнер инициализирован перед shutdown
-    # Foundation утилиты всегда доступны, проверяем их
+    # Verify that container is initialized before shutdown
+    # Foundation utilities are always available, verify them
     logger = di_container.get_utility('logger')
-    assert logger is not None, "Logger должен быть доступен перед shutdown"
+    assert logger is not None, "Logger should be available before shutdown"
     
-    # Проверяем, что shutdown не вызывает ошибок
-    # Примечание: shutdown очищает контейнер, поэтому проверяем только отсутствие исключений
+    # Verify that shutdown does not cause errors
+    # Note: shutdown clears the container, so we only verify absence of exceptions
     try:
         di_container.shutdown()
     except Exception as e:
-        pytest.fail(f"Shutdown вызвал исключение: {e}")
+        pytest.fail(f"Shutdown raised exception: {e}")
     
-    # Проверяем, что shutdown не вызывает ошибок при повторном вызове
+    # Verify that shutdown does not cause errors on repeated call
     try:
-        di_container.shutdown()  # Должно быть безопасно
+        di_container.shutdown()  # Should be safe
     except Exception as e:
-        pytest.fail(f"Повторный shutdown вызвал исключение: {e}")
+        pytest.fail(f"Repeated shutdown raised exception: {e}")
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_foundation_utilities_available(initialized_di_container):
-    """Проверка доступности foundation утилит"""
-    # Foundation утилиты доступны через get_utility до shutdown
+    """Verify foundation utilities availability"""
+    # Foundation utilities are available through get_utility until shutdown
     foundation_utils = ['logger', 'plugins_manager', 'settings_manager']
     
     for util_name in foundation_utils:
         util_instance = initialized_di_container.get_utility(util_name)
-        assert util_instance is not None, f"Foundation утилита {util_name} должна быть доступна"
+        assert util_instance is not None, f"Foundation utility {util_name} should be available"
         
-        # Проверяем, что это действительно экземпляр утилиты
-        assert hasattr(util_instance, '__class__'), f"{util_name} должен быть объектом"
+        # Verify that this is indeed a utility instance
+        assert hasattr(util_instance, '__class__'), f"{util_name} should be an object"
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_services_can_be_retrieved(initialized_di_container):
-    """Проверка, что все сервисы могут быть получены из DI-контейнера"""
-    # Получаем список включенных сервисов из плана запуска
+    """Verify that all services can be retrieved from DI container"""
+    # Get list of enabled services from startup plan
     settings_manager = initialized_di_container.get_utility('settings_manager')
-    assert settings_manager is not None, "SettingsManager должен быть доступен"
+    assert settings_manager is not None, "SettingsManager should be available"
     
     startup_plan = settings_manager.get_startup_plan()
-    assert startup_plan is not None, "План запуска должен быть построен"
+    assert startup_plan is not None, "Startup plan should be built"
     
     enabled_services = startup_plan.get('enabled_services', [])
-    assert len(enabled_services) > 0, "Должен быть хотя бы один включенный сервис"
+    assert len(enabled_services) > 0, "At least one enabled service should exist"
     
-    # Проверяем, что каждый сервис может быть получен по имени
+    # Verify that each service can be retrieved by name
     for service_name in enabled_services:
         service_instance = initialized_di_container.get_service(service_name)
-        assert service_instance is not None, f"Сервис {service_name} должен быть доступен"
+        assert service_instance is not None, f"Service {service_name} should be available"
 

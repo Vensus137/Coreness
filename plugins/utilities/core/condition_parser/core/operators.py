@@ -1,5 +1,5 @@
 """
-Модуль с функциями операторов для компиляции условий
+Module with operator functions for condition compilation
 """
 
 import re
@@ -7,7 +7,7 @@ from typing import Any, Optional
 
 
 def regex_match(field_value: Any, pattern: str) -> bool:
-    """Проверка соответствия значения регулярному выражению"""
+    """Check if value matches regular expression"""
     if field_value is None:
         return False
     try:
@@ -17,21 +17,21 @@ def regex_match(field_value: Any, pattern: str) -> bool:
 
 
 def is_null(value: Any) -> bool:
-    """Проверка на null (None, пустая строка или строка "null")"""
+    """Check for null (None, empty string or string "null")"""
     return value is None or value == '' or (isinstance(value, str) and value.lower() == 'null')
 
 
 def not_is_null(value: Any) -> bool:
-    """Проверка на не-null (обратное от is_null)"""
+    """Check for non-null (inverse of is_null)"""
     return not is_null(value)
 
 
 def safe_eq(left: Any, right: Any) -> bool:
-    """Безопасное сравнение с автоматическим преобразованием типов"""
+    """Safe comparison with automatic type conversion"""
     if left is None or right is None:
         return left is right
     
-    # Пытаемся преобразовать строки в числа для сравнения
+    # Try to convert strings to numbers for comparison
     if isinstance(left, str) and isinstance(right, (int, float)):
         try:
             if '.' in left:
@@ -54,12 +54,12 @@ def safe_eq(left: Any, right: Any) -> bool:
 
 
 def safe_ne(left: Any, right: Any) -> bool:
-    """Безопасное неравенство"""
+    """Safe inequality"""
     return not safe_eq(left, right)
 
 
 def safe_gt(left: Any, right: Any) -> bool:
-    """Безопасное сравнение >"""
+    """Safe comparison >"""
     if left is None or right is None:
         return False
     
@@ -73,7 +73,7 @@ def safe_gt(left: Any, right: Any) -> bool:
 
 
 def safe_lt(left: Any, right: Any) -> bool:
-    """Безопасное сравнение <"""
+    """Safe comparison <"""
     if left is None or right is None:
         return False
     
@@ -87,7 +87,7 @@ def safe_lt(left: Any, right: Any) -> bool:
 
 
 def safe_gte(left: Any, right: Any) -> bool:
-    """Безопасное сравнение >="""
+    """Safe comparison >="""
     if left is None or right is None:
         return False
     
@@ -101,7 +101,7 @@ def safe_gte(left: Any, right: Any) -> bool:
 
 
 def safe_lte(left: Any, right: Any) -> bool:
-    """Безопасное сравнение <="""
+    """Safe comparison <="""
     if left is None or right is None:
         return False
     
@@ -115,7 +115,7 @@ def safe_lte(left: Any, right: Any) -> bool:
 
 
 def _try_convert_to_number(value: Any) -> Optional[float]:
-    """Пытается преобразовать значение в число"""
+    """Tries to convert value to number"""
     if isinstance(value, (int, float)):
         return float(value)
     
@@ -129,7 +129,7 @@ def _try_convert_to_number(value: Any) -> Optional[float]:
 
 
 def get_operator_functions() -> dict:
-    """Возвращает словарь функций операторов для использования в компиляции"""
+    """Returns dictionary of operator functions for use in compilation"""
     return {
         'regex': regex_match,
         'is_null': is_null,

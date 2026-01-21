@@ -1,6 +1,6 @@
 """
-Модуль для операций с бэкапами базы данных
-Создание и восстановление бэкапов для SQLite и PostgreSQL
+Module for database backup operations
+Creating and restoring backups for SQLite and PostgreSQL
 """
 
 import datetime
@@ -12,11 +12,11 @@ from typing import Optional
 
 
 class BackupOperations:
-    """Класс для операций с бэкапами базы данных"""
+    """Class for database backup operations"""
     
     def __init__(self, logger, db_config, engine, settings_manager):
         """
-        Инициализация операций с бэкапами
+        Initialize backup operations
         """
         self.logger = logger
         self.db_config = db_config
@@ -24,12 +24,12 @@ class BackupOperations:
         self.settings_manager = settings_manager
     
     def _get_backup_dir(self) -> str:
-        """Получает директорию бэкапов из глобальных настроек"""
+        """Gets backup directory from global settings"""
         global_settings = self.settings_manager.get_global_settings()
         return global_settings.get('backup_dir', 'data/backups')
     
     async def create_backup(self, backup_filename: Optional[str] = None) -> Optional[str]:
-        """Создает бэкап базы данных в формате plain SQL + gzip для PostgreSQL или .bak.gz для SQLite"""
+        """Creates database backup in plain SQL + gzip format for PostgreSQL or .bak.gz for SQLite"""
         try:
             backup_dir = self._get_backup_dir()
             db_type = self.db_config.get('type')
@@ -39,24 +39,24 @@ class BackupOperations:
             elif db_type == 'postgresql':
                 return await self._create_postgresql_backup(backup_dir, self.db_config, backup_filename)
             else:
-                self.logger.error(f"Неподдерживаемый тип БД для бэкапа: {db_type}")
+                self.logger.error(f"Unsupported DB type for backup: {db_type}")
                 return None
                 
         except Exception as e:
-            self.logger.error(f"Ошибка создания бэкапа: {e}")
+            self.logger.error(f"Error creating backup: {e}")
             return None
     
     async def restore_backup(self, backup_filename: Optional[str] = None) -> bool:
-        """Восстанавливает базу данных из бэкапа"""
+        """Restores database from backup"""
         try:
             backup_dir = self._get_backup_dir()
             db_type = self.db_config.get('type')
             
-            # Если имя файла не указано, находим последний бэкап
+            # If filename not specified, find latest backup
             if backup_filename is None:
                 backup_filename = self._find_latest_backup(backup_dir, db_type)
                 if backup_filename is None:
-                    self.logger.error("Не найден бэкап для восстановления")
+                    self.logger.error("No backup found for restoration")
                     return False
             
             backup_path = os.path.join(backup_dir, backup_filename)
@@ -66,20 +66,20 @@ class BackupOperations:
             elif db_type == 'postgresql':
                 return await self._restore_postgresql_backup(backup_path, self.db_config)
             else:
-                self.logger.error(f"Неподдерживаемый тип БД для восстановления: {db_type}")
+                self.logger.error(f"Unsupported DB type for restoration: {db_type}")
                 return False
                 
         except Exception as e:
-            self.logger.error(f"Ошибка восстановления бэкапа: {e}")
+            self.logger.error(f"Error restoring backup: {e}")
             return False
     
     def _find_latest_backup(self, backup_dir: str, db_type: str) -> Optional[str]:
-        """Находит последний бэкап в директории для указанного типа БД"""
+        """Finds latest backup in directory for specified DB type"""
         try:
             if not os.path.exists(backup_dir):
                 return None
             
-            # Определяем расширение файла в зависимости от типа БД
+            # Determine file extension based on DB type
             if db_type == 'sqlite':
                 extension = '.bak.gz'
             elif db_type == 'postgresql':
@@ -87,7 +87,7 @@ class BackupOperations:
             else:
                 return None
             
-            # Находим все файлы бэкапов с нужным расширением
+            # Find all backup files with required extension
             backup_files = []
             for filename in os.listdir(backup_dir):
                 if filename.endswith(extension):
@@ -98,76 +98,76 @@ class BackupOperations:
             if not backup_files:
                 return None
             
-            # Сортируем по времени модификации (последний = самый новый)
+            # Sort by modification time (latest = newest)
             backup_files.sort(key=lambda x: x[1], reverse=True)
             return backup_files[0][0]
             
         except Exception as e:
-            self.logger.warning(f"Ошибка поиска последнего бэкапа: {e}")
+            self.logger.warning(f"Error finding latest backup: {e}")
             return None
     
     async def _create_sqlite_backup(self, backup_dir: str, db_config: dict, backup_filename: Optional[str] = None) -> Optional[str]:
-        """Создает бэкап SQLite в формате .bak.gz"""
+        """Creates SQLite backup in .bak.gz format"""
         try:
             db_path = db_config.get('db_path')
             
             if not db_path or not os.path.exists(db_path):
-                self.logger.warning(f"Файл БД SQLite не найден: {db_path}")
+                self.logger.warning(f"SQLite DB file not found: {db_path}")
                 return None
             
-            # Формируем имя файла бэкапа
+            # Form backup filename
             if backup_filename:
-                # Если имя указано, добавляем расширение если его нет
+                # If name specified, add extension if missing
                 if not backup_filename.endswith('.bak.gz'):
                     backup_filename = f"{backup_filename}.bak.gz"
             else:
-                # Генерируем автоматически с timestamp
+                # Generate automatically with timestamp
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 db_filename = os.path.basename(db_path) if db_path else "core.db"
                 backup_filename = f"{db_filename}_{timestamp}.bak.gz"
             
             backup_path = os.path.join(backup_dir, backup_filename)
-            # Создаем директорию если нужно (включая поддиректории из пути в имени файла)
+            # Create directory if needed (including subdirectories from path in filename)
             os.makedirs(os.path.dirname(backup_path), exist_ok=True)
             
-            # Читаем файл БД и сжимаем его
+            # Read DB file and compress it
             with open(db_path, 'rb') as f_in:
                 with gzip.open(backup_path, 'wb') as f_out:
                     f_out.writelines(f_in)
             
-            self.logger.info(f"Бэкап SQLite создан: {backup_path}")
+            self.logger.info(f"SQLite backup created: {backup_path}")
             return backup_path
             
         except Exception as e:
-            self.logger.error(f"Ошибка создания бэкапа SQLite: {e}")
+            self.logger.error(f"Error creating SQLite backup: {e}")
             return None
     
     async def _create_postgresql_backup(self, backup_dir: str, db_config: dict, backup_filename: Optional[str] = None) -> Optional[str]:
-        """Создает бэкап PostgreSQL в формате plain SQL + gzip"""
+        """Creates PostgreSQL backup in plain SQL + gzip format"""
         backup_path = None
         try:
-            # Получаем параметры подключения из конфигурации
+            # Get connection parameters from config
             postgresql_host = db_config.get('host')
             postgresql_port = db_config.get('port')
             postgresql_username = db_config.get('username')
             postgresql_database = db_config.get('database')
             postgresql_password = db_config.get('password')
             
-            # Формируем имя файла бэкапа
+            # Form backup filename
             if backup_filename:
-                # Если имя указано, добавляем расширение если его нет
+                # If name specified, add extension if missing
                 if not backup_filename.endswith('.sql.gz'):
                     backup_filename = f"{backup_filename}.sql.gz"
             else:
-                # Генерируем автоматически с timestamp
+                # Generate automatically with timestamp
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 backup_filename = f"postgresql_backup_{timestamp}.sql.gz"
             
             backup_path = os.path.join(backup_dir, backup_filename)
-            # Создаем директорию если нужно (включая поддиректории из пути в имени файла)
+            # Create directory if needed (including subdirectories from path in filename)
             os.makedirs(os.path.dirname(backup_path), exist_ok=True)
             
-            # Команда для создания дампа
+            # Command for creating dump
             cmd = [
                 'pg_dump',
                 '-h', str(postgresql_host),
@@ -177,21 +177,21 @@ class BackupOperations:
                 '--no-password'
             ]
             
-            # Устанавливаем пароль через переменную окружения
+            # Set password via environment variable
             env = os.environ.copy()
             if postgresql_password:
                 env['PGPASSWORD'] = postgresql_password
             
-            # Запускаем pg_dump и сжимаем вывод через gzip
+            # Run pg_dump and compress output via gzip
             process = subprocess.Popen(
                 cmd,
                 env=env,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=False  # Работаем с бинарными данными для gzip
+                text=False  # Work with binary data for gzip
             )
             
-            # Сжимаем вывод и сохраняем в файл
+            # Compress output and save to file
             with gzip.open(backup_path, 'wb') as f_out:
                 while True:
                     chunk = process.stdout.read(8192)
@@ -199,101 +199,101 @@ class BackupOperations:
                         break
                     f_out.write(chunk)
             
-            # Ждем завершения процесса
+            # Wait for process completion
             process.wait()
             
             if process.returncode == 0:
-                self.logger.info(f"Бэкап PostgreSQL создан: {backup_path}")
+                self.logger.info(f"PostgreSQL backup created: {backup_path}")
                 return backup_path
             else:
-                error_msg = process.stderr.read().decode('utf-8') if process.stderr else "Неизвестная ошибка"
-                self.logger.error(f"Ошибка создания бэкапа PostgreSQL: {error_msg}")
-                # Удаляем частично созданный файл при ошибке
+                error_msg = process.stderr.read().decode('utf-8') if process.stderr else "Unknown error"
+                self.logger.error(f"Error creating PostgreSQL backup: {error_msg}")
+                # Remove partially created file on error
                 if os.path.exists(backup_path):
                     os.remove(backup_path)
                 return None
                 
         except FileNotFoundError:
-            self.logger.error("pg_dump не найден, создание бэкапа PostgreSQL невозможно")
+            self.logger.error("pg_dump not found, PostgreSQL backup creation impossible")
             return None
         except Exception as e:
-            self.logger.error(f"Ошибка создания бэкапа PostgreSQL: {e}")
-            # Удаляем частично созданный файл при ошибке
+            self.logger.error(f"Error creating PostgreSQL backup: {e}")
+            # Remove partially created file on error
             if backup_path and os.path.exists(backup_path):
                 os.remove(backup_path)
             return None
     
     async def _restore_sqlite_backup(self, backup_path: str, db_config: dict) -> bool:
-        """Восстанавливает SQLite из бэкапа"""
+        """Restores SQLite from backup"""
         try:
-            # Проверяем существование файла бэкапа
+            # Check backup file existence
             if not os.path.exists(backup_path):
-                self.logger.error(f"Файл бэкапа не найден: {backup_path}")
+                self.logger.error(f"Backup file not found: {backup_path}")
                 return False
             
             db_path = db_config.get('db_path')
             if not db_path:
-                self.logger.error("Путь к файлу БД SQLite не определен")
+                self.logger.error("SQLite DB file path not defined")
                 return False
             
-            # Закрываем все соединения с БД перед восстановлением
+            # Close all DB connections before restoration
             try:
                 self.engine.dispose()
             except Exception as e:
-                self.logger.warning(f"Ошибка при закрытии соединений: {e}")
+                self.logger.warning(f"Error closing connections: {e}")
             
-            # Создаем директорию для БД, если её нет
+            # Create DB directory if it doesn't exist
             db_dir = os.path.dirname(db_path)
             if db_dir and not os.path.exists(db_dir):
                 os.makedirs(db_dir, exist_ok=True)
             
-            # Удаляем существующий файл БД, если он есть
+            # Remove existing DB file if present
             if os.path.exists(db_path):
                 try:
                     os.remove(db_path)
                 except PermissionError:
-                    # Если файл заблокирован, пробуем еще раз после небольшой задержки
+                    # If file is locked, try again after short delay
                     import time
                     time.sleep(0.1)
                     os.remove(db_path)
             
-            # Распаковываем и копируем файл
+            # Unpack and copy file
             if backup_path.endswith('.gz'):
-                # Распаковываем gzip
+                # Unpack gzip
                 with gzip.open(backup_path, 'rb') as f_in:
                     with open(db_path, 'wb') as f_out:
                         f_out.writelines(f_in)
             else:
-                # Просто копируем файл
+                # Just copy file
                 shutil.copy2(backup_path, db_path)
             
-            self.logger.info(f"БД SQLite восстановлена из {backup_path}")
+            self.logger.info(f"SQLite DB restored from {backup_path}")
             return True
             
         except Exception as e:
-            self.logger.error(f"Ошибка восстановления бэкапа SQLite: {e}")
+            self.logger.error(f"Error restoring SQLite backup: {e}")
             return False
     
     async def _restore_postgresql_backup(self, backup_path: str, db_config: dict) -> bool:
-        """Восстанавливает PostgreSQL из бэкапа"""
+        """Restores PostgreSQL from backup"""
         try:
-            # Проверяем существование файла бэкапа
+            # Check backup file existence
             if not os.path.exists(backup_path):
-                self.logger.error(f"Файл бэкапа не найден: {backup_path}")
+                self.logger.error(f"Backup file not found: {backup_path}")
                 return False
             
-            # Получаем параметры подключения из конфигурации
+            # Get connection parameters from config
             postgresql_host = db_config.get('host')
             postgresql_port = db_config.get('port')
             postgresql_username = db_config.get('username')
             postgresql_database = db_config.get('database')
             postgresql_password = db_config.get('password')
             
-            # Сначала очищаем БД для чистого восстановления
+            # First clear DB for clean restoration
             if not await self._clear_postgresql_database(db_config):
-                self.logger.warning("Не удалось очистить БД перед восстановлением, продолжаем...")
+                self.logger.warning("Failed to clear DB before restoration, continuing...")
             
-            # Команда для восстановления
+            # Command for restoration
             cmd = [
                 'psql',
                 '-h', str(postgresql_host),
@@ -304,14 +304,14 @@ class BackupOperations:
                 '--no-password'
             ]
             
-            # Устанавливаем пароль через переменную окружения
+            # Set password via environment variable
             env = os.environ.copy()
             if postgresql_password:
                 env['PGPASSWORD'] = postgresql_password
             
-            # Распаковываем gzip если нужно и передаем в psql
+            # Unpack gzip if needed and pass to psql
             if backup_path.endswith('.gz'):
-                # Распаковываем и передаем в psql
+                # Unpack and pass to psql
                 with gzip.open(backup_path, 'rb') as f_in:
                     process = subprocess.Popen(
                         cmd,
@@ -324,7 +324,7 @@ class BackupOperations:
                     process.stdin.close()
                     process.wait()
             else:
-                # Передаем файл напрямую
+                # Pass file directly
                 with open(backup_path, 'rb') as f_in:
                     process = subprocess.Popen(
                         cmd,
@@ -336,22 +336,22 @@ class BackupOperations:
                     process.wait()
             
             if process.returncode == 0:
-                self.logger.info(f"БД PostgreSQL восстановлена из {backup_path}")
+                self.logger.info(f"PostgreSQL DB restored from {backup_path}")
                 return True
             else:
-                error_msg = process.stderr.read().decode('utf-8') if process.stderr else "Неизвестная ошибка"
-                self.logger.error(f"Ошибка восстановления PostgreSQL: {error_msg}")
+                error_msg = process.stderr.read().decode('utf-8') if process.stderr else "Unknown error"
+                self.logger.error(f"Error restoring PostgreSQL: {error_msg}")
                 return False
                 
         except FileNotFoundError:
-            self.logger.error("psql не найден, восстановление PostgreSQL невозможно")
+            self.logger.error("psql not found, PostgreSQL restoration impossible")
             return False
         except Exception as e:
-            self.logger.error(f"Ошибка восстановления бэкапа PostgreSQL: {e}")
+            self.logger.error(f"Error restoring PostgreSQL backup: {e}")
             return False
     
     async def _clear_postgresql_database(self, db_config: dict) -> bool:
-        """Очищает PostgreSQL базу данных перед восстановлением"""
+        """Clears PostgreSQL database before restoration"""
         try:
             postgresql_host = db_config.get('host')
             postgresql_port = db_config.get('port')
@@ -359,7 +359,7 @@ class BackupOperations:
             postgresql_database = db_config.get('database')
             postgresql_password = db_config.get('password')
             
-            # Команда для очистки БД
+            # Command for clearing DB
             cmd = [
                 'psql',
                 '-h', str(postgresql_host),
@@ -370,7 +370,7 @@ class BackupOperations:
                 '-c', 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
             ]
             
-            # Устанавливаем пароль через переменную окружения
+            # Set password via environment variable
             env = os.environ.copy()
             if postgresql_password:
                 env['PGPASSWORD'] = postgresql_password
@@ -386,9 +386,9 @@ class BackupOperations:
             return result.returncode == 0
                 
         except FileNotFoundError:
-            self.logger.warning("psql не найден, очистка БД пропущена")
+            self.logger.warning("psql not found, DB clearing skipped")
             return False
         except Exception as e:
-            self.logger.warning(f"Ошибка очистки БД: {e}")
+            self.logger.warning(f"Error clearing DB: {e}")
             return False
 

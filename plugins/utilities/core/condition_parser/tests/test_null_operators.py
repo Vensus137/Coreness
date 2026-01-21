@@ -1,49 +1,49 @@
 """
-Тесты операторов is_null
+Tests for is_null operators
 """
 import pytest
 
 
 class TestIsNullOperator:
-    """Тесты оператора is_null"""
+    """Tests for is_null operator"""
 
     @pytest.mark.asyncio
     async def test_is_null_operator_none(self, parser):
-        """Проверка оператора is_null - None"""
+        """Check is_null operator - None"""
         result = await parser.check_match("$field is_null", {"field": None})
         assert result is True
 
     @pytest.mark.asyncio
     async def test_is_null_operator_empty_string(self, parser):
-        """Проверка оператора is_null - пустая строка"""
+        """Check is_null operator - empty string"""
         result = await parser.check_match("$field is_null", {"field": ""})
         assert result is True
 
     @pytest.mark.asyncio
     async def test_is_null_operator_has_value(self, parser):
-        """Проверка оператора is_null - есть значение"""
+        """Check is_null operator - has value"""
         result = await parser.check_match("$field is_null", {"field": "value"})
         assert result is False
 
 
 class TestNotIsNullOperator:
-    """Тесты оператора not is_null"""
+    """Tests for not is_null operator"""
 
     @pytest.mark.asyncio
     async def test_not_is_null_operator_has_value(self, parser):
-        """Проверка оператора not is_null - есть значение"""
+        """Check not is_null operator - has value"""
         result = await parser.check_match("$field not is_null", {"field": "value"})
         assert result is True
 
     @pytest.mark.asyncio
     async def test_not_is_null_operator_none(self, parser):
-        """Проверка оператора not is_null - None"""
+        """Check not is_null operator - None"""
         result = await parser.check_match("$field not is_null", {"field": None})
         assert result is False
 
     @pytest.mark.asyncio
     async def test_not_is_null_operator_empty_string(self, parser):
-        """Проверка оператора not is_null - пустая строка"""
+        """Check not is_null operator - empty string"""
         result = await parser.check_match("$field not is_null", {"field": ""})
         assert result is False
 

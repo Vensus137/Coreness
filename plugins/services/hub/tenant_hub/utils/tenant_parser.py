@@ -1,6 +1,6 @@
 """
-Tenant Parser - подмодуль для парсинга конфигураций тенантов
-Парсит конфигурации тенантов из файлов (отдельно bot и scenarios)
+Tenant Parser - submodule for parsing tenant configurations
+Parses tenant configurations from files (separately bot and scenarios)
 """
 
 import asyncio
@@ -12,8 +12,8 @@ import yaml
 
 class TenantParser:
     """
-    Подмодуль для парсинга конфигураций тенантов
-    Парсит отдельные части: bot/config или scenarios
+    Submodule for parsing tenant configurations
+    Parses separate parts: bot/config or scenarios
     """
     
     def __init__(self, logger, settings_manager, condition_parser):
@@ -21,25 +21,25 @@ class TenantParser:
         self.settings_manager = settings_manager
         self.condition_parser = condition_parser
         
-        # Получаем настройки из global (общие для всех сервисов)
+        # Get settings from global (common for all services)
         global_settings = self.settings_manager.get_global_settings()
         tenants_config_path = global_settings.get("tenants_config_path", "config/tenant")
         
-        # Получаем настройку максимальной глубины вложенности для storage
+        # Get maximum nesting depth setting for storage
         tenant_hub_settings = self.settings_manager.get_plugin_settings("tenant_hub")
         self.storage_max_depth = tenant_hub_settings.get("storage_max_depth", 10)
         
-        # Путь к тенантам (единая папка без разделения на system/public)
-        # Папка уже создана в tenant_hub, проверка не нужна
+        # Path to tenants (single folder without system/public separation)
+        # Folder already created in tenant_hub, no check needed
         from pathlib import Path
         project_root = self.settings_manager.get_project_root()
         self.tenants_path = Path(project_root) / tenants_config_path
     
-    # === Публичные методы ===
+    # === Public methods ===
     
     async def parse_bot(self, tenant_id: int) -> Dict[str, Any]:
         """
-        Парсит только конфигурацию бота и команды (без сценариев)
+        Parse only bot configuration and commands (without scenarios)
         """
         try:
             if not tenant_id:
@@ -47,22 +47,22 @@ class TenantParser:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "tenant_id не указан"
+                        "message": "tenant_id not specified"
                     }
                 }
             
-            # Получаем путь к тенанту
+            # Get tenant path
             tenant_path = await self._get_tenant_path(tenant_id)
             if not tenant_path:
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Тенант {tenant_id} не найден"
+                        "message": f"Tenant {tenant_id} not found"
                     }
                 }
             
-            # Парсим tg_bot.yaml
+            # Parse tg_bot.yaml
             bot_data = await self._parse_bot_data(tenant_id, tenant_path)
             
             return {
@@ -71,7 +71,7 @@ class TenantParser:
             }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга конфигурации бота: {e}")
+            self.logger.error(f"Error parsing bot configuration: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -82,7 +82,7 @@ class TenantParser:
     
     async def parse_scenarios(self, tenant_id: int) -> Dict[str, Any]:
         """
-        Парсит только сценарии тенанта (без бота)
+        Parse only tenant scenarios (without bot)
         """
         try:
             if not tenant_id:
@@ -90,22 +90,22 @@ class TenantParser:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "tenant_id не указан"
+                        "message": "tenant_id not specified"
                     }
                 }
             
-            # Получаем путь к тенанту
+            # Get tenant path
             tenant_path = await self._get_tenant_path(tenant_id)
             if not tenant_path:
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Тенант {tenant_id} не найден"
+                        "message": f"Tenant {tenant_id} not found"
                     }
                 }
             
-            # Парсим сценарии
+            # Parse scenarios
             scenario_data = await self._parse_scenarios(tenant_id, tenant_path)
             
             return {
@@ -114,7 +114,7 @@ class TenantParser:
             }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга сценариев: {e}")
+            self.logger.error(f"Error parsing scenarios: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -125,7 +125,7 @@ class TenantParser:
     
     async def parse_storage(self, tenant_id: int) -> Dict[str, Any]:
         """
-        Парсит только storage тенанта (без бота и сценариев)
+        Parse only tenant storage (without bot and scenarios)
         """
         try:
             if not tenant_id:
@@ -133,22 +133,22 @@ class TenantParser:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "tenant_id не указан"
+                        "message": "tenant_id not specified"
                     }
                 }
             
-            # Получаем путь к тенанту
+            # Get tenant path
             tenant_path = await self._get_tenant_path(tenant_id)
             if not tenant_path:
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Тенант {tenant_id} не найден"
+                        "message": f"Tenant {tenant_id} not found"
                     }
                 }
             
-            # Парсим storage
+            # Parse storage
             storage_data = await self._parse_storage(tenant_id, tenant_path)
             
             return {
@@ -157,7 +157,7 @@ class TenantParser:
             }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга storage: {e}")
+            self.logger.error(f"Error parsing storage: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -168,8 +168,8 @@ class TenantParser:
     
     async def parse_tenant_config(self, tenant_id: int) -> Dict[str, Any]:
         """
-        Парсит конфиг тенанта из файла config.yaml
-        Возвращает словарь с конфигом (например, {"ai_token": "..."})
+        Parse tenant config from config.yaml file
+        Returns dictionary with config (e.g., {"ai_token": "..."})
         """
         try:
             if not tenant_id:
@@ -177,22 +177,22 @@ class TenantParser:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "tenant_id не указан"
+                        "message": "tenant_id not specified"
                     }
                 }
             
-            # Получаем путь к тенанту
+            # Get tenant path
             tenant_path = await self._get_tenant_path(tenant_id)
             if not tenant_path:
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Тенант {tenant_id} не найден"
+                        "message": f"Tenant {tenant_id} not found"
                     }
                 }
             
-            # Парсим config.yaml
+            # Parse config.yaml
             config = await self._parse_tenant_config_file(tenant_id, tenant_path)
             
             return {
@@ -201,7 +201,7 @@ class TenantParser:
             }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга атрибутов тенанта: {e}")
+            self.logger.error(f"Error parsing tenant attributes: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -212,7 +212,7 @@ class TenantParser:
     
     async def parse_tenant(self, tenant_id: int) -> Dict[str, Any]:
         """
-        Парсит всю конфигурацию тенанта (bot + scenarios)
+        Parse entire tenant configuration (bot + scenarios)
         """
         try:
             if not tenant_id:
@@ -220,28 +220,28 @@ class TenantParser:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "tenant_id не указан"
+                        "message": "tenant_id not specified"
                     }
                 }
             
-            # Получаем путь к тенанту
+            # Get tenant path
             tenant_path = await self._get_tenant_path(tenant_id)
             if not tenant_path:
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Тенант {tenant_id} не найден"
+                        "message": f"Tenant {tenant_id} not found"
                     }
                 }
             
-            # Парсим bot
+            # Parse bot
             bot_data = await self._parse_bot_data(tenant_id, tenant_path)
             
-            # Парсим scenarios
+            # Parse scenarios
             scenario_data = await self._parse_scenarios(tenant_id, tenant_path)
             
-            # Парсим storage
+            # Parse storage
             storage_data = await self._parse_storage(tenant_id, tenant_path)
             
             return {
@@ -255,7 +255,7 @@ class TenantParser:
             }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга конфигурации тенанта: {e}")
+            self.logger.error(f"Error parsing tenant configuration: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -264,41 +264,41 @@ class TenantParser:
                 }
             }
     
-    # === Внутренние методы ===
+    # === Internal methods ===
     
     async def _get_tenant_path(self, tenant_id: int) -> Optional[Path]:
-        """Получает путь к папке тенанта"""
+        """Get path to tenant folder"""
         try:
             tenant_name = f"tenant_{tenant_id}"
             tenant_path = self.tenants_path / tenant_name
             
-            # Проверяем существование папки тенанта
+            # Check tenant folder existence
             if not tenant_path.exists():
-                self.logger.warning(f"Папка тенанта не найдена: {tenant_path}")
+                self.logger.warning(f"Tenant folder not found: {tenant_path}")
                 return None
             
             return tenant_path
             
         except Exception as e:
-            self.logger.error(f"Ошибка получения пути к тенанту {tenant_id}: {e}")
+            self.logger.error(f"Error getting path to tenant {tenant_id}: {e}")
             return None
     
     async def _parse_bot_data(self, tenant_id: int, tenant_path: Path) -> Dict[str, Any]:
-        """Парсит данные бота (bot + bot_commands)"""
+        """Parse bot data (bot + bot_commands)"""
         bot_data = {
             "bot": {},
             "bot_commands": []
         }
         
-        # Парсим tg_bot.yaml
+        # Parse tg_bot.yaml
         bot_file = tenant_path / "tg_bot.yaml"
         if bot_file.exists():
             yaml_data = await self._parse_yaml_file(bot_file)
             
-            # Извлекаем данные бота
-            # bot_token может быть None если не указан в конфиге (тогда используется из БД)
+            # Extract bot data
+            # bot_token can be None if not specified in config (then used from DB)
             bot_token = yaml_data.get("bot_token")
-            # Если токен пустая строка, считаем что его нет
+            # If token is empty string, consider it missing
             if bot_token is not None and not bot_token.strip():
                 bot_token = None
             
@@ -307,7 +307,7 @@ class TenantParser:
                 "is_active": yaml_data.get("is_active", True)
             }
             
-            # Извлекаем команды бота
+            # Extract bot commands
             commands = yaml_data.get("commands", [])
             for cmd in commands:
                 bot_data["bot_commands"].append({
@@ -317,7 +317,7 @@ class TenantParser:
                     "scope": cmd.get("scope", "default")
                 })
             
-            # Извлекаем команды для очистки
+            # Extract commands for clearing
             command_clear = yaml_data.get("command_clear", [])
             for cmd in command_clear:
                 bot_data["bot_commands"].append({
@@ -329,17 +329,17 @@ class TenantParser:
                     "user_id": cmd.get("user_id")
                 })
         else:
-            self.logger.warning(f"[Tenant-{tenant_id}] Файл tg_bot.yaml не найден")
+            self.logger.warning(f"[Tenant-{tenant_id}] File tg_bot.yaml not found")
         
         return bot_data
     
     async def _parse_scenarios(self, tenant_id: int, tenant_path: Path) -> Dict[str, Any]:
-        """Парсит все сценарии тенанта"""
+        """Parse all tenant scenarios"""
         scenarios = []
         scenarios_path = tenant_path / "scenarios"
         
         if scenarios_path.exists():
-            # Парсим все YAML файлы рекурсивно из scenarios (включая подпапки)
+            # Parse all YAML files recursively from scenarios (including subfolders)
             for yaml_file in scenarios_path.rglob("*.yaml"):
                 file_scenarios = await self._parse_scenario_file(yaml_file)
                 scenarios.extend(file_scenarios)
@@ -349,7 +349,7 @@ class TenantParser:
         }
     
     async def _parse_scenario_file(self, file_path: Path) -> List[Dict[str, Any]]:
-        """Парсит файл сценариев"""
+        """Parse scenario file"""
         scenarios = []
         
         try:
@@ -359,46 +359,46 @@ class TenantParser:
             
             yaml_content = yaml.safe_load(content) or {}
             
-            # Обрабатываем каждый сценарий в файле
+            # Process each scenario in file
             for scenario_name, scenario_data in yaml_content.items():
                 if isinstance(scenario_data, dict):
-                    # Парсим триггеры
+                    # Parse triggers
                     parsed_trigger = await self._parse_scenario_trigger(scenario_data.get("trigger", []))
                     
-                    # Парсим шаги
+                    # Parse steps
                     parsed_step = await self._parse_scenario_step(scenario_data.get("step", []))
                     
                     scenario = {
                         "scenario_name": scenario_name,
                         "description": scenario_data.get("description"),
-                        "schedule": scenario_data.get("schedule"),  # Cron выражение для scheduled сценариев
+                        "schedule": scenario_data.get("schedule"),  # Cron expression for scheduled scenarios
                         "trigger": parsed_trigger,
                         "step": parsed_step
                     }
                     scenarios.append(scenario)
             
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга файла сценариев {file_path}: {e}")
+            self.logger.error(f"Error parsing scenario file {file_path}: {e}")
         
         return scenarios
     
     async def _parse_yaml_file(self, file_path: Path) -> Dict[str, Any]:
-        """Парсит YAML файл"""
+        """Parse YAML file"""
         try:
             loop = asyncio.get_event_loop()
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = await loop.run_in_executor(None, f.read)
             return yaml.safe_load(content) or {}
         except Exception as e:
-            self.logger.error(f"Ошибка чтения файла {file_path}: {e}")
+            self.logger.error(f"Error reading file {file_path}: {e}")
             return {}
     
     async def _parse_scenario_trigger(self, trigger: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Парсит триггеры сценария в формат БД используя condition_parser"""
+        """Parse scenario triggers to DB format using condition_parser"""
         parsed_trigger = []
         
         for trigger_data in trigger:
-            # Используем condition_parser.build_condition для создания условия
+            # Use condition_parser.build_condition to create condition
             condition_expression = await self.condition_parser.build_condition([trigger_data])
             
             parsed_trigger.append({
@@ -408,11 +408,11 @@ class TenantParser:
         return parsed_trigger
     
     async def _parse_scenario_step(self, step: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Парсит шаги сценария в формат БД"""
+        """Parse scenario steps to DB format"""
         parsed_step = []
         
         for step_order, step_data in enumerate(step):
-            # Берем params как есть (dict)
+            # Take params as is (dict)
             params = step_data.get("params", {})
             
             parsed_step.append({
@@ -427,43 +427,43 @@ class TenantParser:
         return parsed_step
     
     async def _parse_storage(self, tenant_id: int, tenant_path: Path) -> Dict[str, Any]:
-        """Парсит секцию storage из конфига тенанта"""
+        """Parse storage section from tenant config"""
         storage = {}
         storage_path = tenant_path / "storage"
         
         if storage_path.exists() and storage_path.is_dir():
-            # Парсим все YAML файлы в папке storage
+            # Parse all YAML files in storage folder
             for yaml_file in storage_path.glob("*.yaml"):
                 try:
-                    # Парсим содержимое файла
+                    # Parse file content
                     yaml_content = await self._parse_yaml_file(yaml_file)
                     
-                    # Ожидаем структуру: {group_key: {key: value}}
+                    # Expected structure: {group_key: {key: value}}
                     if not isinstance(yaml_content, dict):
-                        self.logger.warning(f"[Tenant-{tenant_id}] Файл {yaml_file.name} содержит невалидную структуру, ожидается словарь")
+                        self.logger.warning(f"[Tenant-{tenant_id}] File {yaml_file.name} contains invalid structure, expected dictionary")
                         continue
                     
-                    # Обрабатываем каждую группу в файле
+                    # Process each group in file
                     for group_key, group_data in yaml_content.items():
                         if not isinstance(group_data, dict):
-                            self.logger.warning(f"[Tenant-{tenant_id}] Группа '{group_key}' в файле {yaml_file.name} содержит невалидную структуру, ожидается словарь")
+                            self.logger.warning(f"[Tenant-{tenant_id}] Group '{group_key}' in file {yaml_file.name} contains invalid structure, expected dictionary")
                             continue
                         
-                        # Валидируем и нормализуем атрибуты группы
+                        # Validate and normalize group attributes
                         validated_group = await self._validate_and_normalize_storage_group(
                             tenant_id, group_key, group_data, yaml_file.name
                         )
                         
                         if validated_group:
-                            # Объединяем с существующими данными группы (если группа уже была в другом файле)
+                            # Merge with existing group data (if group already existed in another file)
                             if group_key in storage:
-                                # Объединяем атрибуты, новые перезаписывают старые
+                                # Merge attributes, new ones overwrite old ones
                                 storage[group_key].update(validated_group)
                             else:
                                 storage[group_key] = validated_group
                         
                 except Exception as e:
-                    self.logger.error(f"[Tenant-{tenant_id}] Ошибка парсинга файла storage {yaml_file.name}: {e}")
+                    self.logger.error(f"[Tenant-{tenant_id}] Error parsing storage file {yaml_file.name}: {e}")
         
         return {
             "storage": storage
@@ -473,13 +473,13 @@ class TenantParser:
         self, tenant_id: int, group_key: str, group_data: Dict[str, Any], file_name: str
     ) -> Dict[str, Any]:
         """
-        Валидирует и нормализует группу атрибутов storage
+        Validate and normalize storage attribute group
         
-        Поддерживает:
-        - Простые типы (str, int, float, bool, None)
-        - Массивы с простыми типами или сложными структурами (dict, list)
-        - Словари (dict) с любыми поддерживаемыми типами значений
-        - Рекурсивная валидация вложенных структур (максимальная глубина настраивается через config.yaml: tenant_hub.storage_max_depth)
+        Supports:
+        - Simple types (str, int, float, bool, None)
+        - Arrays with simple types or complex structures (dict, list)
+        - Dictionaries (dict) with any supported value types
+        - Recursive validation of nested structures (maximum depth configured via config.yaml: tenant_hub.storage_max_depth)
         """
         validated_group = {}
         
@@ -497,26 +497,26 @@ class TenantParser:
         self, tenant_id: int, group_key: str, key: str, value: Any, file_name: str, depth: int = 0, max_depth: int = 10
     ) -> Any:
         """
-        Рекурсивно валидирует значение storage с поддержкой сложных структур
+        Recursively validate storage value with support for complex structures
         
-        Поддерживает:
-        - Простые типы: str, int, float, bool, None
-        - Массивы: могут содержать простые типы, словари или другие массивы
-        - Словари: могут содержать любые поддерживаемые типы значений
+        Supports:
+        - Simple types: str, int, float, bool, None
+        - Arrays: can contain simple types, dictionaries or other arrays
+        - Dictionaries: can contain any supported value types
         
-        Параметры:
-        - depth: текущая глубина вложенности
-        - max_depth: максимальная глубина вложенности для предотвращения рекурсии
+        Parameters:
+        - depth: current nesting depth
+        - max_depth: maximum nesting depth to prevent recursion
         """
-        # Проверка глубины вложенности
+        # Check nesting depth
         if depth > max_depth:
             self.logger.warning(
-                f"[Tenant-{tenant_id}] Атрибут '{group_key}.{key}' в файле {file_name} "
-                f"превышает максимальную глубину вложенности ({max_depth}), пропускаем."
+                f"[Tenant-{tenant_id}] Attribute '{group_key}.{key}' in file {file_name} "
+                f"exceeds maximum nesting depth ({max_depth}), skipping."
             )
             return None
         
-        # Обработка словарей (JSON объекты)
+        # Process dictionaries (JSON objects)
         if isinstance(value, dict):
             validated_dict = {}
             for dict_key, dict_value in value.items():
@@ -530,7 +530,7 @@ class TenantParser:
             
             return validated_dict if validated_dict else None
         
-        # Обработка массивов
+        # Process arrays
         elif isinstance(value, list):
             validated_list = []
             invalid_items = []
@@ -547,51 +547,51 @@ class TenantParser:
                 else:
                     invalid_items.append(i)
             
-            # Логируем некорректные элементы только если есть валидные
+            # Log invalid items only if there are valid ones
             if invalid_items and validated_list:
                 for i in invalid_items:
                     self.logger.warning(
-                        f"[Tenant-{tenant_id}] Элемент '{group_key}.{key}[{i}]' в файле {file_name} "
-                        f"содержит неподдерживаемый тип, пропускаем."
+                        f"[Tenant-{tenant_id}] Element '{group_key}.{key}[{i}]' in file {file_name} "
+                        f"contains unsupported type, skipping."
                     )
             
-            # Возвращаем валидированный массив только если он не пустой или пустой массив был исходно валидным
+            # Return validated array only if it's not empty or empty array was originally valid
             if validated_list or (not invalid_items and len(value) == 0):
                 return validated_list
             elif invalid_items:
-                # Если массив полностью некорректный, логируем один раз
+                # If array is completely invalid, log once
                 self.logger.warning(
-                    f"[Tenant-{tenant_id}] Атрибут '{group_key}.{key}' в файле {file_name} "
-                    f"содержит массив с некорректными элементами, пропускаем."
+                    f"[Tenant-{tenant_id}] Attribute '{group_key}.{key}' in file {file_name} "
+                    f"contains array with invalid elements, skipping."
                 )
             return None
         
-        # Обработка простых типов
+        # Process simple types
         elif isinstance(value, (str, int, float, bool, type(None))):
             return value
         
-        # Обработка других типов - пытаемся преобразовать в строку
+        # Process other types - try to convert to string
         else:
             original_type = type(value).__name__
             try:
                 str_value = str(value)
                 self.logger.warning(
-                    f"[Tenant-{tenant_id}] Атрибут '{group_key}.{key}' в файле {file_name} "
-                    f"был преобразован в строку из {original_type}"
+                    f"[Tenant-{tenant_id}] Attribute '{group_key}.{key}' in file {file_name} "
+                    f"was converted to string from {original_type}"
                 )
                 return str_value
             except Exception as e:
                 self.logger.error(
-                    f"[Tenant-{tenant_id}] Не удалось преобразовать атрибут '{group_key}.{key}' "
-                    f"в файле {file_name}: {e}. Пропускаем."
+                    f"[Tenant-{tenant_id}] Failed to convert attribute '{group_key}.{key}' "
+                    f"in file {file_name}: {e}. Skipping."
                 )
                 return None
     
     async def _parse_tenant_config_file(self, tenant_id: int, tenant_path: Path) -> Dict[str, Any]:
         """
-        Парсит файл config.yaml с конфигом тенанта
-        Возвращает словарь с конфигом (например, {"ai_token": "..."})
-        Если файла нет или поле пустое → не добавляет в словарь
+        Parse config.yaml file with tenant config
+        Returns dictionary with config (e.g., {"ai_token": "..."})
+        If file doesn't exist or field is empty → don't add to dictionary
         """
         config = {}
         tenant_file = tenant_path / "config.yaml"
@@ -599,18 +599,18 @@ class TenantParser:
         if tenant_file.exists():
             yaml_data = await self._parse_yaml_file(tenant_file)
             
-            # Извлекаем ai_token (приоритет) или openrouter_token (обратная совместимость)
+            # Extract ai_token (priority) or openrouter_token (backward compatibility)
             ai_token = yaml_data.get("ai_token")
             if not ai_token:
-                # Обратная совместимость: проверяем старое поле
+                # Backward compatibility: check old field
                 ai_token = yaml_data.get("openrouter_token")
-            # Если токен пустая строка, считаем что его нет
+            # If token is empty string, consider it missing
             if ai_token is not None and ai_token.strip():
                 config["ai_token"] = ai_token.strip()
-                # Также сохраняем в старое поле для обратной совместимости
+                # Also save to old field for backward compatibility
                 config["openrouter_token"] = ai_token.strip()
         else:
-            # Файл не существует - это нормально, возвращаем пустой словарь
+            # File doesn't exist - this is normal, return empty dictionary
             pass
         
         return config

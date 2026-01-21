@@ -1,5 +1,5 @@
 """
-Базовый репозиторий с общими методами
+Base repository with common methods
 """
 
 from contextlib import contextmanager
@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 
 class BaseRepository:
     """
-    Базовый репозиторий с общими методами
+    Base repository with common methods
     """
     
     def __init__(self, session_factory, **kwargs):
@@ -19,8 +19,8 @@ class BaseRepository:
     
     async def _to_dict(self, obj: Any, json_fields: Optional[List[str]] = None, convert_text_fields: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
         """
-        Преобразовать объект модели в словарь с использованием data_converter
-        Возвращает None при ошибке преобразования
+        Convert model object to dictionary using data_converter
+        Returns None on conversion error
         """
         try:
             if obj is None:
@@ -28,7 +28,7 @@ class BaseRepository:
             
             result = await self.data_converter.to_dict(obj, json_fields=json_fields)
             
-            # Преобразуем указанные Text поля в типы
+            # Convert specified Text fields to types
             if convert_text_fields:
                 for field_name in convert_text_fields:
                     if field_name in result:
@@ -36,13 +36,13 @@ class BaseRepository:
             
             return result
         except Exception as e:
-            self.logger.error(f"Ошибка преобразования объекта в словарь: {e}")
+            self.logger.error(f"Error converting object to dictionary: {e}")
             return None
     
     async def _to_dict_list(self, objects: List[Any], json_fields: Optional[List[str]] = None, convert_text_fields: Optional[List[str]] = None) -> Optional[List[Dict[str, Any]]]:
         """
-        Преобразовать список объектов в список словарей с использованием data_converter
-        Возвращает None при ошибке преобразования
+        Convert list of objects to list of dictionaries using data_converter
+        Returns None on conversion error
         """
         try:
             if objects is None:
@@ -50,7 +50,7 @@ class BaseRepository:
             
             result = await self.data_converter.to_dict_list(objects, json_fields=json_fields)
             
-            # Преобразуем указанные Text поля в типы
+            # Convert specified Text fields to types
             if convert_text_fields:
                 for record in result:
                     for field_name in convert_text_fields:
@@ -59,19 +59,19 @@ class BaseRepository:
             
             return result
         except Exception as e:
-            self.logger.error(f"Ошибка преобразования списка объектов в словари: {e}")
+            self.logger.error(f"Error converting list of objects to dictionaries: {e}")
             return None
     
     async def _convert_value_from_db(self, value: Any, column_type: Optional[Any] = None) -> Union[str, int, float, bool, list, None]:
         """
-        Преобразует значение из БД в Python тип на основе содержимого строки
-        Использует data_converter для преобразования типов.
+        Converts value from DB to Python type based on string content
+        Uses data_converter for type conversion.
         
-        Правила преобразования:
-        - Массивы (JSON строка, начинающаяся с '[') - десериализует из JSON
-        - Числа (int, float) - преобразует в соответствующий тип
-        - Булевы значения ('true', 'false') - преобразует в bool
-        - Остальное - оставляет как строку
+        Conversion rules:
+        - Arrays (JSON string starting with '[') - deserializes from JSON
+        - Numbers (int, float) - converts to corresponding type
+        - Boolean values ('true', 'false') - converts to bool
+        - Everything else - leaves as string
         
         """
         return await self.data_converter.convert_string_to_type(value)
@@ -79,7 +79,7 @@ class BaseRepository:
     @contextmanager
     def _get_session(self):
         """
-        Контекстный менеджер для получения сессии БД
+        Context manager for getting DB session
         """
         session = self.session_factory()
         try:

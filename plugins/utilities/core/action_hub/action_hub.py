@@ -1,5 +1,5 @@
 """
-Action Hub - центральный хаб действий
+Action Hub - central action hub
 """
 
 import asyncio
@@ -8,50 +8,50 @@ from typing import Any, Dict, Optional, Union
 
 class ActionHub:
     """
-    Центральный хаб действий
-    Маршрутизирует действия к соответствующим сервисам
+    Central action hub
+    Routes actions to corresponding services
     """
     
     def __init__(self, **kwargs):
         self.logger = kwargs['logger']
         
-        # Создаем валидатор доступа
+        # Create access validator
         from .core.access_validator import AccessValidator
         self.access_validator = AccessValidator(**kwargs)
         
-        # Компоненты
+        # Components
         from .core.action_registry import ActionRegistry
         
-        # Передаем валидаторы в ActionRegistry
+        # Pass validators to ActionRegistry
         kwargs['access_validator'] = self.access_validator
-        # action_validator передается через DI, если доступен
+        # action_validator is passed through DI if available
         self.action_registry = ActionRegistry(**kwargs)
     
-    # === Registry сервисов ===
+    # === Service Registry ===
     
     def register(self, service_name: str, service_instance) -> bool:
-        """Регистрация сервиса"""
+        """Register service"""
         return self.action_registry.register(service_name, service_instance)
     
     def get_action_config(self, action_name: str) -> Optional[Dict[str, Any]]:
         """
-        Получение полной конфигурации действия
+        Get full action configuration
         
-        Возвращает конфигурацию действия из маппинга или None если действие не найдено
+        Returns action configuration from mapping or None if action not found
         """
         return self.action_registry.get_action_config(action_name)
     
-    # === Actions для сценариев ===
+    # === Actions for scenarios ===
     
     async def execute_action(self, action_name: str, data: dict = None, queue_name: str = None, 
                             fire_and_forget: bool = False, return_future: bool = False) -> Union[Dict[str, Any], asyncio.Future]:
-        """Выполнение действия через соответствующий сервис (внутренние вызовы)"""
+        """Execute action through corresponding service (internal calls)"""
         return await self.action_registry.execute_action(action_name, data, queue_name, fire_and_forget, return_future)
     
     async def execute_action_secure(self, action_name: str, data: dict = None, queue_name: str = None, 
                                    fire_and_forget: bool = False, return_future: bool = False) -> Union[Dict[str, Any], asyncio.Future]:
         """
-        Безопасное выполнение действия для сценариев
-        Проверяет tenant_access перед выполнением
+        Secure action execution for scenarios
+        Checks tenant_access before execution
         """
         return await self.action_registry.execute_action_secure(action_name, data, queue_name, fire_and_forget, return_future)
