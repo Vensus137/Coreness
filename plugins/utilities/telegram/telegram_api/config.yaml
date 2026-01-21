@@ -7,7 +7,7 @@ dependencies:
   - "settings_manager"
 
 settings:
-  # Rate limiting настройки
+  # Rate limiting settings
   bot_bucket_size:
     type: integer
     default: 20
@@ -25,7 +25,7 @@ settings:
     default: 20
     description: "Скорость восстановления токенов чата (токенов в минуту)"
 
-  # HTTP клиент
+  # HTTP client
   request_timeout:
     type: integer
     default: 30

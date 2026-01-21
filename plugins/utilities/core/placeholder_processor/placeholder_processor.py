@@ -3,43 +3,43 @@ from typing import Any, Dict, List
 
 from .modules.object_utils import deep_merge
 
-# Импортируем утилиты из модулей
+# Import utilities from modules
 from .modules.path_parser import extract_literal_or_get_value, get_nested_value
 from .modules.type_utils import determine_result_type
 
 
 class PlaceholderProcessor:
     """
-    Высокопроизводительный процессор плейсхолдеров с оптимизациями:
-    - Предкомпиляция регулярных выражений
-    - Быстрые строковые проверки
-    - Кэширование результатов
-    - Многоуровневая оптимизация
+    High-performance placeholder processor with optimizations:
+    - Precompiled regular expressions
+    - Fast string checks
+    - Result caching
+    - Multi-level optimization
     """
     
     def __init__(self, **kwargs):
         self.logger = kwargs['logger']
         self.settings_manager = kwargs['settings_manager']
         
-        # Получаем настройки через settings_manager
+        # Get settings through settings_manager
         settings = self.settings_manager.get_plugin_settings("placeholder_processor")
         
-        # Настройки
+        # Settings
         self.enable_fast_check = settings.get('enable_fast_check', True)
         self.max_nesting_depth = settings.get('max_nesting_depth', 10)
         
-        # Предкомпилированные регулярные выражения
-        # Поддержка вложенности на один уровень: {...{...}...}
-        # На базе этого делаем рекурсивную подстановку, что позволяет обрабатывать произвольную глубину
+        # Precompiled regular expressions
+        # Support for one level of nesting: {...{...}...}
+        # Based on this we do recursive substitution, which allows processing arbitrary depth
         self.placeholder_pattern = re.compile(r'\{((?:[^{}]|\{[^{}]*\})+)\}')
         self.modifier_pattern = re.compile(r'([^|:]+)(?::([^|]+))?')
         
-        # Инициализация модификаторов
+        # Initialize modifiers
         self._init_modifiers()
     
     def _init_modifiers(self):
-        """Инициализация всех доступных модификаторов"""
-        # Импортируем все модули с модификаторами
+        """Initialize all available modifiers"""
+        # Import all modules with modifiers
         from .modules.modifiers_arithmetic import ArithmeticModifiers
         from .modules.modifiers_array import ArrayModifiers
         from .modules.modifiers_async import AsyncModifiers
@@ -48,7 +48,7 @@ class PlaceholderProcessor:
         from .modules.modifiers_datetime import DatetimeModifiers
         from .modules.modifiers_formatting import FormattingModifiers
         
-        # Создаем экземпляры классов с модификаторами
+        # Create instances of classes with modifiers
         basic = BasicModifiers(self.logger)
         arithmetic = ArithmeticModifiers(self.logger)
         formatting = FormattingModifiers(self.logger)
@@ -58,17 +58,17 @@ class PlaceholderProcessor:
         async_mods = AsyncModifiers(self.logger)
         
         self.modifiers = {
-            # Fallback (остается в основном классе, так как использует _determine_result_type)
+            # Fallback (remains in main class, as it uses _determine_result_type)
             'fallback': self._modifier_fallback,
             
-            # Арифметические
+            # Arithmetic
             '/': arithmetic.modifier_divide,
             '+': arithmetic.modifier_add,
             '-': arithmetic.modifier_subtract,
             '*': arithmetic.modifier_multiply,
             '%': arithmetic.modifier_modulo,
             
-            # Базовые строковые
+            # Basic string
             'upper': basic.modifier_upper,
             'lower': basic.modifier_lower,
             'title': basic.modifier_title,
@@ -79,13 +79,13 @@ class PlaceholderProcessor:
             'regex': basic.modifier_regex,
             'code': basic.modifier_code,
             
-            # Форматирование
+            # Formatting
             'format': formatting.modifier_format,
             'tags': formatting.modifier_tags,
             'list': formatting.modifier_list,
             'comma': formatting.modifier_comma,
             
-            # Условные
+            # Conditional
             'equals': conditional.modifier_equals,
             'in_list': conditional.modifier_in_list,
             'true': conditional.modifier_true,
@@ -93,7 +93,7 @@ class PlaceholderProcessor:
             'exists': conditional.modifier_exists,
             'is_null': conditional.modifier_is_null,
             
-            # Временные (даты и время)
+            # Temporal (dates and time)
             'shift': datetime_mods.modifier_shift,
             'seconds': datetime_mods.modifier_seconds,
             'to_date': datetime_mods.modifier_to_date,
@@ -104,89 +104,89 @@ class PlaceholderProcessor:
             'to_month': datetime_mods.modifier_to_month,
             'to_year': datetime_mods.modifier_to_year,
             
-            # Массивы
+            # Arrays
             'expand': array_mods.modifier_expand,
             'keys': array_mods.modifier_keys,
             
-            # Async действия
+            # Async actions
             'not_ready': async_mods.modifier_not_ready,
             'ready': async_mods.modifier_ready,
         }
     
     def process_placeholders(self, data_with_placeholders: Dict, values_dict: Dict, max_depth: int = None) -> Dict:
         """
-        Универсальный метод - обрабатывает плейсхолдеры в любом словаре,
-        используя значения из values_dict с поддержкой вложенных плейсхолдеров
+        Universal method - processes placeholders in any dictionary,
+        using values from values_dict with support for nested placeholders
         """
         try:
-            # Используем настройку из конфига, если max_depth не указан
+            # Use setting from config if max_depth not specified
             if max_depth is None:
                 max_depth = self.max_nesting_depth
             
-            # Один проход - вложенные плейсхолдеры обрабатываются рекурсивно
+            # Single pass - nested placeholders are processed recursively
             result = self._process_object_optimized(data_with_placeholders, values_dict)
             
             return result
             
         except Exception as e:
-            self.logger.error(f"❌ Ошибка обработки плейсхолдеров: {e}")
+            self.logger.error(f"❌ Error processing placeholders: {e}")
             return data_with_placeholders
     
     def process_placeholders_full(self, data_with_placeholders: Dict, values_dict: Dict, max_depth: int = None) -> Dict:
         """
-        Обрабатывает плейсхолдеры в словаре и возвращает ПОЛНЫЙ объект с обработанными плейсхолдерами.
-        В отличие от process_placeholders, который возвращает только обработанные поля,
-        этот метод возвращает весь исходный объект с замененными плейсхолдерами.
+        Processes placeholders in dictionary and returns FULL object with processed placeholders.
+        Unlike process_placeholders, which returns only processed fields,
+        this method returns the entire original object with replaced placeholders.
         """
         try:
-            # Используем настройку из конфига, если max_depth не указан
+            # Use setting from config if max_depth not specified
             if max_depth is None:
                 max_depth = self.max_nesting_depth
             
-            # Обрабатываем плейсхолдеры рекурсивно
-            # _process_object_optimized уже возвращает полный объект с объединенными вложенными структурами
+            # Process placeholders recursively
+            # _process_object_optimized already returns full object with merged nested structures
             processed_data = self._process_object_optimized(data_with_placeholders, values_dict)
             
-            # Рекурсивно объединяем исходные данные с обработанными
+            # Recursively merge original data with processed
             return deep_merge(data_with_placeholders, processed_data)
             
         except Exception as e:
-            self.logger.error(f"❌ Ошибка обработки плейсхолдеров (полный режим): {e}")
+            self.logger.error(f"❌ Error processing placeholders (full mode): {e}")
             return data_with_placeholders
     
 
     def process_text_placeholders(self, text: str, values_dict: Dict, max_depth: int = None) -> str:
         """
-        Универсальный метод для обработки плейсхолдеров в строке.
-        Принимает строку и словарь значений, возвращает обработанную строку.
+        Universal method for processing placeholders in string.
+        Takes string and dictionary of values, returns processed string.
         """
         try:
-            # Используем настройку из конфига, если max_depth не указан
+            # Use setting from config if max_depth not specified
             if max_depth is None:
                 max_depth = self.max_nesting_depth
             
-            # Проверяем, есть ли плейсхолдеры в тексте
+            # Check if there are placeholders in text
             if not self._has_placeholders_fast(text):
                 return text
             
-            # Обрабатываем строку через оптимизированный метод
+            # Process string through optimized method
             result = self._process_string_optimized(text, values_dict, 0)
             
-            # Убеждаемся, что результат - строка
+            # Ensure result is a string
             return str(result) if result is not None else text
             
         except Exception as e:
-            self.logger.error(f"Ошибка обработки плейсхолдеров в тексте: {e}")
+            self.logger.error(f"Error processing placeholders in text: {e}")
             return text
     
     def _process_placeholder_chain(self, placeholder: str, values_dict: Dict, depth: int = 0):
-        """Обрабатывает цепочку модификаторов с поддержкой вложенных плейсхолдеров"""
-        # Контроль глубины рекурсии
+        """Processes modifier chain with support for nested placeholders"""
+        # Recursion depth control
         if depth >= self.max_nesting_depth:
-            self.logger.warning(f"⚠️ Достигнута максимальная глубина рекурсии ({self.max_nesting_depth}) для плейсхолдера: {placeholder}")
+            self.logger.warning(f"⚠️ Maximum recursion depth ({self.max_nesting_depth}) reached for placeholder: {placeholder}")
             return f"{{{placeholder}}}"
         
-        # Сначала вычисляем ВСЕ внутренние плейсхолдеры внутри текущего content (без внешних скобок)
+        # First compute ALL inner placeholders inside current content (without outer brackets)
         if self._has_placeholders_fast(placeholder):
             try:
                 def _inner_repl(m):
@@ -194,34 +194,34 @@ class PlaceholderProcessor:
                     return str(self._process_placeholder_chain(inner_content, values_dict, depth + 1))
                 placeholder = self.placeholder_pattern.sub(_inner_repl, placeholder)
             except Exception as e:
-                # ОЖИДАЕМО: Если не удалось обработать вложенные плейсхолдеры (не найдено значение, ошибка преобразования и т.д.),
-                # продолжаем выполнение с исходным плейсхолдером. Это нормальное поведение для случаев, когда значение отсутствует.
-                self.logger.warning(f"Ошибка обработки вложенных плейсхолдеров: {e}")
+                # EXPECTED: If failed to process nested placeholders (value not found, conversion error, etc.),
+                # continue execution with original placeholder. This is normal behavior for cases when value is missing.
+                self.logger.warning(f"Error processing nested placeholders: {e}")
 
         parts = placeholder.split('|')
         field_name = parts[0].strip()
         
-        # Проверяем, является ли field_name литеральным значением в кавычках
+        # Check if field_name is a literal value in quotes
         value = extract_literal_or_get_value(field_name, values_dict, get_nested_value)
         
-        # Если значение - строка с плейсхолдерами, рекурсивно обрабатываем
+        # If value is a string with placeholders, process recursively
         if isinstance(value, str) and self._has_placeholders_fast(value):
             value = self._process_string_optimized(value, values_dict, depth + 1)
         
-        # Применяем модификаторы по порядку
+        # Apply modifiers in order
         for modifier in parts[1:]:
             value = self._apply_modifier(value, modifier.strip())
         
-        # Определяем тип результата универсально
+        # Determine result type universally
         if value is not None:
             return determine_result_type(value)
         else:
-            # ОЖИДАЕМО: Если значение не найдено, возвращаем плейсхолдер как строку для упрощения отладки
-            # Это позволяет видеть, какие плейсхолдеры не были разрешены
+            # EXPECTED: If value not found, return placeholder as string for easier debugging
+            # This allows seeing which placeholders were not resolved
             return f"{{{placeholder}}}"
     
     def _process_object_optimized(self, obj: Any, values_dict: Dict) -> Dict:
-        """Оптимизированная обработка объекта (dict, list, str)"""
+        """Optimized object processing (dict, list, str)"""
         if isinstance(obj, dict):
             return self._process_dict_optimized(obj, values_dict)
         elif isinstance(obj, list):
@@ -232,77 +232,77 @@ class PlaceholderProcessor:
             return {}
     
     def _process_dict_optimized(self, obj: Dict, values_dict: Dict) -> Dict:
-        """Оптимизированная обработка словаря"""
+        """Optimized dictionary processing"""
         result = {}
         
         for key, value in obj.items():
             if isinstance(value, str):
-                # Уровень 1: Быстрая проверка
+                # Level 1: Fast check
                 if self.enable_fast_check and not self._has_placeholders_fast(value):
                     continue
                 
-                # Уровень 2: Обработка строки
+                # Level 2: String processing
                 processed_value = self._process_string_optimized(value, values_dict, 0)
-                # Сравниваем с учетом возможного изменения типа
-                # ОЖИДАЕМО: Если плейсхолдер не разрешился и остался строкой, он не добавляется в result.
-                # Затем _deep_merge берет исходное значение из base, и плейсхолдер остается строкой.
-                # Это ожидаемое поведение для упрощения отладки.
+                # Compare considering possible type change
+                # EXPECTED: If placeholder not resolved and remained string, it's not added to result.
+                # Then _deep_merge takes original value from base, and placeholder remains string.
+                # This is expected behavior for easier debugging.
                 if processed_value != value or type(processed_value) is not type(value):
                     result[key] = processed_value
             
             elif isinstance(value, dict):
-                # Обрабатываем вложенный словарь рекурсивно
+                # Process nested dictionary recursively
                 processed_dict = self._process_dict_optimized(value, values_dict)
-                # Объединяем оригинальный словарь с обработанными полями
-                # Это гарантирует, что все поля будут в результате, даже если они не изменились
+                # Merge original dictionary with processed fields
+                # This ensures all fields will be in result, even if they didn't change
                 merged_dict = {**value, **processed_dict}
                 result[key] = merged_dict
             
             elif isinstance(value, list):
                 processed_list = self._process_list_optimized(value, values_dict)
-                if processed_list is not value:  # Добавляем только если есть изменения
+                if processed_list is not value:  # Add only if there are changes
                     result[key] = processed_list
         
             else:
-                # Числовые значения (int, float), bool, None и другие типы
-                # Добавляем как есть, так как они не содержат плейсхолдеров
+                # Numeric values (int, float), bool, None and other types
+                # Add as is, as they don't contain placeholders
                 result[key] = value
         
         return result
     
     def _process_list_optimized(self, obj: List, values_dict: Dict) -> List:
-        """Оптимизированная обработка списка"""
+        """Optimized list processing"""
         result = []
         has_changes = False
         
         for item in obj:
             if isinstance(item, str):
-                # Быстрая проверка
+                # Fast check
                 if self.enable_fast_check and not self._has_placeholders_fast(item):
-                    result.append(item)  # Добавляем элементы без плейсхолдеров как есть
+                    result.append(item)  # Add elements without placeholders as is
                     continue
                 
-                # Проверяем, содержит ли плейсхолдер модификатор expand
+                # Check if placeholder contains expand modifier
                 has_expand_modifier = '|expand' in item or item.endswith('|expand}')
                 
-                # Обработка строки
+                # String processing
                 processed_item = self._process_string_optimized(item, values_dict, 0)
                 
-                # Сравниваем с учетом возможного изменения типа
+                # Compare considering possible type change
                 if processed_item != item or type(processed_item) is not type(item):
                     has_changes = True
-                    # Если использован модификатор expand и результат - массив массивов, разворачиваем его
+                    # If expand modifier used and result is array of arrays, expand it
                     if has_expand_modifier and isinstance(processed_item, list):
-                        # Проверяем, является ли это массивом массивов
+                        # Check if this is array of arrays
                         if processed_item and all(isinstance(subitem, list) for subitem in processed_item):
-                            # Разворачиваем массив массивов на один уровень
+                            # Expand array of arrays one level
                             result.extend(processed_item)
                         else:
-                            # Обычный массив добавляем как есть
+                            # Regular array add as is
                             result.append(processed_item)
-                    # Если результат - массив, и весь исходный элемент был одним плейсхолдером, разворачиваем его
+                    # If result is array, and entire original element was one placeholder, expand it
                     elif isinstance(processed_item, list) and self._is_entire_placeholder(item):
-                        # Разворачиваем массив на один уровень
+                        # Expand array one level
                         result.extend(processed_item)
                     else:
                         result.append(processed_item)
@@ -311,50 +311,50 @@ class PlaceholderProcessor:
             
             elif isinstance(item, dict):
                 processed_dict = self._process_dict_optimized(item, values_dict)
-                # Объединяем оригинальный словарь с обработанными полями
-                # Это гарантирует, что все поля будут в результате, даже если они не изменились
+                # Merge original dictionary with processed fields
+                # This ensures all fields will be in result, even if they didn't change
                 merged_dict = {**item, **processed_dict}
-                if merged_dict != item:  # Проверяем, были ли изменения
+                if merged_dict != item:  # Check if there were changes
                     has_changes = True
                 result.append(merged_dict)
             
             elif isinstance(item, list):
                 processed_list = self._process_list_optimized(item, values_dict)
-                if processed_list is not item:  # Добавляем только если есть изменения
+                if processed_list is not item:  # Add only if there are changes
                     has_changes = True
                     result.append(processed_list)
                 else:
-                    # Добавляем список даже если он не изменился (важно для статичных элементов)
+                    # Add list even if it didn't change (important for static elements)
                     result.append(item)
         
-        # ОЖИДАЕМО: Если изменений нет, возвращаем исходный объект для оптимизации.
-        # Логика has_changes корректно отслеживает все изменения (строки, словари, списки).
+        # EXPECTED: If no changes, return original object for optimization.
+        # has_changes logic correctly tracks all changes (strings, dictionaries, lists).
         return result if has_changes else obj
     
     def _process_string_optimized(self, text: str, values_dict: Dict, depth: int = 0):
-        """Оптимизированная обработка строки с сохранением типов"""
-        # Уровень 1: Быстрая проверка
+        """Optimized string processing with type preservation"""
+        # Level 1: Fast check
         if self.enable_fast_check and not self._has_placeholders_fast(text):
             return text
         
-        # Уровень 2: Простая замена (если нет модификаторов)
+        # Level 2: Simple replacement (if no modifiers)
         if self._is_simple_replacement(text):
             return self._simple_replace(text, values_dict, depth)
         
-        # Уровень 3: Сложная замена с модификаторами
+        # Level 3: Complex replacement with modifiers
         return self._complex_replace(text, values_dict, depth)
     
     def _has_placeholders_fast(self, text: str) -> bool:
-        """Быстрая проверка наличия плейсхолдеров без regex"""
+        """Fast check for placeholder presence without regex"""
         return '{' in text and '}' in text
     
     def _is_simple_replacement(self, text: str) -> bool:
-        """Проверяет, является ли замена простой (без модификаторов)"""
-        # ОПТИМИЗАЦИЯ: Быстрая проверка наличия | перед полным парсингом
+        """Checks if replacement is simple (without modifiers)"""
+        # OPTIMIZATION: Fast check for | presence before full parsing
         if '|' not in text:
             return True
         
-        # Если есть |, проверяем каждый плейсхолдер на наличие модификаторов
+        # If | exists, check each placeholder for modifiers
         matches = self.placeholder_pattern.findall(text)
         for match in matches:
             if '|' in match:
@@ -362,82 +362,82 @@ class PlaceholderProcessor:
         return True
     
     def _simple_replace(self, text: str, values_dict: Dict, depth: int = 0):
-        """Простая замена без модификаторов с сохранением типов"""
+        """Simple replacement without modifiers with type preservation"""
         def replace_simple(match):
             field_name = match.group(1).strip()
-            # Внутри простого плейсхолдера тоже могут быть вложенные, их нужно сначала вычислить
-            # Но нужно обрабатывать вложенные плейсхолдеры рекурсивно, заменяя их значениями,
-            # чтобы получить финальный путь для поиска
+            # Inside simple placeholder there can also be nested ones, they need to be computed first
+            # But need to process nested placeholders recursively, replacing them with values,
+            # to get final path for search
             if self._has_placeholders_fast(field_name):
-                # Обрабатываем вложенные плейсхолдеры, заменяя их значениями в строке
+                # Process nested placeholders, replacing them with values in string
                 def _inner_repl(m):
                     inner_content = m.group(1).strip()
                     inner_value = self._process_placeholder_chain(inner_content, values_dict, depth + 1)
-                    # Если вернулся плейсхолдер (не обработался), возвращаем как есть
+                    # If placeholder returned (not processed), return as is
                     if isinstance(inner_value, str) and inner_value.startswith('{') and inner_value.endswith('}'):
                         return inner_value
                     return str(inner_value)
                 field_name = self.placeholder_pattern.sub(_inner_repl, field_name)
-            # Используем функцию для извлечения литералов или значений
+            # Use function to extract literals or values
             value = extract_literal_or_get_value(field_name, values_dict, get_nested_value)
-            # В смешанном тексте всегда возвращаем строку
+            # In mixed text always return string
             result = str(determine_result_type(value)) if value is not None else match.group(0)
             return result
         
-        # Проверяем, есть ли плейсхолдеры в тексте
+        # Check if there are placeholders in text
         if not self.placeholder_pattern.search(text):
             return text
         
-        # Если весь текст - это один плейсхолдер, возвращаем значение как есть
+        # If entire text is one placeholder, return value as is
         if self._is_entire_placeholder(text):
             field_name = text[1:-1].strip()
             
             if self._has_placeholders_fast(field_name):
-                # Если есть вложенные плейсхолдеры, обрабатываем через _process_placeholder_chain
-                # который уже вернет финальное значение
+                # If there are nested placeholders, process through _process_placeholder_chain
+                # which will already return final value
                 value = self._process_placeholder_chain(field_name, values_dict, depth)
                 
-                # Если _process_placeholder_chain вернул значение (не None и не исходный плейсхолдер)
+                # If _process_placeholder_chain returned value (not None and not original placeholder)
                 if value is not None:
-                    # Проверяем, не вернул ли он исходный плейсхолдер в виде строки
+                    # Check if it returned original placeholder as string
                     value_str = str(value)
                     if not (value_str.startswith('{') and value_str.endswith('}') and field_name in value_str):
                         return determine_result_type(value)
-                # ОЖИДАЕМО: Если вернул None или исходный плейсхолдер, возвращаем исходный текст (плейсхолдер как строку).
-                # Это упрощает отладку, позволяя видеть, какие плейсхолдеры не были разрешены.
+                # EXPECTED: If returned None or original placeholder, return original text (placeholder as string).
+                # This simplifies debugging, allowing to see which placeholders were not resolved.
                 return text
-            # Если нет вложенных плейсхолдеров, используем функцию для извлечения литералов или значений
+            # If no nested placeholders, use function to extract literals or values
             value = extract_literal_or_get_value(field_name, values_dict, get_nested_value)
             
-            # ОЖИДАЕМО: Если значение None, возвращаем исходный текст (плейсхолдер как строку) для отладки
+            # EXPECTED: If value None, return original text (placeholder as string) for debugging
             return determine_result_type(value) if value is not None else text
         
-        # Если плейсхолдеры встроены в текст, возвращаем строку
+        # If placeholders embedded in text, return string
         return self.placeholder_pattern.sub(replace_simple, text)
     
     def _complex_replace(self, text: str, values_dict: Dict, depth: int = 0):
-        """Сложная замена с модификаторами. Для чистого плейсхолдера сохраняет тип результата."""
+        """Complex replacement with modifiers. For pure placeholder preserves result type."""
         def replace_complex(match):
             placeholder_content = match.group(1).strip()
             result = self._process_placeholder_chain(placeholder_content, values_dict, depth)
-            # В смешанном тексте всегда возвращаем строку
+            # In mixed text always return string
             return str(result)
         
-        # Итеративно разворачиваем плейсхолдеры, чтобы после подстановки внутренних
-        # на следующем проходе корректно обработать внешние
+        # Iteratively expand placeholders, so after substituting inner ones
+        # on next pass correctly process outer ones
         
-        # Если весь текст - это один плейсхолдер с модификаторами, сохраняем тип результата
+        # If entire text is one placeholder with modifiers, preserve result type
         if self._is_entire_placeholder(text):
             placeholder_content = text[1:-1].strip()
             result = self._process_placeholder_chain(placeholder_content, values_dict, depth)
             
-            # Для чистого плейсхолдера сохраняем тип результата (не преобразуем в строку)
+            # For pure placeholder preserve result type (don't convert to string)
             if result is not None:
-                # Проверяем, не вернул ли он исходный плейсхолдер в виде строки
+                # Check if it returned original placeholder as string
                 value_str = str(result)
                 if not (value_str.startswith('{') and value_str.endswith('}') and placeholder_content in value_str):
                     return result
-            # Если вернул None или исходный плейсхолдер, возвращаем исходный текст
+            # If returned None or original placeholder, return original text
             return text
         
         while True:
@@ -449,28 +449,28 @@ class PlaceholderProcessor:
             text = new_text
 
     def _is_entire_placeholder(self, text: str) -> bool:
-        """Проверяет, что вся строка — один плейсхолдер с балансом скобок."""
+        """Checks that entire string is one placeholder with balanced brackets."""
         if not text or text[0] != '{' or text[-1] != '}':
             return False
         depth = 0
         for i, ch in enumerate(text):
             if ch == '{':
                 depth += 1
-                # первая открывающая должна быть на позиции 0
+                # first opening should be at position 0
                 if depth == 1 and i != 0:
                     return False
             elif ch == '}':
                 depth -= 1
                 if depth < 0:
                     return False
-                # если наружная закрылась раньше конца строки — это не единственный плейсхолдер
+                # if outer closed before end of string - this is not single placeholder
                 if depth == 0 and i != len(text) - 1:
                     return False
         return depth == 0
     
     def _apply_modifier(self, value: Any, modifier: str) -> Any:
-        """Применяет один модификатор"""
-        # Проверяем, является ли модификатор арифметическим (начинается с символа)
+        """Applies one modifier"""
+        # Check if modifier is arithmetic (starts with symbol)
         if modifier and modifier[0] in ['/', '+', '-', '*', '%']:
             mod_name = modifier[0]
             mod_param = modifier[1:] if len(modifier) > 1 else None
@@ -479,31 +479,31 @@ class PlaceholderProcessor:
         else:
             mod_name, mod_param = modifier, None
         
-        # Получаем функцию модификатора
+        # Get modifier function
         modifier_func = self.modifiers.get(mod_name)
         if modifier_func:
             try:
                 return modifier_func(value, mod_param)
             except Exception as e:
-                self.logger.warning(f"Ошибка применения модификатора {mod_name}: {e}")
+                self.logger.warning(f"Error applying modifier {mod_name}: {e}")
                 return value
         
         return value
     
-    # === Модификаторы ===
+    # === Modifiers ===
     
     def _modifier_fallback(self, value: Any, param: str) -> Any:
-        """Замена с дефолтом: {field|fallback:default}"""
-        # ОЖИДАЕМО: Fallback срабатывает только для None и пустой строки.
-        # False, 0, [], {} считаются валидными значениями и не триггерят fallback.
+        """Replacement with default: {field|fallback:default}"""
+        # EXPECTED: Fallback triggers only for None and empty string.
+        # False, 0, [], {} are considered valid values and don't trigger fallback.
         if value is not None and value != "":
             return value
         
-        # Используем универсальный метод определения типа
+        # Use universal type determination method
         if param is None:
             return None
         
-        # ОЖИДАЕМО: Если param пустая строка после strip(), возвращается пустая строка "", а не None.
-        # Это ожидаемое поведение для fallback: без значения.
+        # EXPECTED: If param is empty string after strip(), returns empty string "", not None.
+        # This is expected behavior for fallback: without value.
         return determine_result_type(param.strip())
     

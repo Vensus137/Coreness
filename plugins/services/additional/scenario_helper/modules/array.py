@@ -1,5 +1,5 @@
 """
-Модуль для работы с массивами (модификация, проверка значений)
+Module for working with arrays (modification, value checking)
 """
 
 from typing import Any, Dict
@@ -7,7 +7,7 @@ from typing import Any, Dict
 
 class ArrayManager:
     """
-    Класс для работы с массивами
+    Class for working with arrays
     """
     
     def __init__(self, logger):
@@ -15,7 +15,7 @@ class ArrayManager:
     
     async def modify_array(self, data: dict) -> Dict[str, Any]:
         """
-        Модификация массива: добавление, удаление элементов или очистка
+        Modify array: add, remove elements or clear
         """
         try:
             if not data:
@@ -23,22 +23,22 @@ class ArrayManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Нет данных для модификации"
+                        "message": "No data for modification"
                     }
                 }
             
             array = data.get('array')
             operation = data.get('operation')
             value = data.get('value')
-            skip_duplicates = data.get('skip_duplicates', True)  # По умолчанию пропускаем дубликаты
+            skip_duplicates = data.get('skip_duplicates', True)  # By default skip duplicates
             
-            # Валидация параметров
+            # Parameter validation
             if array is None:
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр array обязателен"
+                        "message": "array parameter is required"
                     }
                 }
             
@@ -47,7 +47,7 @@ class ArrayManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр array должен быть массивом"
+                        "message": "array parameter must be an array"
                     }
                 }
             
@@ -56,7 +56,7 @@ class ArrayManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр operation обязателен"
+                        "message": "operation parameter is required"
                     }
                 }
             
@@ -65,27 +65,27 @@ class ArrayManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр operation должен быть одним из: 'add', 'remove', 'clear'"
+                        "message": "operation parameter must be one of: 'add', 'remove', 'clear'"
                     }
                 }
             
-            # Создаем копию массива для модификации
+            # Create copy of array for modification
             modified_array = list(array)
             
-            # Выполняем операцию
+            # Execute operation
             if operation == 'add':
                 if value is None:
                     return {
                         "result": "error",
                         "error": {
                             "code": "VALIDATION_ERROR",
-                            "message": "Параметр value обязателен для операции 'add'"
+                            "message": "value parameter is required for 'add' operation"
                         }
                     }
                 
-                # Проверяем дубликаты, если нужно
+                # Check duplicates if needed
                 if skip_duplicates and value in modified_array:
-                    # Элемент уже есть, возвращаем массив без изменений
+                    # Element already exists, return array unchanged
                     pass
                 else:
                     modified_array.append(value)
@@ -96,27 +96,27 @@ class ArrayManager:
                         "result": "error",
                         "error": {
                             "code": "VALIDATION_ERROR",
-                            "message": "Параметр value обязателен для операции 'remove'"
+                            "message": "value parameter is required for 'remove' operation"
                         }
                     }
                 
-                # Проверяем, есть ли элемент в массиве
+                # Check if element exists in array
                 if value not in modified_array:
-                    # Элемент не найден
+                    # Element not found
                     return {
                         "result": "not_found",
                         "response_data": {
-                            "modified_array": modified_array  # Возвращаем исходный массив без изменений
+                            "modified_array": modified_array  # Return original array unchanged
                         }
                     }
                 
-                # Удаляем все вхождения значения
+                # Remove all occurrences of value
                 modified_array = [item for item in modified_array if item != value]
             
             elif operation == 'clear':
                 modified_array = []
             
-            # Формируем результат
+            # Form result
             result = {
                 "result": "success",
                 "response_data": {
@@ -127,7 +127,7 @@ class ArrayManager:
             return result
             
         except Exception as e:
-            self.logger.error(f"Ошибка модификации массива: {e}")
+            self.logger.error(f"Error modifying array: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -138,9 +138,9 @@ class ArrayManager:
     
     async def check_value_in_array(self, data: dict) -> Dict[str, Any]:
         """
-        Проверка наличия значения в массиве
-        Возвращает индекс первого вхождения значения в массиве
-        result: "success" если найдено, "not_found" если не найдено
+        Check if value exists in array
+        Returns index of first occurrence of value in array
+        result: "success" if found, "not_found" if not found
         """
         try:
             if not data:
@@ -148,20 +148,20 @@ class ArrayManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Нет данных для проверки"
+                        "message": "No data for check"
                     }
                 }
             
             array = data.get('array')
             value = data.get('value')
             
-            # Валидация параметров
+            # Parameter validation
             if array is None:
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр array обязателен"
+                        "message": "array parameter is required"
                     }
                 }
             
@@ -170,7 +170,7 @@ class ArrayManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр array должен быть массивом"
+                        "message": "array parameter must be an array"
                     }
                 }
             
@@ -179,16 +179,16 @@ class ArrayManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр value обязателен"
+                        "message": "value parameter is required"
                     }
                 }
             
-            # Проверяем наличие значения в массиве
+            # Check if value exists in array
             if value in array:
-                # Находим индекс первого вхождения
+                # Find index of first occurrence
                 index = array.index(value)
                 
-                # Формируем результат - найдено
+                # Form result - found
                 return {
                     "result": "success",
                     "response_data": {
@@ -196,13 +196,13 @@ class ArrayManager:
                     }
                 }
             else:
-                # Значение не найдено
+                # Value not found
                 return {
                     "result": "not_found"
                 }
             
         except Exception as e:
-            self.logger.error(f"Ошибка проверки значения в массиве: {e}")
+            self.logger.error(f"Error checking value in array: {e}")
             return {
                 "result": "error",
                 "error": {

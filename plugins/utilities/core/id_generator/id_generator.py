@@ -1,5 +1,5 @@
 """
-Утилита для генерации детерминированных уникальных ID через IdSequence
+Utility for generating deterministic unique IDs through IdSequence
 """
 
 import hashlib
@@ -9,9 +9,9 @@ from typing import Optional
 
 class IdGenerator:
     """
-    Утилита для генерации детерминированных уникальных ID
-    При одинаковых seed возвращает тот же ID
-    Поддерживает кэширование через cache_manager
+    Utility for generating deterministic unique IDs
+    Returns the same ID for the same seed
+    Supports caching through cache_manager
     """
     
     def __init__(self, **kwargs):
@@ -20,68 +20,68 @@ class IdGenerator:
         self.cache_manager = kwargs['cache_manager']
         self.settings_manager = kwargs['settings_manager']
         
-        # Получаем настройки кэша
+        # Get cache settings
         settings = self.settings_manager.get_plugin_settings('id_generator')
-        self.cache_ttl = settings.get('cache_ttl', 600)  # 10 минут по умолчанию
+        self.cache_ttl = settings.get('cache_ttl', 600)  # 10 minutes by default
     
     def _calculate_hash(self, seed: str) -> str:
         """
-        Вычисление MD5 хэша от seed
+        Calculate MD5 hash from seed
         """
         return hashlib.md5(seed.encode('utf-8')).hexdigest()
     
     def _get_cache_key(self, hash_value: str) -> str:
-        """Генерация ключа кэша в формате cache_manager"""
+        """Generate cache key in cache_manager format"""
         return f"id:hash:{hash_value}"
     
     async def get_or_create_unique_id(self, seed: Optional[str] = None) -> Optional[int]:
         """
-        Получение или создание уникального ID для seed
-        Возвращает существующий ID если seed уже был, или создает новый
+        Get or create unique ID for seed
+        Returns existing ID if seed already existed, or creates new one
         
-        Если seed не указан, генерируется случайный UUID (сохраняется в БД для отладки)
-        Поддерживает кэширование через cache_manager
+        If seed not specified, generates random UUID (saved to DB for debugging)
+        Supports caching through cache_manager
         """
         try:
-            # Если seed не передан, генерируем UUID (сохраняется в БД для отладки)
+            # If seed not provided, generate UUID (saved to DB for debugging)
             if seed is None:
                 seed = str(uuid.uuid4())
             else:
-                # Преобразуем в строку, если это не строка
+                # Convert to string if not string
                 if not isinstance(seed, str):
                     try:
                         seed = str(seed)
                     except Exception as e:
-                        self.logger.error(f"Не удалось преобразовать seed в строку: {e}")
+                        self.logger.error(f"Failed to convert seed to string: {e}")
                         return None
             
-            # Вычисляем хэш от seed
+            # Calculate hash from seed
             hash_value = self._calculate_hash(seed)
             
-            # Проверяем кэш
+            # Check cache
             cache_key = self._get_cache_key(hash_value)
             cached_id = await self.cache_manager.get(cache_key)
             if cached_id is not None:
                 return cached_id
             
-            # Получаем master repository
+            # Get master repository
             master_repo = self.database_manager.get_master_repository()
             
-            # Используем метод-обертку для получения или создания ID
-            # seed всегда сохраняется в БД (либо переданный пользователем, либо сгенерированный UUID) для удобства отладки
+            # Use wrapper method to get or create ID
+            # seed is always saved to DB (either user-provided or generated UUID) for debugging convenience
             unique_id = await master_repo.get_or_create_id_sequence(
                 hash_value=hash_value,
                 seed=seed
             )
             
-            # Сохраняем в кэш (если ID получен)
+            # Save to cache (if ID obtained)
             if unique_id is not None:
                 await self.cache_manager.set(cache_key, unique_id, ttl=self.cache_ttl)
             
             return unique_id
                 
         except Exception as e:
-            self.logger.error(f"Ошибка генерации уникального ID: {e}")
+            self.logger.error(f"Error generating unique ID: {e}")
             return None
     
 

@@ -10,10 +10,10 @@ class AIClient:
         self.settings_manager = kwargs['settings_manager']
         self.data_converter = kwargs.get('data_converter')
         
-        # Получаем настройки
+        # Get settings
         self.settings = self.settings_manager.get_plugin_settings('ai_client')
         
-        # Настройки из config.yaml
+        # Settings from config.yaml
         self.api_key = self.settings.get("api_key", "")
         self.base_url = self.settings.get("base_url", "https://api.polza.ai/v1")
         self.default_model = self.settings.get("default_model")
@@ -22,7 +22,7 @@ class AIClient:
         self.default_embedding_model = self.settings.get("default_embedding_model", "text-embedding-3-small")
         self.default_embedding_dimensions = self.settings.get("default_embedding_dimensions", 1024)
         
-        # Инициализация OpenAI клиента
+        # Initialize OpenAI client
         self.client = AsyncOpenAI(
             api_key=self.api_key,
             base_url=self.base_url
@@ -38,28 +38,28 @@ class AIClient:
                            rag_chunks: Optional[List[Dict[str, Any]]] = None,
                            chunk_format: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
         """
-        Completion через AI API (Polza.ai, OpenRouter и др.)
-        Соответствует эндпоинту /v1/chat/completions
+        Completion via AI API (Polza.ai, OpenRouter, etc.)
+        Corresponds to /v1/chat/completions endpoint
         """
         try:
-            # Подготовка параметров
+            # Prepare parameters
             model = model or self.default_model
             max_tokens = max_tokens or self.max_tokens
             temperature = temperature or self.temperature
             
-            # Определяем какой клиент использовать
+            # Determine which client to use
             client_to_use = self.client
             if api_key and api_key != self.api_key:
-                # Создаем временный клиент с переданным токеном
+                # Create temporary client with passed token
                 client_to_use = AsyncOpenAI(
                     api_key=api_key,
                     base_url=self.base_url
                 )
             
-            # Построение response_format для JSON режимов
+            # Build response_format for JSON modes
             response_format = self._build_response_format(json_mode, json_schema)
             
-            # Построение сообщений для API
+            # Build messages for API
             messages = self._build_messages(
                 prompt=prompt,
                 system_prompt=system_prompt,
@@ -69,7 +69,7 @@ class AIClient:
                 chunk_format=chunk_format
             )
             
-            # Параметры для API запроса
+            # Parameters for API request
             api_params = {
                 "model": model,
                 "messages": messages,
@@ -77,29 +77,29 @@ class AIClient:
                 "temperature": temperature
             }
             
-            # Добавляем response_format если указан
+            # Add response_format if specified
             if response_format:
                 api_params["response_format"] = response_format
             
-            # Добавляем tools если указаны
+            # Add tools if specified
             if tools:
                 api_params["tools"] = tools
             
-            # Добавляем tool_choice если указан
+            # Add tool_choice if specified
             if tool_choice:
                 api_params["tool_choice"] = tool_choice
             
-            # Вызов AI API через OpenAI SDK (используем нужный клиент)
+            # Call AI API via OpenAI SDK (use appropriate client)
             response = await client_to_use.chat.completions.create(**api_params)
             
-            # Получаем ответ модели
+            # Get model response
             message = response.choices[0].message
             response_content = message.content or ""
             
-            # Получаем tool_calls если модель вызвала функции
-            # Примечание: обычно модель возвращает либо tool_calls, либо content, но не оба одновременно.
-            # Если модель решила вызвать функцию, content обычно будет None.
-            # Однако некоторые модели могут вернуть и content и tool_calls одновременно.
+            # Get tool_calls if model called functions
+            # Note: usually model returns either tool_calls or content, but not both simultaneously.
+            # If model decided to call function, content is usually None.
+            # However, some models may return both content and tool_calls simultaneously.
             tool_calls = None
             if message.tool_calls:
                 tool_calls = [
@@ -114,31 +114,31 @@ class AIClient:
                     for tool_call in message.tool_calls
                 ]
             
-            # Парсим JSON строку в словарь если используется json_mode
+            # Parse JSON string to dict if json_mode is used
             parsed_dict = None
             if json_mode and response_content and self.data_converter:
                 try:
-                    # Очищаем ответ от markdown код-блоков (```json ... ```)
+                    # Clean response from markdown code blocks (```json ... ```)
                     cleaned_content = response_content.strip()
                     if cleaned_content.startswith("```"):
-                        # Убираем открывающий ```json или ```
+                        # Remove opening ```json or ```
                         lines = cleaned_content.split("\n")
                         if lines[0].startswith("```"):
                             lines = lines[1:]
-                        # Убираем закрывающий ```
+                        # Remove closing ```
                         if lines and lines[-1].strip() == "```":
                             lines = lines[:-1]
                         cleaned_content = "\n".join(lines)
                     
-                    # Используем data_converter для парсинга JSON строки в словарь
+                    # Use data_converter to parse JSON string to dict
                     parsed_dict = await self.data_converter.convert_string_to_type(cleaned_content)
-                    # Проверяем, что получили словарь или список (валидный JSON)
+                    # Check that we got dict or list (valid JSON)
                     if not isinstance(parsed_dict, (dict, list)):
                         parsed_dict = None
                 except Exception as e:
-                    self.logger.warning(f"Не удалось распарсить JSON ответ в словарь: {e}")
+                    self.logger.warning(f"Failed to parse JSON response to dict: {e}")
             
-            # Формируем результат
+            # Form result
             result = {
                 "result": "success",
                 "response_data": {
@@ -150,18 +150,18 @@ class AIClient:
                 }
             }
             
-            # Добавляем распарсенный словарь если есть
+            # Add parsed dict if exists
             if parsed_dict is not None:
                 result["response_data"]["response_dict"] = parsed_dict
             
-            # Добавляем tool_calls если модель вызвала функции
+            # Add tool_calls if model called functions
             if tool_calls:
                 result["response_data"]["tool_calls"] = tool_calls
             
             return result
             
         except Exception as e:
-            self.logger.error(f"Ошибка генерации ответа: {e}")
+            self.logger.error(f"Error generating response: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -173,14 +173,14 @@ class AIClient:
     def _build_response_format(self, json_mode: Optional[str], 
                                json_schema: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
-        Построение response_format для JSON режимов
+        Build response_format for JSON modes
         """
         if not json_mode:
             return None
         
         if json_mode == "json_schema":
             if not json_schema:
-                self.logger.warning("json_mode='json_schema' указан, но json_schema не предоставлен. Используется json_object.")
+                self.logger.warning("json_mode='json_schema' specified, but json_schema not provided. Using json_object.")
                 return {"type": "json_object"}
             return {
                 "type": "json_schema",
@@ -189,23 +189,23 @@ class AIClient:
         elif json_mode == "json_object":
             return {"type": "json_object"}
         else:
-            self.logger.warning(f"Неизвестный json_mode: {json_mode}. Используется json_object.")
+            self.logger.warning(f"Unknown json_mode: {json_mode}. Using json_object.")
             return {"type": "json_object"}
     
     def _build_messages(self, prompt: str, system_prompt: str = "", context: str = "",
                        json_mode: Optional[str] = None, rag_chunks: Optional[List[Dict[str, Any]]] = None,
                        chunk_format: Optional[Dict[str, str]] = None) -> list:
         """
-        Построение сообщений для AI API с поддержкой RAG
+        Build messages for AI API with RAG support
         
-        Формат messages:
-        1. system (инструкции)
-        2. Диалог (user→assistant пары из chat_history, отсортированные по created_at)
-        3. Финальный user с контекстом (knowledge + other + кастомный context) + вопрос
+        Messages format:
+        1. system (instructions)
+        2. Dialog (user→assistant pairs from chat_history, sorted by created_at)
+        3. Final user with context (knowledge + other + custom context) + question
         """
         messages = []
         
-        # Группируем чанки по типам и ролям
+        # Group chunks by types and roles
         chat_history_chunks = []
         knowledge_chunks = []
         other_chunks = []
@@ -220,7 +220,7 @@ class AIClient:
                 chunk_index = chunk.get("chunk_index", 0)
                 chunk_document_id = chunk.get("document_id", "")
                 
-                # Применяем формат чанка, если указан шаблон для этого типа
+                # Apply chunk format if template specified for this type
                 formatted_content = self._apply_chunk_format(chunk_content, chunk, chunk_type, chunk_format)
                 
                 if chunk_type == "chat_history":
@@ -243,7 +243,7 @@ class AIClient:
                         "content": formatted_content
                     })
         
-        # 1. Системное сообщение
+        # 1. System message
         system_content = ""
         if system_prompt:
             system_content = system_prompt
@@ -254,21 +254,21 @@ class AIClient:
                 "content": system_content
             })
         
-        # 2. Диалог (chat_history) - сортируем по created_at для сохранения порядка
+        # 2. Dialog (chat_history) - sort by created_at to preserve order
         if chat_history_chunks:
-            # Сортируем по created_at (старые первыми) для правильного порядка истории
-            # created_at - реальная дата создания сообщения, используется для корректной сортировки
-            # Также используем processed_at, chunk_index и document_id для детерминированности
+            # Sort by created_at (oldest first) for correct history order
+            # created_at - real message creation date, used for correct sorting
+            # Also use processed_at, chunk_index and document_id for determinism
             def sort_key(chunk):
-                # created_at - обязательное поле в БД (NOT NULL), всегда присутствует
-                # Многоуровневая сортировка соответствует сортировке в БД
+                # created_at - required field in DB (NOT NULL), always present
+                # Multi-level sorting corresponds to DB sorting
                 created_at = chunk.get("created_at", "")
                 processed_at = chunk.get("processed_at", "")
                 chunk_index = chunk.get("chunk_index", 0)
                 document_id = chunk.get("document_id", "")
                 
-                # ISO строки сортируются лексикографически корректно
-                # Комбинируем для многоуровневой сортировки (как в БД)
+                # ISO strings sort lexicographically correctly
+                # Combine for multi-level sorting (like in DB)
                 return (created_at, processed_at, chunk_index, document_id)
             
             chat_history_chunks.sort(key=sort_key)
@@ -279,12 +279,12 @@ class AIClient:
                     "content": chunk["content"]
                 })
         
-        # 3. Финальный user с контекстом (knowledge + other + кастомный context) + вопрос
+        # 3. Final user with context (knowledge + other + custom context) + question
         final_user_content = ""
         
-        # Добавляем knowledge чанки
+        # Add knowledge chunks
         if knowledge_chunks:
-            # Вычисляем среднюю similarity
+            # Calculate average similarity
             similarities = [c.get("similarity") for c in knowledge_chunks if c.get("similarity") is not None]
             avg_similarity = sum(similarities) / len(similarities) if similarities else 0
             
@@ -305,26 +305,26 @@ class AIClient:
             
             final_user_content += knowledge_text + "\n"
         
-        # Добавляем other чанки и кастомный контекст в ДОП. КОНТЕКСТ
+        # Add other chunks and custom context to ADD. CONTEXT
         additional_context_parts = []
         
-        # Собираем other чанки
+        # Collect other chunks
         if other_chunks:
             for i, chunk in enumerate(other_chunks, 1):
                 additional_context_parts.append(f"[{i}] {chunk['content']}")
         
-        # Добавляем кастомный контекст (если указан)
+        # Add custom context (if specified)
         if context:
             additional_context_parts.append(context)
         
-        # Формируем блок ДОП. КОНТЕКСТ если есть что добавить
+        # Form ADD. CONTEXT block if there's something to add
         if additional_context_parts:
-            additional_context_text = "ДОП. КОНТЕКСТ:\n" + "\n".join(additional_context_parts) + "\n\n"
+            additional_context_text = "ADD. CONTEXT:\n" + "\n".join(additional_context_parts) + "\n\n"
             final_user_content += additional_context_text
         
-        # Добавляем вопрос
+        # Add question
         if final_user_content:
-            final_user_content += f"ВОПРОС: {prompt}"
+            final_user_content += f"QUESTION: {prompt}"
         else:
             final_user_content = prompt
         
@@ -338,40 +338,40 @@ class AIClient:
     def _apply_chunk_format(self, content: str, chunk: Dict[str, Any], chunk_type: str,
                            chunk_format: Optional[Dict[str, str]]) -> str:
         """
-        Применяет формат чанка к контенту, если указан шаблон для типа документа
+        Apply chunk format to content if template specified for document type
         """
         if not chunk_format:
             return content
         
-        # Получаем шаблон для типа документа
+        # Get template for document type
         template = chunk_format.get(chunk_type)
         if not template:
             return content
         
-        # Применяем шаблон
+        # Apply template
         return self._apply_chunk_template(template, content, chunk)
     
     def _apply_chunk_template(self, template: str, content: str, chunk: Dict[str, Any]) -> str:
         """
-        Применяет шаблон с маркерами $ к данным чанка
-        Доступны: $content (обязательно) + любые поля из chunk_metadata
-        Поддерживает fallback: $field|fallback:значение
+        Apply template with $ markers to chunk data
+        Available: $content (required) + any fields from chunk_metadata
+        Supports fallback: $field|fallback:value
         """
-        # Формируем словарь данных: content + chunk_metadata
+        # Form data dict: content + chunk_metadata
         chunk_metadata = chunk.get("chunk_metadata") or {}
         chunk_data = {
             "content": content,
             **chunk_metadata
         }
         
-        # Паттерн для маркеров: $key или $key|fallback:value
-        # Проблема: определить границы fallback (где заканчивается значение)
-        # Решение: fallback — это слово или фраза, ограниченная ] } ) , пробелом перед $ или концом строки
-        # Используем жадный квантификатор, но останавливаемся на определенных символах
+        # Pattern for markers: $key or $key|fallback:value
+        # Problem: determine fallback boundaries (where value ends)
+        # Solution: fallback is word or phrase, limited by ] } ) , space before $ or end of line
+        # Use greedy quantifier, but stop at certain characters
         
-        # Паттерн: $key или $key|fallback:value
-        # Fallback заканчивается на: ] } ) пробел+$ или конец строки
-        # Используем [\w\sА-Яа-я]+ для fallback (слова и пробелы), но останавливаемся на спецсимволах
+        # Pattern: $key or $key|fallback:value
+        # Fallback ends on: ] } ) space+$ or end of line
+        # Use [\w\sА-Яа-я]+ for fallback (words and spaces), but stop at special characters
         pattern = r'\$(\w+)(?:\|fallback:([\w\sА-Яа-яЁё]+))?'
         
         def replace_placeholder(match):
@@ -390,44 +390,44 @@ class AIClient:
     async def embedding(self, text: str, model: Optional[str] = None, 
                        dimensions: Optional[int] = None, api_key: Optional[str] = None) -> Dict[str, Any]:
         """
-        Генерация embedding для текста через AI API (Polza.ai, OpenRouter и др.)
+        Generate embedding for text via AI API (Polza.ai, OpenRouter, etc.)
         
-        Примечание: параметр dimensions поддерживается только для OpenAI text-embedding-3-small 
-        и text-embedding-3-large. Для других моделей (Cohere, HuggingFace и др.) размерность фиксирована.
+        Note: dimensions parameter is supported only for OpenAI text-embedding-3-small 
+        and text-embedding-3-large. For other models (Cohere, HuggingFace, etc.) dimension is fixed.
         """
         try:
-            # Используем настройки по умолчанию если не указаны
+            # Use default settings if not specified
             model = model or self.default_embedding_model
             dimensions = dimensions if dimensions is not None else self.default_embedding_dimensions
             
-            # Определяем какой клиент использовать
+            # Determine which client to use
             client_to_use = self.client
             if api_key and api_key != self.api_key:
-                # Создаем временный клиент с переданным токеном
+                # Create temporary client with passed token
                 client_to_use = AsyncOpenAI(
                     api_key=api_key,
                     base_url=self.base_url
                 )
             
-            # Подготавливаем параметры для API
+            # Prepare parameters for API
             api_params = {
                 "model": model,
                 "input": text
             }
             
-            # Параметр dimensions поддерживается только для OpenAI text-embedding-3 моделей
-            # Для других моделей (Cohere, HuggingFace и др.) не передаем dimensions
+            # dimensions parameter supported only for OpenAI text-embedding-3 models
+            # For other models (Cohere, HuggingFace, etc.) don't pass dimensions
             if "text-embedding-3" in model.lower():
                 api_params["dimensions"] = dimensions
             
-            # Вызов embeddings API
+            # Call embeddings API
             response = await client_to_use.embeddings.create(**api_params)
             
-            # Получаем embedding
+            # Get embedding
             embedding_data = response.data[0]
             embedding_vector = embedding_data.embedding
             
-            # Формируем результат (плоская структура как в completion)
+            # Form result (flat structure like in completion)
             result = {
                 "result": "success",
                 "response_data": {
@@ -441,7 +441,7 @@ class AIClient:
             return result
             
         except Exception as e:
-            self.logger.error(f"Ошибка генерации embedding: {e}")
+            self.logger.error(f"Error generating embedding: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -451,23 +451,23 @@ class AIClient:
             }
     
     def shutdown(self):
-        """Корректное закрытие клиента и всех соединений"""
+        """Properly close client and all connections"""
         try:
             if hasattr(self.client, 'close') and self.client:
                 import asyncio
                 try:
-                    # Пытаемся закрыть клиент в существующем event loop
+                    # Try to close client in existing event loop
                     loop = asyncio.get_event_loop()
                     if loop.is_running():
-                        # Если loop запущен, создаем задачу для закрытия
+                        # If loop is running, create task for closing
                         loop.create_task(self.client.close())
                     else:
-                        # Если loop не запущен, запускаем его для закрытия
+                        # If loop not running, run it for closing
                         loop.run_until_complete(self.client.close())
                 except RuntimeError:
-                    # Если нет event loop, создаем новый
+                    # If no event loop, create new one
                     asyncio.run(self.client.close())
                 except Exception as e:
-                    self.logger.warning(f"Ошибка закрытия AI клиента: {e}")
+                    self.logger.warning(f"Error closing AI client: {e}")
         except Exception as e:
-            self.logger.warning(f"Ошибка при shutdown AI клиента: {e}")
+            self.logger.warning(f"Error during AI client shutdown: {e}")

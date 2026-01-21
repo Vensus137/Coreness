@@ -1,5 +1,5 @@
 """
-Invoice Service - сервис для работы с инвойсами (создание, управление, обработка платежей)
+Invoice Service - service for working with invoices (creation, management, payment processing)
 """
 
 from typing import Any, Dict, Optional
@@ -7,11 +7,11 @@ from typing import Any, Dict, Optional
 
 class InvoiceService:
     """
-    Сервис для работы с инвойсами:
-    - Создание инвойсов (в БД и отправка/создание ссылки)
-    - Подтверждение/отклонение платежей
-    - Получение информации об инвойсах
-    - Управление инвойсами (отмена)
+    Service for working with invoices:
+    - Create invoices (in DB and send/create link)
+    - Confirm/reject payments
+    - Get invoice information
+    - Manage invoices (cancel)
     """
     
     def __init__(self, **kwargs):
@@ -21,24 +21,24 @@ class InvoiceService:
         self.database_manager = kwargs['database_manager']
         self.telegram_api = kwargs['telegram_api']
         self.datetime_formatter = kwargs['datetime_formatter']
-        # Получаем настройки
+        # Get settings
         self.settings = self.settings_manager.get_plugin_settings('invoice_service')
         
-        # Регистрируем себя в ActionHub
+        # Register ourselves in ActionHub
         self.action_hub.register('invoice_service', self)
     
-    # === Actions для ActionHub ===
+    # === Actions for ActionHub ===
     
     async def create_invoice(self, data: dict) -> Dict[str, Any]:
         """
-        Создание инвойса в БД и отправка/создание ссылки
+        Create invoice in DB and send/create link
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             bot_id = data.get('bot_id')
             
-            # target_user_id с fallback на user_id из контекста
+            # target_user_id with fallback to user_id from context
             target_user_id = data.get('target_user_id') or data.get('user_id')
             chat_id = data.get('chat_id')
             title = data.get('title')
@@ -47,27 +47,27 @@ class InvoiceService:
             amount = data.get('amount')
             as_link = data.get('as_link', False)
             
-            # Если не создаем ссылку, нужен chat_id
+            # If not creating link, chat_id is required
             if not as_link and not chat_id:
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "chat_id обязателен для отправки инвойса"
+                        "message": "chat_id is required for sending invoice"
                     }
                 }
             
-            # Получаем информацию о боте через bot_hub
+            # Get bot information through bot_hub
             bot_result = await self.action_hub.execute_action('get_bot_info', {'bot_id': bot_id})
             if bot_result.get('result') != 'success':
-                error_msg = bot_result.get('error', 'Неизвестная ошибка')
+                error_msg = bot_result.get('error', 'Unknown error')
                 if isinstance(error_msg, dict):
-                    error_msg = error_msg.get('message', 'Неизвестная ошибка')
+                    error_msg = error_msg.get('message', 'Unknown error')
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Не удалось получить информацию о боте: {error_msg}"
+                        "message": f"Failed to get bot information: {error_msg}"
                     }
                 }
             
@@ -78,11 +78,11 @@ class InvoiceService:
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": "Токен бота не найден"
+                        "message": "Bot token not found"
                     }
                 }
             
-            # Создаем инвойс в БД
+            # Create invoice in DB
             master_repo = self.database_manager.get_master_repository()
             
             invoice_data = {
@@ -99,13 +99,13 @@ class InvoiceService:
                     "result": "error",
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": "Не удалось создать инвойс в БД"
+                        "message": "Failed to create invoice in DB"
                     }
                 }
             
-            # Отправляем инвойс или создаем ссылку
+            # Send invoice or create link
             if as_link:
-                # Создаем ссылку
+                # Create link
                 link_result = await self.telegram_api.create_invoice_link(
                     bot_token,
                     bot_id,
@@ -119,22 +119,22 @@ class InvoiceService:
                 )
                 
                 if link_result.get('result') != 'success':
-                    # Если не удалось создать ссылку, удаляем инвойс из БД
+                    # If failed to create link, delete invoice from DB
                     await master_repo.cancel_invoice(tenant_id, invoice_id)
-                    error_msg = link_result.get('error', 'Неизвестная ошибка')
+                    error_msg = link_result.get('error', 'Unknown error')
                     if isinstance(error_msg, dict):
-                        error_msg = error_msg.get('message', 'Неизвестная ошибка')
+                        error_msg = error_msg.get('message', 'Unknown error')
                     return {
                         "result": "error",
                         "error": {
                             "code": "INTERNAL_ERROR",
-                            "message": f"Не удалось создать ссылку: {error_msg}"
+                            "message": f"Failed to create link: {error_msg}"
                         }
                     }
                 
                 invoice_link = link_result.get('response_data', {}).get('invoice_link')
                 
-                # Обновляем инвойс с ссылкой
+                # Update invoice with link
                 await master_repo.update_invoice(
                     invoice_id,
                     {'link': invoice_link}
@@ -148,7 +148,7 @@ class InvoiceService:
                     }
                 }
             else:
-                # Отправляем инвойс
+                # Send invoice
                 send_result = await self.telegram_api.send_invoice(
                     bot_token,
                     bot_id,
@@ -163,16 +163,16 @@ class InvoiceService:
                 )
                 
                 if send_result.get('result') != 'success':
-                    # Если не удалось отправить, удаляем инвойс из БД
+                    # If failed to send, delete invoice from DB
                     await master_repo.cancel_invoice(tenant_id, invoice_id)
-                    error_msg = send_result.get('error', 'Неизвестная ошибка')
+                    error_msg = send_result.get('error', 'Unknown error')
                     if isinstance(error_msg, dict):
-                        error_msg = error_msg.get('message', 'Неизвестная ошибка')
+                        error_msg = error_msg.get('message', 'Unknown error')
                     return {
                         "result": "error",
                         "error": {
                             "code": "INTERNAL_ERROR",
-                            "message": f"Не удалось отправить инвойс: {error_msg}"
+                            "message": f"Failed to send invoice: {error_msg}"
                         }
                     }
                 
@@ -187,35 +187,35 @@ class InvoiceService:
                 }
             
         except Exception as e:
-            self.logger.error(f"Ошибка создания инвойса: {e}")
+            self.logger.error(f"Error creating invoice: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def _get_bot_token(self, data: dict) -> tuple[Optional[str], Optional[int], Optional[Dict[str, Any]]]:
         """
-        Получение bot_token для подтверждения/отклонения платежа
+Get bot_token for confirming/rejecting payment
         
-        Валидация входных данных (tenant_id, bot_id, pre_checkout_query_id) 
-        выполняется централизованно в ActionRegistry
+        Input data validation (tenant_id, bot_id, pre_checkout_query_id)
+        is done centrally in ActionRegistry
         """
         bot_id = data.get('bot_id')
         
-        # Получаем информацию о боте через bot_hub
+        # Get bot information through bot_hub
         bot_result = await self.action_hub.execute_action('get_bot_info', {'bot_id': bot_id})
         if bot_result.get('result') != 'success':
-            error_msg = bot_result.get('error', 'Неизвестная ошибка')
+            error_msg = bot_result.get('error', 'Unknown error')
             if isinstance(error_msg, dict):
-                error_msg = error_msg.get('message', 'Неизвестная ошибка')
+                error_msg = error_msg.get('message', 'Unknown error')
             return None, None, {
                 "result": "error",
                 "error": {
                     "code": "NOT_FOUND",
-                    "message": f"Не удалось получить информацию о боте: {error_msg}"
+                    "message": f"Failed to get bot information: {error_msg}"
                 }
             }
         
@@ -226,7 +226,7 @@ class InvoiceService:
                 "result": "error",
                 "error": {
                     "code": "NOT_FOUND",
-                    "message": "Токен бота не найден"
+                    "message": "Bot token not found"
                 }
             }
         
@@ -234,10 +234,10 @@ class InvoiceService:
     
     async def confirm_payment(self, data: dict) -> Dict[str, Any]:
         """
-        Подтверждение платежа (ответ на pre_checkout_query с подтверждением)
+        Confirm payment (answer pre_checkout_query with confirmation)
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             bot_token, bot_id, error = await self._get_bot_token(data)
             if error:
                 return error
@@ -246,7 +246,7 @@ class InvoiceService:
             tenant_id = data.get('tenant_id')
             invoice_payload = data.get('invoice_payload')
             
-            # Если передан invoice_payload, проверяем статус инвойса
+            # If invoice_payload provided, check invoice status
             if invoice_payload and tenant_id:
                 try:
                     invoice_id = int(invoice_payload)
@@ -254,53 +254,53 @@ class InvoiceService:
                     invoice = await master_repo.get_invoice_by_id(invoice_id)
                     
                     if invoice:
-                        # Получаем кастомное сообщение об ошибке или используем дефолтное
+                        # Get custom error message or use default
                         error_message = data.get('error_message')
                         
                         if invoice.get('is_cancelled'):
-                            # Отклоняем платеж, если инвойс отменен
+                            # Reject payment if invoice cancelled
                             reject_data = {
                                 'tenant_id': tenant_id,
                                 'bot_id': bot_id,
                                 'pre_checkout_query_id': pre_checkout_query_id,
-                                'error_message': error_message or 'Платеж невозможен: счет был отменен'
+                                'error_message': error_message or 'Payment impossible: invoice was cancelled'
                             }
                             reject_result = await self.reject_payment(reject_data)
-                            # Возвращаем результат отклонения (failed - нормальное бизнес-поведение)
+                            # Return rejection result (failed - normal business behavior)
                             if reject_result.get('result') == 'success':
                                 return {
                                     "result": "failed",
                                     "error": {
                                         "code": "INVOICE_CANCELLED",
-                                        "message": error_message or 'Платеж невозможен: счет был отменен'
+                                        "message": error_message or 'Payment impossible: invoice was cancelled'
                                     }
                                 }
                             return reject_result
                         
                         if invoice.get('paid_at'):
-                            # Отклоняем платеж, если инвойс уже оплачен
+                            # Reject payment if invoice already paid
                             reject_data = {
                                 'tenant_id': tenant_id,
                                 'bot_id': bot_id,
                                 'pre_checkout_query_id': pre_checkout_query_id,
-                                'error_message': error_message or 'Платеж невозможен: этот счет уже был оплачен'
+                                'error_message': error_message or 'Payment impossible: this invoice was already paid'
                             }
                             reject_result = await self.reject_payment(reject_data)
-                            # Возвращаем результат отклонения (failed - нормальное бизнес-поведение)
+                            # Return rejection result (failed - normal business behavior)
                             if reject_result.get('result') == 'success':
                                 return {
                                     "result": "failed",
                                     "error": {
                                         "code": "INVOICE_ALREADY_PAID",
-                                        "message": error_message or 'Платеж невозможен: этот счет уже был оплачен'
+                                        "message": error_message or 'Payment impossible: this invoice was already paid'
                                     }
                                 }
                             return reject_result
                 except (ValueError, TypeError):
-                    # Если не удалось распарсить invoice_id, продолжаем без проверки
+                    # If failed to parse invoice_id, continue without check
                     pass
             
-            # Подтверждаем платеж через Telegram API
+            # Confirm payment through Telegram API
             result = await self.telegram_api.answer_pre_checkout_query(
                 bot_token,
                 bot_id,
@@ -313,21 +313,21 @@ class InvoiceService:
             return result
             
         except Exception as e:
-            self.logger.error(f"Ошибка подтверждения платежа: {e}")
+            self.logger.error(f"Error confirming payment: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def reject_payment(self, data: dict) -> Dict[str, Any]:
         """
-        Отклонение платежа (ответ на pre_checkout_query с отклонением)
+        Reject payment (answer pre_checkout_query with rejection)
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             bot_token, bot_id, error = await self._get_bot_token(data)
             if error:
                 return error
@@ -335,7 +335,7 @@ class InvoiceService:
             pre_checkout_query_id = data.get('pre_checkout_query_id')
             error_message = data.get('error_message')
             
-            # Отклоняем платеж через Telegram API
+            # Reject payment through Telegram API
             payload = {
                 'pre_checkout_query_id': pre_checkout_query_id,
                 'ok': False
@@ -352,21 +352,21 @@ class InvoiceService:
             return result
             
         except Exception as e:
-            self.logger.error(f"Ошибка отклонения платежа: {e}")
+            self.logger.error(f"Error rejecting payment: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def get_invoice(self, data: dict) -> Dict[str, Any]:
         """
-        Получение информации об инвойсе
+        Get invoice information
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             invoice_id = data.get('invoice_id')
             
@@ -377,21 +377,21 @@ class InvoiceService:
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": "Инвойс не найден"
+                        "message": "Invoice not found"
                     }
                 }
             
-            # Проверяем, что инвойс принадлежит тенанту
+            # Check that invoice belongs to tenant
             if invoice.get('tenant_id') != tenant_id:
                 return {
                     "result": "error",
                     "error": {
                         "code": "PERMISSION_DENIED",
-                        "message": "Инвойс не принадлежит данному тенанту"
+                        "message": "Invoice does not belong to this tenant"
                     }
                 }
             
-            # Формируем ответ (оборачиваем в объект invoice для защиты от deep merge)
+            # Form response (wrap in invoice object to protect from deep merge)
             invoice_data = {
                 "invoice": {
                     "invoice_id": invoice.get('id'),
@@ -414,31 +414,31 @@ class InvoiceService:
             }
             
         except Exception as e:
-            self.logger.error(f"Ошибка получения инвойса: {e}")
+            self.logger.error(f"Error getting invoice: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def get_user_invoices(self, data: dict) -> Dict[str, Any]:
         """
-        Получение всех инвойсов пользователя
+        Get all user invoices
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             
-            # target_user_id с fallback на user_id из контекста
+            # target_user_id with fallback to user_id from context
             target_user_id = data.get('target_user_id') or data.get('user_id')
             if not target_user_id:
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "target_user_id или user_id обязателен"
+                        "message": "target_user_id or user_id is required"
                     }
                 }
             
@@ -451,7 +451,7 @@ class InvoiceService:
                 include_cancelled
             )
             
-            # Формируем список инвойсов
+            # Form invoice list
             invoices_list = []
             for invoice in invoices:
                 invoices_list.append({
@@ -476,34 +476,34 @@ class InvoiceService:
             }
             
         except Exception as e:
-            self.logger.error(f"Ошибка получения инвойсов пользователя: {e}")
+            self.logger.error(f"Error getting user invoices: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def cancel_invoice(self, data: dict) -> Dict[str, Any]:
         """
-        Отмена инвойса (установка флага is_cancelled)
+        Cancel invoice (set is_cancelled flag)
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             invoice_id = data.get('invoice_id')
             
             master_repo = self.database_manager.get_master_repository()
             
-            # Проверяем, что инвойс существует и принадлежит тенанту
+            # Check that invoice exists and belongs to tenant
             invoice = await master_repo.get_invoice_by_id(invoice_id)
             if not invoice:
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": "Инвойс не найден"
+                        "message": "Invoice not found"
                     }
                 }
             
@@ -512,46 +512,46 @@ class InvoiceService:
                     "result": "error",
                     "error": {
                         "code": "PERMISSION_DENIED",
-                        "message": "Инвойс не принадлежит данному тенанту"
+                        "message": "Invoice does not belong to this tenant"
                     }
                 }
             
-            # Проверяем, что инвойс еще не оплачен
+            # Check that invoice is not yet paid
             if invoice.get('paid_at'):
                 return {
                     "result": "error",
                     "error": {
                         "code": "INVALID_STATE",
-                        "message": "Нельзя отменить оплаченный инвойс"
+                        "message": "Cannot cancel paid invoice"
                     }
                 }
             
-            # Отменяем инвойс
+            # Cancel invoice
             await master_repo.cancel_invoice(invoice_id)
             
             return {"result": "success"}
             
         except Exception as e:
-            self.logger.error(f"Ошибка отмены инвойса: {e}")
+            self.logger.error(f"Error cancelling invoice: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def mark_invoice_as_paid(self, data: dict) -> Dict[str, Any]:
         """
-        Отметить инвойс как оплаченный (обработка события payment_successful)
+        Mark invoice as paid (process payment_successful event)
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             invoice_payload = data.get('invoice_payload')
             telegram_payment_charge_id = data.get('telegram_payment_charge_id')
             
-            # Парсим invoice_id из payload (payload - это строка с ID инвойса)
+            # Parse invoice_id from payload (payload is string with invoice ID)
             try:
                 invoice_id = int(invoice_payload)
             except (ValueError, TypeError):
@@ -559,20 +559,20 @@ class InvoiceService:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": f"Некорректный invoice_payload: {invoice_payload}"
+                        "message": f"Invalid invoice_payload: {invoice_payload}"
                     }
                 }
             
             master_repo = self.database_manager.get_master_repository()
             
-            # Проверяем, что инвойс существует и принадлежит тенанту
+            # Check that invoice exists and belongs to tenant
             invoice = await master_repo.get_invoice_by_id(invoice_id)
             if not invoice:
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": "Инвойс не найден"
+                        "message": "Invoice not found"
                     }
                 }
             
@@ -581,45 +581,45 @@ class InvoiceService:
                     "result": "error",
                     "error": {
                         "code": "PERMISSION_DENIED",
-                        "message": "Инвойс не принадлежит данному тенанту"
+                        "message": "Invoice does not belong to this tenant"
                     }
                 }
             
-            # Проверяем, что инвойс еще не оплачен
+            # Check that invoice is not yet paid
             if invoice.get('paid_at'):
-                self.logger.warning(f"[Tenant-{tenant_id}] [Invoice-{invoice_id}] Уже помечен как оплаченный, пропускаем обновление")
+                self.logger.warning(f"[Tenant-{tenant_id}] [Invoice-{invoice_id}] Already marked as paid, skipping update")
                 return {"result": "success"}
             
-            # Получаем дату оплаты или используем текущую
+            # Get payment date or use current
             paid_at_str = data.get('paid_at')
             if paid_at_str:
                 paid_at = await self.datetime_formatter.parse_date_string(paid_at_str)
                 if not paid_at:
-                    self.logger.warning(f"[Tenant-{tenant_id}] [Invoice-{invoice_id}] Не удалось распарсить paid_at, используем текущую дату")
+                    self.logger.warning(f"[Tenant-{tenant_id}] [Invoice-{invoice_id}] Failed to parse paid_at, using current date")
                     paid_at = await self.datetime_formatter.now_local()
             else:
                 paid_at = await self.datetime_formatter.now_local()
             
-            # Отмечаем инвойс как оплаченный
+            # Mark invoice as paid
             success = await master_repo.mark_invoice_as_paid(invoice_id, telegram_payment_charge_id, paid_at)
             if not success:
                 return {
                     "result": "error",
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": "Не удалось обновить инвойс"
+                        "message": "Failed to update invoice"
                     }
                 }
             
             return {"result": "success"}
             
         except Exception as e:
-            self.logger.error(f"Ошибка отметки инвойса как оплаченного: {e}")
+            self.logger.error(f"Error marking invoice as paid: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
 

@@ -13,13 +13,13 @@ dependencies:
   - "cache_manager"
 
 settings:
-  # Настройки обработки медиагрупп
+  # Media group processing settings
   media_group_timeout:
     type: float
     default: 0.5
     description: "Таймаут ожидания медиагрупп в секундах"
   
-  # Настройки фильтрации событий по времени
+  # Event time filtering settings
   enable_time_comparison:
     type: boolean
     default: false

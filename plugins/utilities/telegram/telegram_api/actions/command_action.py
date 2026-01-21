@@ -1,39 +1,39 @@
 """
-CommandAction - действия с командами через Telegram API
+CommandAction - actions with commands via Telegram API
 """
 
 from typing import Any, Dict, List
 
 
 class CommandAction:
-    """Действия с командами через Telegram API"""
+    """Actions with commands via Telegram API"""
     
     def __init__(self, api_client, **kwargs):
         self.api_client = api_client
         self.logger = kwargs['logger']
     
     async def sync_bot_commands(self, bot_token: str, bot_id: int, command_list: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Синхронизация команд бота: применение команд в Telegram"""
+        """Sync bot commands: apply commands in Telegram"""
         try:
             if not command_list:
-                # Если команд нет, удаляем все существующие команды
+                # If no commands, delete all existing commands
                 result = await self.api_client.make_request(bot_token, "deleteMyCommands", {})
                 if result["result"] != "success":
-                    return {"result": "error", "error": f"[Bot-{bot_id}] Не удалось удалить команды: {result.get('error', 'Unknown error')}"}
+                    return {"result": "error", "error": f"[Bot-{bot_id}] Failed to delete commands: {result.get('error', 'Unknown error')}"}
                 
                 return {"result": "success"}
             
-            # Сначала принудительно очищаем ВСЕ команды для всех scope (как в старом коде)
-            # Ошибки очистки игнорируем (это не критично)
+            # First, forcibly clear ALL commands for all scopes (as in old code)
+            # Clear errors are ignored (not critical)
             await self._clear_all_commands(bot_token, bot_id)
             
-            # Разделяем команды по action_type
+            # Split commands by action_type
             register_command = [cmd for cmd in command_list if cmd.get('action_type') == 'register']
             clear_command = [cmd for cmd in command_list if cmd.get('action_type') == 'clear']
             
             failed_commands = set()
             
-            # Дополнительно удаляем команды (clear) если есть
+            # Additionally delete commands (clear) if any
             if clear_command:
                 for clear_cmd in clear_command:
                     scope_name = clear_cmd.get('scope', 'default')
@@ -42,17 +42,17 @@ class CommandAction:
                     
                     result = await self.api_client.make_request(bot_token, "deleteMyCommands", payload)
                     if result["result"] != "success":
-                        # При ошибке очистки добавляем все команды этого scope в список неудачных
+                        # On clear error, add all commands of this scope to failed list
                         for cmd in register_command:
                             if cmd.get('scope', 'default') == scope_name:
                                 failed_commands.add(cmd["command"])
             
-            # Затем регистрируем команды (register)
+            # Then register commands (register)
             if register_command:
-                # Группируем команды по scope
+                # Group commands by scope
                 grouped_command = self._group_command_by_scope(register_command)
                 
-                # Применяем команды для каждого scope
+                # Apply commands for each scope
                 for _scope_key, scope_command in grouped_command.items():
                     scope_type = scope_command[0].get('scope', 'default')
                     scope = self._get_scope_object(scope_type, scope_command[0])
@@ -66,27 +66,27 @@ class CommandAction:
                         'commands': bot_command_list
                     }
                     
-                    # Добавляем scope только если он не None
+                    # Add scope only if it's not None
                     if scope is not None:
                         payload['scope'] = scope
                     
                     result = await self.api_client.make_request(bot_token, "setMyCommands", payload)
                     
                     if result["result"] != "success":
-                        # Добавляем все команды этого scope в список неудачных
+                        # Add all commands of this scope to failed list
                         for cmd in scope_command:
                             failed_commands.add(cmd["command"])
             
-            # Если были ошибки - логируем список команд и возвращаем ошибку
+            # If there were errors - log command list and return error
             if failed_commands:
                 commands_str = ', '.join(sorted(failed_commands))
-                self.logger.warning(f"[Bot-{bot_id}] Не удалось обновить команды: {commands_str}")
-                return {"result": "error", "error": f"[Bot-{bot_id}] Ошибки при синхронизации команд"}
+                self.logger.warning(f"[Bot-{bot_id}] Failed to update commands: {commands_str}")
+                return {"result": "error", "error": f"[Bot-{bot_id}] Errors during command sync"}
             
             return {"result": "success"}
             
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка синхронизации команд: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error syncing commands: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -97,10 +97,10 @@ class CommandAction:
     
     async def _clear_all_commands(self, bot_token: str, bot_id: int):
         """
-        Принудительная очистка всех команд для всех scope (как в старом коде)
+        Forced clearing of all commands for all scopes (as in old code)
         """
         try:
-            # Очищаем команды для всех основных scope (как в старом коде)
+            # Clear commands for all main scopes (as in old code)
             scopes_to_clear = [
                 None,  # default scope
                 {'type': 'all_private_chats'},
@@ -111,15 +111,15 @@ class CommandAction:
                 payload = {'scope': scope} if scope else {}
                 await self.api_client.make_request(bot_token, "deleteMyCommands", payload)
                 
-                # Ошибки очистки не критичны, не логируем индивидуально
-                # Они будут собраны в общий warning если будут проблемы с регистрацией
+                # Clear errors are not critical, don't log individually
+                # They will be collected in a general warning if there are registration problems
             
         except Exception as e:
-            self.logger.warning(f"[Bot-{bot_id}] Ошибка при очистке всех команд: {e}")
-            # Продолжаем работу даже если очистка не удалась
+            self.logger.warning(f"[Bot-{bot_id}] Error clearing all commands: {e}")
+            # Continue even if clearing failed
     
     def _group_command_by_scope(self, command_list: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
-        """Группировка команд по scope для регистрации"""
+        """Group commands by scope for registration"""
         grouped = {}
         for cmd in command_list:
             scope = cmd.get('scope', 'default')
@@ -135,9 +135,9 @@ class CommandAction:
         return grouped
     
     def _get_scope_object(self, scope_type: str, scope_info: Dict[str, Any]):
-        """Создание объекта scope для Telegram API"""
+        """Create scope object for Telegram API"""
         if scope_type == 'default':
-            return None  # Default scope не требует объекта
+            return None  # Default scope doesn't require object
         
         elif scope_type == 'chat':
             chat_id = scope_info.get('chat_id')
@@ -150,5 +150,5 @@ class CommandAction:
             if chat_id and user_id:
                 return {"type": "chat_member", "chat_id": chat_id, "user_id": user_id}
         
-        # Если scope не поддерживается, возвращаем default
+        # If scope is not supported, return default
         return None

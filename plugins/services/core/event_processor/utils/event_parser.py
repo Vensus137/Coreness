@@ -1,5 +1,5 @@
 """
-Утилита для парсинга raw событий Telegram в стандартный формат
+Utility for parsing raw Telegram events into standard format
 """
 
 from typing import Any, Dict, List, Optional
@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 class EventParser:
     """
-    Парсер raw событий Telegram в стандартный формат событий.
+    Parser for raw Telegram events into standard event format.
     """
 
     def __init__(self, logger, datetime_formatter, data_converter, database_manager, user_manager, cache_manager):
@@ -18,30 +18,30 @@ class EventParser:
         self.user_manager = user_manager
         self.cache_manager = cache_manager
         
-        # Локальный кэш для tenant_id по bot_id (вечный)
+        # Local cache for tenant_id by bot_id (permanent)
         self._bot_tenant_cache: Dict[int, int] = {}
 
     async def parse_event(self, telegram_event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
-        Парсинг Telegram события в стандартный формат события
+        Parse Telegram event into standard event format
         """
         try:
-            # Получаем bot_id из системного поля
+            # Get bot_id from system field
             bot_id = telegram_event.get('system', {}).get('bot_id')
             if not bot_id:
-                self.logger.warning("bot_id отсутствует в системном поле события")
+                self.logger.warning("bot_id missing in event system field")
                 return None
             
-            # Получаем tenant_id по bot_id (с кэшированием)
+            # Get tenant_id by bot_id (with caching)
             tenant_id = await self._get_tenant_by_bot_id(bot_id)
             if not tenant_id:
-                self.logger.warning(f"tenant_id не найден для bot_id {bot_id}")
+                self.logger.warning(f"tenant_id not found for bot_id {bot_id}")
                 return None
             
-            # Определяем тип события
+            # Determine event type
             if 'message' in telegram_event:
                 message = telegram_event['message']
-                # Проверяем, является ли это событием входа/выхода участника
+                # Check if this is a member join/leave event
                 if 'new_chat_member' in message:
                     event = await self._parse_member_joined_from_message(message)
                 elif 'left_chat_member' in message:
@@ -55,39 +55,39 @@ class EventParser:
             elif 'pre_checkout_query' in telegram_event:
                 event = await self._parse_pre_checkout_query(telegram_event['pre_checkout_query'])
             else:
-                # Игнорируем неизвестные типы событий
+                # Ignore unknown event types
                 return None
             
             if event:
-                # Добавляем bot_id и tenant_id в системное поле события (для защиты)
+                # Add bot_id and tenant_id to event system field (for protection)
                 event['system'] = {
                     'bot_id': bot_id,
                     'tenant_id': tenant_id
                 }
                 
-                # Добавляем bot_id и tenant_id в плоский словарь (для использования в действиях)
+                # Add bot_id and tenant_id to flat dictionary (for use in actions)
                 event['bot_id'] = bot_id
                 event['tenant_id'] = tenant_id
                 
-                # Добавляем конфиг тенанта в событие
+                # Add tenant config to event
                 tenant_config = await self._get_tenant_config(tenant_id)
                 if tenant_config:
-                    # Кладем весь конфиг в _config (действия будут извлекать нужные атрибуты оттуда)
+                    # Put entire config in _config (actions will extract needed attributes from there)
                     event['_config'] = tenant_config
                 
-                # Автоматически сохраняем данные пользователя
+                # Automatically save user data
                 await self._save_user_data(event)
             
             return event
                 
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга обновления: {e}")
+            self.logger.error(f"Error parsing update: {e}")
             return None
 
     async def _parse_message(self, message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Парсинг сообщения в стандартный формат события"""
+        """Parse message into standard event format"""
         try:
-            # Базовая информация
+            # Basic information
             chat_type = message.get('chat', {}).get('type')
             event = {
                 'event_source': 'telegram',
@@ -105,7 +105,7 @@ class EventParser:
                 'event_attachment': self._extract_attachments(message)
             }
 
-            # Информация о пользователе
+            # User information
             if message.get('from'):
                 from_user = message['from']
                 event.update({
@@ -117,7 +117,7 @@ class EventParser:
                     'is_premium': from_user.get('is_premium', False)
                 })
 
-            # Информация о чате
+            # Chat information
             if message.get('chat'):
                 chat = message['chat']
                 event.update({
@@ -125,13 +125,13 @@ class EventParser:
                     'chat_username': chat.get('username')
                 })
 
-            # Флаги
+            # Flags
             event.update({
                 'is_reply': bool(message.get('reply_to_message')),
                 'is_forward': bool(message.get('forward_from') or message.get('forward_from_chat'))
             })
 
-            # Обработка reply-сообщений
+            # Process reply messages
             if message.get('reply_to_message'):
                 reply_msg = message['reply_to_message']
                 event.update({
@@ -147,7 +147,7 @@ class EventParser:
                     'reply_attachment': self._extract_attachments(reply_msg)
                 })
 
-            # Обработка forward-сообщений
+            # Process forward messages
             if message.get('forward_from') or message.get('forward_from_chat'):
                 event.update({
                     'forward_message_id': message.get('forward_from_message_id'),
@@ -163,20 +163,20 @@ class EventParser:
                     )
                 })
 
-            # Обработка inline-клавиатуры
+            # Process inline keyboard
             inline_keyboard = self._extract_inline_keyboard(message)
             if inline_keyboard:
                 event['inline_keyboard'] = inline_keyboard
 
-            # Конвертируем в безопасный словарь
+            # Convert to safe dictionary
             return await self.data_converter.to_safe_dict(event)
 
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга сообщения: {e}")
+            self.logger.error(f"Error parsing message: {e}")
             return None
 
     async def _parse_callback_query(self, callback: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Парсинг callback_query в стандартный формат события"""
+        """Parse callback_query into standard event format"""
         try:
             chat_type = callback.get('message', {}).get('chat', {}).get('type') if callback.get('message') else None
             event = {
@@ -193,7 +193,7 @@ class EventParser:
                 'event_date': await self.datetime_formatter.to_iso_local_string(await self.datetime_formatter.now_local())
             }
 
-            # Информация о пользователе
+            # User information
             if callback.get('from'):
                 from_user = callback['from']
                 event.update({
@@ -205,7 +205,7 @@ class EventParser:
                     'is_premium': from_user.get('is_premium', False)
                 })
 
-            # Информация о чате
+            # Chat information
             if callback.get('message') and callback['message'].get('chat'):
                 chat = callback['message']['chat']
                 event.update({
@@ -213,25 +213,25 @@ class EventParser:
                     'chat_username': chat.get('username')
                 })
 
-            # Обработка inline-клавиатуры из сообщения callback
+            # Process inline keyboard from callback message
             if callback.get('message'):
                 inline_keyboard = self._extract_inline_keyboard(callback['message'])
                 if inline_keyboard:
                     event['inline_keyboard'] = inline_keyboard
 
-            # Конвертируем в безопасный словарь
+            # Convert to safe dictionary
             return await self.data_converter.to_safe_dict(event)
 
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга callback: {e}")
+            self.logger.error(f"Error parsing callback: {e}")
             return None
 
     async def _parse_member_joined_from_message(self, message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Парсинг события вступления участника из message с new_chat_member"""
+        """Parse member joined event from message with new_chat_member"""
         try:
             new_member = message.get('new_chat_member')
             if not new_member:
-                self.logger.warning("Не найден new_chat_member в сообщении о вступлении")
+                self.logger.warning("new_chat_member not found in join message")
                 return None
             
             chat = message.get('chat', {})
@@ -250,7 +250,7 @@ class EventParser:
                 )
             }
             
-            # Информация о пользователе
+            # User information
             event.update({
                 'username': new_member.get('username'),
                 'first_name': new_member.get('first_name'),
@@ -260,26 +260,26 @@ class EventParser:
                 'is_premium': new_member.get('is_premium', False)
             })
             
-            # Информация о чате
+            # Chat information
             if chat:
                 event.update({
                     'chat_title': chat.get('title'),
                     'chat_username': chat.get('username')
                 })
             
-            # Конвертируем в безопасный словарь
+            # Convert to safe dictionary
             return await self.data_converter.to_safe_dict(event)
             
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга member_joined из message: {e}")
+            self.logger.error(f"Error parsing member_joined from message: {e}")
             return None
 
     async def _parse_member_left_from_message(self, message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Парсинг события выхода участника из message с left_chat_member"""
+        """Parse member left event from message with left_chat_member"""
         try:
             left_member = message.get('left_chat_member')
             if not left_member:
-                self.logger.warning("Не найден left_chat_member в сообщении о выходе")
+                self.logger.warning("left_chat_member not found in leave message")
                 return None
             
             chat = message.get('chat', {})
@@ -298,7 +298,7 @@ class EventParser:
                 )
             }
             
-            # Информация о пользователе
+            # User information
             event.update({
                 'username': left_member.get('username'),
                 'first_name': left_member.get('first_name'),
@@ -308,22 +308,22 @@ class EventParser:
                 'is_premium': left_member.get('is_premium', False)
             })
             
-            # Информация о чате
+            # Chat information
             if chat:
                 event.update({
                     'chat_title': chat.get('title'),
                     'chat_username': chat.get('username')
                 })
             
-            # Конвертируем в безопасный словарь
+            # Convert to safe dictionary
             return await self.data_converter.to_safe_dict(event)
             
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга member_left из message: {e}")
+            self.logger.error(f"Error parsing member_left from message: {e}")
             return None
 
     async def _parse_pre_checkout_query(self, pre_checkout_query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Парсинг pre_checkout_query в стандартный формат события"""
+        """Parse pre_checkout_query into standard event format"""
         try:
             event = {
                 'event_source': 'telegram',
@@ -336,7 +336,7 @@ class EventParser:
                 'event_date': await self.datetime_formatter.to_iso_local_string(await self.datetime_formatter.now_local())
             }
 
-            # Информация о пользователе
+            # User information
             if pre_checkout_query.get('from'):
                 from_user = pre_checkout_query['from']
                 event.update({
@@ -348,19 +348,19 @@ class EventParser:
                     'is_premium': from_user.get('is_premium', False)
                 })
 
-            # Конвертируем в безопасный словарь
+            # Convert to safe dictionary
             return await self.data_converter.to_safe_dict(event)
 
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга pre_checkout_query: {e}")
+            self.logger.error(f"Error parsing pre_checkout_query: {e}")
             return None
 
     async def _parse_successful_payment_from_message(self, message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Парсинг successful_payment из message в стандартный формат события"""
+        """Parse successful_payment from message into standard event format"""
         try:
             successful_payment = message.get('successful_payment')
             if not successful_payment:
-                self.logger.warning("Не найден successful_payment в сообщении")
+                self.logger.warning("successful_payment not found in message")
                 return None
             
             chat = message.get('chat', {})
@@ -383,7 +383,7 @@ class EventParser:
                 )
             }
 
-            # Информация о пользователе
+            # User information
             if message.get('from'):
                 from_user = message['from']
                 event.update({
@@ -395,29 +395,29 @@ class EventParser:
                     'is_premium': from_user.get('is_premium', False)
                 })
 
-            # Информация о чате
+            # Chat information
             if chat:
                 event.update({
                     'chat_title': chat.get('title'),
                     'chat_username': chat.get('username')
                 })
 
-            # Конвертируем в безопасный словарь
+            # Convert to safe dictionary
             return await self.data_converter.to_safe_dict(event)
 
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга successful_payment из message: {e}")
+            self.logger.error(f"Error parsing successful_payment from message: {e}")
             return None
 
     def _extract_inline_keyboard(self, message: Dict[str, Any]) -> Optional[List[List[Dict[str, str]]]]:
         """
-        Извлекает inline-клавиатуру из сообщения и преобразует в наш формат.
+        Extract inline keyboard from message and convert to our format.
         
-        Формат Telegram: [[{text, callback_data}, ...], ...]
-        Наш формат: [[{"Текст": "callback_data"}, ...], ...]
+        Telegram format: [[{text, callback_data}, ...], ...]
+        Our format: [[{"Text": "callback_data"}, ...], ...]
         
-        Возвращает массив массивов, где каждый внутренний массив - строка кнопок.
-        Каждая кнопка представлена словарем формата {"Текст кнопки": "callback_data"}.
+        Returns array of arrays, where each inner array is a row of buttons.
+        Each button is represented as a dictionary in format {"Button text": "callback_data"}.
         """
         try:
             reply_markup = message.get('reply_markup', {})
@@ -428,7 +428,7 @@ class EventParser:
             if not inline_keyboard or not isinstance(inline_keyboard, list):
                 return None
             
-            # Преобразуем в наш формат: {"Текст": "callback_data"}
+            # Convert to our format: {"Text": "callback_data"}
             parsed_keyboard = []
             for row in inline_keyboard:
                 if not isinstance(row, list):
@@ -443,81 +443,81 @@ class EventParser:
                     if not button_text:
                         continue
                     
-                    # Приоритет: callback_data > url > пустая строка
+                    # Priority: callback_data > url > empty string
                     button_value = button.get('callback_data')
                     if not button_value:
                         button_value = button.get('url', '')
                     
-                    # Преобразуем в формат проекта: {"Текст": "значение"}
+                    # Convert to project format: {"Text": "value"}
                     if button_value:
                         button_data = {button_text: button_value}
                         parsed_row.append(button_data)
                 
-                # Добавляем строку только если в ней есть кнопки
+                # Add row only if it has buttons
                 if parsed_row:
                     parsed_keyboard.append(parsed_row)
             
             return parsed_keyboard if parsed_keyboard else None
             
         except Exception as e:
-            self.logger.warning(f"Ошибка извлечения inline-клавиатуры: {e}")
+            self.logger.warning(f"Error extracting inline keyboard: {e}")
             return None
 
     def _extract_attachments(self, message: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Извлекает вложения из сообщения"""
+        """Extract attachments from message"""
         attachments = []
 
-        # Фото
+        # Photo
         if message.get('photo'):
-            largest_photo = message['photo'][-1]  # Берем самое большое
+            largest_photo = message['photo'][-1]  # Take the largest one
             attachments.append({
                 'type': 'photo',
                 'file_id': largest_photo.get('file_id')
             })
 
-        # Документ
+        # Document
         if message.get('document'):
             attachments.append({
                 'type': 'document',
                 'file_id': message['document'].get('file_id')
             })
 
-        # Видео
+        # Video
         if message.get('video'):
             attachments.append({
                 'type': 'video',
                 'file_id': message['video'].get('file_id')
             })
 
-        # Аудио
+        # Audio
         if message.get('audio'):
             attachments.append({
                 'type': 'audio',
                 'file_id': message['audio'].get('file_id')
             })
 
-        # Голосовое сообщение
+        # Voice message
         if message.get('voice'):
             attachments.append({
                 'type': 'voice',
                 'file_id': message['voice'].get('file_id')
             })
 
-        # Стикер
+        # Sticker
         if message.get('sticker'):
             attachments.append({
                 'type': 'sticker',
                 'file_id': message['sticker'].get('file_id')
             })
 
-        # Анимация
+        # Animation
         if message.get('animation'):
             attachments.append({
                 'type': 'animation',
                 'file_id': message['animation'].get('file_id')
             })
 
-        # Видео заметка
+        # Video note
         if message.get('video_note'):
             attachments.append({
                 'type': 'video_note',
@@ -528,42 +528,42 @@ class EventParser:
     
     async def _get_tenant_by_bot_id(self, bot_id: int) -> Optional[int]:
         """
-        Получение tenant_id по bot_id из базы данных с кэшированием
+        Get tenant_id by bot_id from database with caching
         """
         try:
-            # Проверяем кэш
+            # Check cache
             if bot_id in self._bot_tenant_cache:
                 return self._bot_tenant_cache[bot_id]
             
-            # Получаем из базы данных
+            # Get from database
             master_repo = self.database_manager.get_master_repository()
             bot_data = await master_repo.get_bot_by_id(bot_id)
             
             if bot_data and 'tenant_id' in bot_data:
                 tenant_id = bot_data['tenant_id']
-                # Сохраняем в кэш
+                # Save to cache
                 self._bot_tenant_cache[bot_id] = tenant_id
                 return tenant_id
             
             return None
             
         except Exception as e:
-            self.logger.error(f"Ошибка получения tenant_id по bot_id {bot_id}: {e}")
+            self.logger.error(f"Error getting tenant_id by bot_id {bot_id}: {e}")
             return None
     
     async def _save_user_data(self, event: Dict[str, Any]) -> None:
         """
-        Автоматическое сохранение данных пользователя при парсинге события
+        Automatically save user data when parsing event
         """
         try:
             user_id = event.get('user_id')
             tenant_id = event.get('tenant_id')
             
             if not user_id or not tenant_id:
-                # Нет данных пользователя для сохранения
+                # No user data to save
                 return
             
-            # Подготавливаем данные пользователя
+            # Prepare user data
             user_data = {
                 'tenant_id': tenant_id,
                 'user_id': user_id,
@@ -575,41 +575,41 @@ class EventParser:
                 'is_premium': event.get('is_premium', False)
             }
             
-            # Сохраняем данные пользователя (с кэшированием)
+            # Save user data (with caching)
             await self.user_manager.save_user_data(user_data)
             
-            # Получаем состояние с проверкой истечения
+            # Get state with expiration check
             state_data = await self.user_manager.get_user_state(user_id, tenant_id)
             if state_data:
                 event['user_state'] = state_data.get('user_state')
                 event['user_state_expired_at'] = state_data.get('user_state_expired_at')
             
         except Exception as e:
-            self.logger.error(f"Ошибка автоматического сохранения данных пользователя: {e}")
+            self.logger.error(f"Error automatically saving user data: {e}")
     
     def _get_tenant_config_key(self, tenant_id: int) -> str:
-        """Генерация ключа кэша для конфига тенанта (совпадает с TenantCache)"""
+        """Generate cache key for tenant config (matches TenantCache)"""
         return f"tenant:{tenant_id}:config"
     
     async def _get_tenant_config(self, tenant_id: int) -> Optional[Dict[str, Any]]:
         """
-        Получение конфига тенанта из общего кэша (cache_manager) с fallback на БД
-        Использует тот же ключ, что и TenantCache, поэтому всегда синхронизирован
-        Возвращает словарь с конфигом (например, {"ai_token": "..."})
+        Get tenant config from shared cache (cache_manager) with DB fallback
+        Uses the same key as TenantCache, so always synchronized
+        Returns dictionary with config (e.g., {"ai_token": "..."})
         
-        Логика: сначала проверяем кэш, если нет - загружаем из БД и сохраняем в кэш.
-        Это решает проблему рассинхрона при обновлении конфига.
+        Logic: first check cache, if not found - load from DB and save to cache.
+        This solves the desynchronization problem when updating config.
         """
         try:
-            # Шаг 1: Проверяем кэш
+            # Step 1: Check cache
             cache_key = self._get_tenant_config_key(tenant_id)
             cached_config = await self.cache_manager.get(cache_key)
             
             if cached_config is not None:
                 return cached_config
             
-            # Шаг 2: Кэша нет - загружаем из БД (fallback для решения проблемы рассинхрона)
-            self.logger.warning(f"[Tenant-{tenant_id}] Конфиг тенанта не найден в кэше, загружаем из БД")
+            # Step 2: Cache not found - load from DB (fallback to solve desynchronization problem)
+            self.logger.warning(f"[Tenant-{tenant_id}] Tenant config not found in cache, loading from DB")
             
             master_repo = self.database_manager.get_master_repository()
             tenant_data = await master_repo.get_tenant_by_id(tenant_id)
@@ -617,18 +617,18 @@ class EventParser:
             if not tenant_data:
                 return None
             
-            # Формируем словарь конфига из всех полей БД (исключаем служебные)
-            # Служебные поля: id, processed_at (и relationship поля, но они не попадают в словарь)
+            # Form config dictionary from all DB fields (exclude system fields)
+            # System fields: id, processed_at (and relationship fields, but they don't get into dictionary)
             config = {}
             excluded_fields = {'id', 'processed_at'}
             for key, value in tenant_data.items():
                 if key not in excluded_fields and value is not None:
                     config[key] = value
             
-            # Не сохраняем в кэш - им управляет TenantCache
-            # Это редкий кейс, когда кэша нет, поэтому просто возвращаем данные из БД
+            # Don't save to cache - TenantCache manages it
+            # This is a rare case when cache is missing, so just return data from DB
             return config
             
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения конфига тенанта: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting tenant config: {e}")
             return None

@@ -1,5 +1,5 @@
 """
-TenantDataManager - подмодуль для работы с данными тенантов
+TenantDataManager - submodule for working with tenant data
 """
 
 from typing import Any, Dict
@@ -7,8 +7,8 @@ from typing import Any, Dict
 
 class TenantDataManager:
     """
-    Подмодуль для работы с данными тенантов
-    Содержит логику синхронизации настроек тенантов
+    Submodule for working with tenant data
+    Contains logic for synchronizing tenant settings
     """
     
     def __init__(self, database_manager, logger):
@@ -16,7 +16,7 @@ class TenantDataManager:
         self.logger = logger
     
     async def sync_tenant_data(self, tenant_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Синхронизация данных тенанта: создание/обновление тенанта"""
+        """Synchronize tenant data: create/update tenant"""
         try:
             tenant_id = tenant_data.get('tenant_id')
             if not tenant_id:
@@ -24,11 +24,11 @@ class TenantDataManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "tenant_id обязателен в tenant_data"
+                        "message": "tenant_id is required in tenant_data"
                     }
                 }
             
-            # Синхронизация настроек тенанта (создание без данных из settings.yaml)
+            # Synchronize tenant settings (create without data from settings.yaml)
             try:
                 await self._sync_tenant_settings(tenant_id, tenant_data)
             except Exception as e:
@@ -36,7 +36,7 @@ class TenantDataManager:
                     "result": "error",
                     "error": {
                         "code": "SYNC_ERROR",
-                        "message": f"Ошибка синхронизации настроек тенанта: {str(e)}"
+                        "message": f"Error synchronizing tenant settings: {str(e)}"
                     }
                 }
             
@@ -48,7 +48,7 @@ class TenantDataManager:
             }
             
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации данных тенанта: {e}")
+            self.logger.error(f"Error synchronizing tenant data: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -58,24 +58,24 @@ class TenantDataManager:
             }
     
     async def _sync_tenant_settings(self, tenant_id: int, tenant_data: Dict[str, Any]):
-        """Синхронизация настроек тенанта - создание тенанта без данных из settings.yaml"""
+        """Synchronize tenant settings - create tenant without data from settings.yaml"""
         try:
             master_repo = self.database_manager.get_master_repository()
             
-            # Ищем существующего тенанта
+            # Search for existing tenant
             existing_tenant = await master_repo.get_tenant_by_id(tenant_id)
             
             if not existing_tenant:
-                # Создаем нового тенанта
+                # Create new tenant
                 created_id = await master_repo.create_tenant({
                     'id': tenant_id
                 })
                 
                 if created_id:
-                    self.logger.info(f"[Tenant-{tenant_id}] Создан новый тенант (без данных из settings.yaml)")
+                    self.logger.info(f"[Tenant-{tenant_id}] Created new tenant (without data from settings.yaml)")
                 else:
-                    self.logger.warning(f"[Tenant-{tenant_id}] Не удалось создать тенант")
+                    self.logger.warning(f"[Tenant-{tenant_id}] Failed to create tenant")
                 
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации настроек тенанта {tenant_id}: {e}")
-            # Не перебрасываем исключение, так как оно обрабатывается в sync_tenant_data
+            self.logger.error(f"Error synchronizing tenant settings {tenant_id}: {e}")
+            # Don't re-raise exception, as it's handled in sync_tenant_data

@@ -1,5 +1,5 @@
 """
-User Hub Service - центральный сервис для управления состояниями пользователей
+User Hub Service - central service for managing user states
 """
 
 from typing import Any, Dict
@@ -9,8 +9,8 @@ from .storage.user_storage_manager import UserStorageManager
 
 class UserHubService:
     """
-    Центральный сервис для управления состояниями пользователей
-    Обертка над user_manager для использования в сценариях
+    Central service for managing user states
+    Wrapper over user_manager for use in scenarios
     """
     
     def __init__(self, **kwargs):
@@ -19,34 +19,34 @@ class UserHubService:
         self.user_manager = kwargs['user_manager']
         self.database_manager = kwargs['database_manager']
         
-        # Получаем настройки
+        # Get settings
         self.settings = self.settings_manager.get_plugin_settings('user_hub')
         
-        # Регистрируем себя в ActionHub
+        # Register ourselves in ActionHub
         self.action_hub = kwargs['action_hub']
         self.action_hub.register('user_hub', self)
         
-        # Создаем менеджер хранилища пользователя
+        # Create user storage manager
         self.user_storage_manager = UserStorageManager(
             self.database_manager,
             self.logger,
             self.settings_manager
         )
     
-    # === Actions для ActionHub ===
+    # === Actions for ActionHub ===
     
     async def set_user_state(self, data: dict) -> Dict[str, Any]:
         """
-        Установка состояния пользователя
+        Set user state
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             user_id = data.get('user_id')
             tenant_id = data.get('tenant_id')
             state = data.get('state')
             expires_in_seconds = data.get('expires_in_seconds')
             
-            # Вызываем метод user_manager (теперь возвращает полные данные)
+            # Call user_manager method (now returns full data)
             user_data = await self.user_manager.set_user_state(
                 user_id=user_id,
                 tenant_id=tenant_id,
@@ -67,30 +67,30 @@ class UserHubService:
                     "result": "error",
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": "Не удалось установить состояние пользователя"
+                        "message": "Failed to set user state"
                     }
                 }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка установки состояния пользователя: {e}")
+            self.logger.error(f"Error setting user state: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def get_user_state(self, data: dict) -> Dict[str, Any]:
         """
-        Получение состояния пользователя
+        Get user state
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             user_id = data.get('user_id')
             tenant_id = data.get('tenant_id')
             
-            # Получаем состояние и время истечения одним вызовом
+            # Get state and expiration time in one call
             state_data = await self.user_manager.get_user_state(user_id, tenant_id)
             
             if state_data:
@@ -111,25 +111,25 @@ class UserHubService:
                 }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка получения состояния пользователя: {e}")
+            self.logger.error(f"Error getting user state: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def clear_user_state(self, data: dict) -> Dict[str, Any]:
         """
-        Очистка состояния пользователя
+        Clear user state
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             user_id = data.get('user_id')
             tenant_id = data.get('tenant_id')
             
-            # Вызываем метод user_manager для очистки состояния
+            # Call user_manager method to clear state
             success = await self.user_manager.clear_user_state(
                 user_id=user_id,
                 tenant_id=tenant_id
@@ -142,27 +142,27 @@ class UserHubService:
                     "result": "error",
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": "Не удалось очистить состояние пользователя"
+                        "message": "Failed to clear user state"
                     }
                 }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка очистки состояния пользователя: {e}")
+            self.logger.error(f"Error clearing user state: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     # === User Storage Actions ===
     
     async def get_user_storage(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Получение значений storage для пользователя"""
+        """Get storage values for user"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
-            # Преобразуем число в строку для key (если передано число)
+            # Validation is done centrally in ActionRegistry
+            # Convert number to string for key (if number passed)
             key = data.get('key')
             if key is not None and not isinstance(key, str):
                 key = str(key)
@@ -175,26 +175,26 @@ class UserHubService:
                 format_yaml=data.get('format', False)
             )
         except Exception as e:
-            self.logger.error(f"Ошибка получения storage: {e}")
+            self.logger.error(f"Error getting storage: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def set_user_storage(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Установка значений storage для пользователя
-        Поддерживает смешанный подход с приоритетом: key -> value -> values
+        Set storage values for user
+        Supports mixed approach with priority: key -> value -> values
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             user_id = data.get('user_id')
             key = data.get('key')
-            # Преобразуем число в строку для key (если передано число)
+            # Convert number to string for key (if number passed)
             if key is not None and not isinstance(key, str):
                 key = str(key)
             
@@ -210,20 +210,20 @@ class UserHubService:
                 format_yaml=data.get('format', False)
             )
         except Exception as e:
-            self.logger.error(f"Ошибка установки storage: {e}")
+            self.logger.error(f"Error setting storage: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def delete_user_storage(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Удаление значений из storage"""
+        """Delete values from storage"""
         try:
-            # Валидация выполняется централизованно в ActionRegistry
-            # Преобразуем число в строку для key (если передано число)
+            # Validation is done centrally in ActionRegistry
+            # Convert number to string for key (if number passed)
             key = data.get('key')
             if key is not None and not isinstance(key, str):
                 key = str(key)
@@ -235,21 +235,21 @@ class UserHubService:
                 key_pattern=data.get('key_pattern')
             )
         except Exception as e:
-            self.logger.error(f"Ошибка удаления storage: {e}")
+            self.logger.error(f"Error deleting storage: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def get_tenant_users(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Получение списка всех user_id для указанного тенанта
+        Get list of all user_ids for specified tenant
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             
             master_repo = self.database_manager.get_master_repository()
@@ -264,28 +264,28 @@ class UserHubService:
             }
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения списка пользователей: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting user list: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def get_users_by_storage_value(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Поиск пользователей по ключу и значению в storage
-        Позволяет найти всех пользователей, у которых в storage есть определенный ключ с определенным значением
-        Например, найти всех пользователей с подключенной подпиской
+        Search users by key and value in storage
+        Allows finding all users who have a specific key with a specific value in storage
+        For example, find all users with active subscription
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             key = data.get('key')
             value = data.get('value')
             
-            # Используем UserStorageManager для поиска
+            # Use UserStorageManager for search
             user_ids = await self.user_storage_manager.find_users_by_storage_value(
                 tenant_id=tenant_id,
                 key=key,
@@ -301,11 +301,11 @@ class UserHubService:
             }
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка поиска пользователей по storage key={key}, value={value}: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error searching users by storage key={key}, value={value}: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }

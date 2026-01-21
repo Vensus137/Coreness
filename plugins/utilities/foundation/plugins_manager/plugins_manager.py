@@ -6,26 +6,26 @@ import yaml
 
 
 class PluginsManager:
-    """Менеджер утилит и сервисов с поддержкой зависимостей и DI"""
+    """Manager for utilities and services with dependency and DI support"""
 
     @staticmethod
     def _find_project_root(start_path: Path) -> Path:
-        """Надежно определяет корень проекта"""
-        # Сначала проверяем переменную окружения
+        """Reliably determine project root"""
+        # First check environment variable
         env_root = os.environ.get('PROJECT_ROOT')
         if env_root and Path(env_root).exists():
             return Path(env_root)
         
-        # Ищем по ключевым файлам/папкам
+        # Search by key files/folders
         current = start_path
         while current != current.parent:
-            # Проверяем наличие ключевых файлов проекта
+            # Check for key project files
             if (current / "plugins").exists() and \
                (current / "app").exists():
                 return current
             current = current.parent
         
-        # Если не найден - используем fallback
+        # If not found - use fallback
         return start_path.parent.parent.parent.parent
 
     def __init__(self, plugins_dir: str = "plugins", utilities_dir: str = "utilities", services_dir: str = "services", **kwargs):
@@ -34,72 +34,72 @@ class PluginsManager:
         self.utilities_dir = utilities_dir
         self.services_dir = services_dir
         
-        # Кеш для информации о утилитах и зависимостях
+        # Cache for utilities and dependencies information
         self._utilities_info: Dict[str, Dict] = {}
         self._services_info: Dict[str, Dict] = {}
         self._dependency_graph: Dict[str, Set[str]] = {}
 
-        # Устанавливаем корень проекта надежным способом
+        # Set project root reliably
         self.project_root = self._find_project_root(Path(__file__))
 
-        # Загружаем информацию о всех утилитах и сервисах
+        # Load information about all utilities and services
         self._load_utilities_and_services_info()
 
     def _load_utilities_and_services_info(self):
-        """Загружает информацию о всех утилитах и сервисах для системы DI"""
-        self.logger.info("Загрузка информации о утилитах и сервисах...")
+        """Load information about all utilities and services for DI system"""
+        self.logger.info("Loading information about utilities and services...")
         self._utilities_info.clear()
         self._services_info.clear()
         self._dependency_graph.clear()
 
-        # Загружаем информацию о утилитах (рекурсивно)
+        # Load utilities information (recursively)
         utilities_dir = os.path.join(self.project_root, self.plugins_dir, self.utilities_dir)
         self._scan_plugins_recursively(utilities_dir, "utilities", self._utilities_info)
         
-        # Загружаем информацию о сервисах (рекурсивно)
+        # Load services information (recursively)
         services_dir = os.path.join(self.project_root, self.plugins_dir, self.services_dir)
         self._scan_plugins_recursively(services_dir, "services", self._services_info)
         
-        # Строим граф зависимостей
+        # Build dependency graph
         self._build_dependency_graph()
         
     def _scan_plugins_recursively(self, root_dir: str, plugin_type: str, target_cache: Dict[str, Dict]):
         """
-        Рекурсивно сканирует директорию и загружает информацию о плагинах
+        Recursively scan directory and load plugin information
         """
         if not os.path.exists(root_dir):
-            self.logger.warning(f"Директория {plugin_type} не найдена: {root_dir}")
+            self.logger.warning(f"Directory {plugin_type} not found: {root_dir}")
             return
 
         self._scan_directory_recursively(root_dir, plugin_type, target_cache, "")
-        self.logger.info(f"Загружено {plugin_type}: {len(target_cache)}")
+        self.logger.info(f"Loaded {plugin_type}: {len(target_cache)}")
 
     def _scan_directory_recursively(self, directory: str, plugin_type: str, target_cache: Dict[str, Dict], relative_path: str):
         """
-        Рекурсивно сканирует директорию на предмет плагинов
+        Recursively scan directory for plugins
         """
         for item_name in os.listdir(directory):
             item_path = os.path.join(directory, item_name)
             
             if os.path.isdir(item_path):
-                # Проверяем, есть ли config.yaml в этой папке
+                # Check if config.yaml exists in this folder
                 config_path = os.path.join(item_path, 'config.yaml')
                 
                 if os.path.exists(config_path):
-                    # Нашли плагин!
-                    # Формируем относительный путь от корня проекта
+                    # Found plugin!
+                    # Form relative path from project root
                     relative_plugin_path = os.path.relpath(item_path, self.project_root)
                     self._load_plugin_info(relative_plugin_path, item_name, plugin_type, target_cache, relative_path)
                 else:
-                    # Это подпапка, продолжаем рекурсию
+                    # This is a subfolder, continue recursion
                     new_relative_path = os.path.join(relative_path, item_name) if relative_path else item_name
                     self._scan_directory_recursively(item_path, plugin_type, target_cache, new_relative_path)
 
     def _load_plugin_info(self, plugin_path: str, plugin_name: str, plugin_type: str, target_cache: Dict[str, Dict], relative_path: str):
         """
-        Загружает информацию о конкретном плагине
+        Load information about specific plugin
         """
-        # Формируем полный путь для чтения config.yaml
+        # Form full path for reading config.yaml
         full_plugin_path = os.path.join(self.project_root, plugin_path)
         config_path = os.path.join(full_plugin_path, 'config.yaml')
         
@@ -107,10 +107,10 @@ class PluginsManager:
             with open(config_path, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f) or {}
             
-            # Проверяем, включен ли плагин (по умолчанию включен)
+            # Check if plugin is enabled (enabled by default)
             enabled = config.get('enabled', True)
             if not enabled:
-                self.logger.info(f"Плагин {plugin_name} отключен в конфигурации, пропускаем")
+                self.logger.info(f"Plugin {plugin_name} disabled in configuration, skipping")
                 return
             
             plugin_info = {
@@ -127,89 +127,89 @@ class PluginsManager:
                 'singleton': config.get('singleton', False)
             }
             
-            # Добавляем все поля из конфига
+            # Add all fields from config
             plugin_info['methods'] = config.get('methods', {})
             plugin_info['actions'] = config.get('actions', {})
             
-            # Проверяем обязательные поля для разных типов
+            # Check required fields for different types
             if plugin_type == "utilities":
                 if not plugin_info['methods']:
-                    self.logger.warning(f"Утилита {plugin_name} не имеет секции methods")
-                # actions для утилит опциональны
+                    self.logger.warning(f"Utility {plugin_name} does not have methods section")
+                # actions for utilities are optional
             elif plugin_type == "services":
                 if not plugin_info['actions']:
-                    self.logger.warning(f"Сервис {plugin_name} не имеет секции actions")
-                # methods для сервисов больше не обязательны
+                    self.logger.warning(f"Service {plugin_name} does not have actions section")
+                # methods for services are no longer required
             
             target_cache[plugin_info['name']] = plugin_info
             
         except Exception as e:
-            self.logger.error(f"Ошибка загрузки конфига {plugin_type[:-1]} {plugin_name}: {e}")
+            self.logger.error(f"Error loading config for {plugin_type[:-1]} {plugin_name}: {e}")
 
     def _load_plugins_info(self, plugin_type: str, plugins_subdir: str, target_cache: Dict[str, Dict]):
         """
-        Универсальный метод для загрузки информации о плагинах (утилитах или сервисах)
+        Universal method for loading plugin information (utilities or services)
         """
         plugins_dir = os.path.join(self.project_root, self.plugins_dir, plugins_subdir)
         self._scan_plugins_recursively(plugins_dir, plugin_type, target_cache)
 
     def _scan_plugins_in_directory(self, directory: str, plugin_type: str, target_cache: Dict[str, Dict], level: str = None):
         """
-        Сканирует директорию и загружает информацию о плагинах (устаревший метод)
+        Scan directory and load plugin information (deprecated method)
         """
-        self.logger.warning("Метод _scan_plugins_in_directory устарел, используйте _scan_plugins_recursively")
+        self.logger.warning("Method _scan_plugins_in_directory is deprecated, use _scan_plugins_recursively")
         self._scan_directory_recursively(directory, plugin_type, target_cache, "")
 
     def _load_utilities_info(self):
-        """Загружает информацию о всех утилитах из plugins/utilities/ (устаревший метод)"""
-        self.logger.warning("Метод _load_utilities_info устарел, используйте _scan_plugins_recursively")
+        """Load information about all utilities from plugins/utilities/ (deprecated method)"""
+        self.logger.warning("Method _load_utilities_info is deprecated, use _scan_plugins_recursively")
         utilities_dir = os.path.join(self.project_root, self.plugins_dir, self.utilities_dir)
         self._scan_plugins_recursively(utilities_dir, "utilities", self._utilities_info)
 
     def _load_services_info(self):
-        """Загружает информацию о всех сервисах из plugins/services/ (устаревший метод)"""
-        self.logger.warning("Метод _load_services_info устарел, используйте _scan_plugins_recursively")
+        """Load information about all services from plugins/services/ (deprecated method)"""
+        self.logger.warning("Method _load_services_info is deprecated, use _scan_plugins_recursively")
         services_dir = os.path.join(self.project_root, self.plugins_dir, self.services_dir)
         self._scan_plugins_recursively(services_dir, "services", self._services_info)
 
     def _build_dependency_graph(self):
-        """Строит граф зависимостей для проверки циклических зависимостей"""
-        # Добавляем все утилиты и сервисы в граф
+        """Build dependency graph for checking circular dependencies"""
+        # Add all utilities and services to graph
         for utility_name in self._utilities_info:
             self._dependency_graph[utility_name] = set()
         
         for service_name in self._services_info:
             self._dependency_graph[service_name] = set()
         
-        # Добавляем зависимости утилит
+        # Add utility dependencies
         for utility_name, utility_info in self._utilities_info.items():
             for dep in utility_info['dependencies']:
                 if dep in self._utilities_info:
                     self._dependency_graph[utility_name].add(dep)
                 else:
-                    self.logger.warning(f"Утилита {utility_name} зависит от несуществующей утилиты: {dep}")
+                    self.logger.warning(f"Utility {utility_name} depends on non-existent utility: {dep}")
         
-        # Добавляем зависимости сервисов
+        # Add service dependencies
         for service_name, service_info in self._services_info.items():
             for dep in service_info['dependencies']:
                 if dep in self._utilities_info:
                     self._dependency_graph[service_name].add(dep)
                 else:
-                    self.logger.warning(f"Сервис {service_name} зависит от несуществующей утилиты: {dep}")
+                    self.logger.warning(f"Service {service_name} depends on non-existent utility: {dep}")
 
 
-    # === Публичные методы ===
+    # === Public methods ===
 
     def get_plugin_info(self, plugin_name: str) -> Optional[Dict]:
         """
-        Универсальный метод для получения информации о любом плагине (утилите или сервисе)
+        Universal method for getting information about any plugin (utility or service)
         """
-        # Сначала пробуем найти как утилиту
+        # First try to find as utility
         plugin_info = self._utilities_info.get(plugin_name)
         if plugin_info:
             return plugin_info
         
-        # Если не найдена как утилита, пробуем как сервис
+        # If not found as utility, try as service
         plugin_info = self._services_info.get(plugin_name)
         if plugin_info:
             return plugin_info
@@ -218,14 +218,14 @@ class PluginsManager:
 
     def get_plugin_type(self, plugin_name: str) -> Optional[str]:
         """
-        Получить тип плагина (утилита или сервис)
+        Get plugin type (utility or service)
         """
         plugin_info = self.get_plugin_info(plugin_name)
         return plugin_info.get('type') if plugin_info else None
 
     def get_all_plugins_info(self) -> Dict[str, Dict]:
         """
-        Получить информацию о всех плагинах (утилиты + сервисы)
+        Get information about all plugins (utilities + services)
         """
         all_plugins = {}
         all_plugins.update(self._utilities_info)
@@ -234,19 +234,19 @@ class PluginsManager:
 
     def get_plugins_by_type(self, plugin_type: str) -> Dict[str, Dict]:
         """
-        Получить все плагины определенного типа
+        Get all plugins of specified type
         """
         if plugin_type == "utilities":
             return self._utilities_info.copy()
         elif plugin_type == "services":
             return self._services_info.copy()
         else:
-            self.logger.warning(f"Неизвестный тип плагина: {plugin_type}")
+            self.logger.warning(f"Unknown plugin type: {plugin_type}")
             return {}
 
     def get_plugin_dependencies(self, plugin_name: str) -> List[str]:
         """
-        Получить ВСЕ зависимости плагина (обязательные + опциональные)
+        Get ALL plugin dependencies (mandatory + optional)
         """
         mandatory = self.get_plugin_mandatory_dependencies(plugin_name)
         optional = self.get_plugin_optional_dependencies(plugin_name)
@@ -254,7 +254,7 @@ class PluginsManager:
     
     def get_plugin_mandatory_dependencies(self, plugin_name: str) -> List[str]:
         """
-        Получить только обязательные зависимости плагина
+        Get only mandatory plugin dependencies
         """
         plugin_info = self.get_plugin_info(plugin_name)
         if not plugin_info:
@@ -264,7 +264,7 @@ class PluginsManager:
     
     def get_plugin_optional_dependencies(self, plugin_name: str) -> List[str]:
         """
-        Получить только опциональные зависимости плагина
+        Get only optional plugin dependencies
         """
         plugin_info = self.get_plugin_info(plugin_name)
         if not plugin_info:
@@ -273,6 +273,6 @@ class PluginsManager:
         return plugin_info.get('optional_dependencies', [])
 
     def reload(self):
-        """Перезагрузить информацию о плагинах"""
-        self.logger.info("Перезагрузка информации о плагинах...")
+        """Reload plugin information"""
+        self.logger.info("Reloading plugin information...")
         self._load_utilities_and_services_info() 

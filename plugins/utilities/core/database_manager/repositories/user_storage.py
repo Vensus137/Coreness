@@ -1,5 +1,5 @@
 """
-Репозиторий для работы с хранилищем данных пользователя (user_storage)
+Repository for working with user data storage (user_storage)
 """
 
 from typing import Any, Dict, List, Optional
@@ -12,21 +12,21 @@ from .base import BaseRepository
 
 class UserStorageRepository(BaseRepository):
     """
-    Репозиторий для работы с хранилищем данных пользователя
+    Repository for working with user data storage
     """
     
     async def get_records(self, tenant_id: int, user_id: int, key: Optional[str] = None, key_pattern: Optional[str] = None, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """
-        Универсальное получение записей storage
+        Universal get storage records
         
-        Логика определения режима:
-        - Если все параметры None (кроме tenant_id, user_id) - получить все записи пользователя
-        - Если указан key - получить конкретное значение
-        - Если указан key_pattern - получить значения по паттерну
+        Mode determination logic:
+        - If all parameters None (except tenant_id, user_id) - get all user records
+        - If key specified - get specific value
+        - If key_pattern specified - get values by pattern
         
-        Значения value преобразуются в нужные типы (int, float, bool, list, dict или str)
+        Values are converted to required types (int, float, bool, list, dict or str)
         
-        limit: опциональное ограничение на количество возвращаемых записей
+        limit: optional limit on number of returned records
         """
         try:
             with self._get_session() as session:
@@ -35,7 +35,7 @@ class UserStorageRepository(BaseRepository):
                     UserStorage.user_id == user_id
                 ]
                 
-                # Ключ: если есть точное значение - используем его, иначе паттерн
+                # Key: if exact value exists - use it, otherwise pattern
                 if key:
                     conditions.append(UserStorage.key == key)
                 elif key_pattern:
@@ -43,33 +43,33 @@ class UserStorageRepository(BaseRepository):
                 
                 stmt = select(UserStorage).where(*conditions)
                 
-                # Применяем лимит, если указан
+                # Apply limit if specified
                 if limit is not None and limit > 0:
                     stmt = stmt.limit(limit)
                 
                 result = session.execute(stmt).scalars().all()
                 
-                # Преобразуем value автоматически через convert_text_fields
+                # Convert value automatically via convert_text_fields
                 return await self._to_dict_list(result, convert_text_fields=['value'])
                     
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Ошибка получения записей storage: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Error getting storage records: {e}")
             return None
     
     async def set_records(self, tenant_id: int, user_id: int, values: Dict[str, Any]) -> Optional[bool]:
         """
-        Универсальная установка записей storage (batch для всех ключей)
+        Universal set storage records (batch for all keys)
         
-        Принимает структуру {key: value} для установки одного или множества значений
-        Оптимизированная версия: сначала получаем все существующие записи одним запросом,
-        затем выполняем batch insert/update
+        Accepts structure {key: value} for setting one or multiple values
+        Optimized version: first get all existing records with one query,
+        then perform batch insert/update
         """
         try:
             if not values:
-                return True  # Нет данных для установки
+                return True  # No data to set
             
             with self._get_session() as session:
-                # Получаем все существующие записи для пользователя одним запросом
+                # Get all existing records for user with one query
                 existing_keys = set()
                 if values:
                     existing_records = session.execute(
@@ -81,7 +81,7 @@ class UserStorageRepository(BaseRepository):
                     ).scalars().all()
                     existing_keys = set(existing_records)
                 
-                # Разделяем на insert и update
+                # Split into insert and update
                 to_insert = []
                 to_update = []
                 
@@ -96,7 +96,7 @@ class UserStorageRepository(BaseRepository):
                             'value': value
                         })
                 
-                # Batch insert для новых записей
+                # Batch insert for new records
                 if to_insert:
                     prepared_inserts = []
                     for record in to_insert:
@@ -110,7 +110,7 @@ class UserStorageRepository(BaseRepository):
                     if prepared_inserts:
                         session.execute(insert(UserStorage), prepared_inserts)
                 
-                # Batch update для существующих записей
+                # Batch update for existing records
                 if to_update:
                     for key, value in to_update:
                         prepared_fields = await self.data_preparer.prepare_for_update(
@@ -129,18 +129,18 @@ class UserStorageRepository(BaseRepository):
                 return True
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Ошибка установки записей storage: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Error setting storage records: {e}")
             return None
     
     async def delete_records(self, tenant_id: int, user_id: int, key: Optional[str] = None, key_pattern: Optional[str] = None) -> Optional[int]:
         """
-        Универсальное удаление записей storage
+        Universal delete storage records
         
-        Логика:
-        - Если указан key или key_pattern - удаляются записи с указанными ключами
-        - Если key и key_pattern не указаны - удаляются все записи пользователя
+        Logic:
+        - If key or key_pattern specified - delete records with specified keys
+        - If key and key_pattern not specified - delete all user records
         
-        Возвращает количество удаленных записей
+        Returns number of deleted records
         """
         try:
             with self._get_session() as session:
@@ -149,7 +149,7 @@ class UserStorageRepository(BaseRepository):
                     UserStorage.user_id == user_id
                 ]
                 
-                # Ключ: если есть точное значение - используем его, иначе паттерн
+                # Key: if exact value exists - use it, otherwise pattern
                 if key:
                     conditions.append(UserStorage.key == key)
                 elif key_pattern:
@@ -162,16 +162,16 @@ class UserStorageRepository(BaseRepository):
                 return result.rowcount
                     
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Ошибка удаления записей storage: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Error deleting storage records: {e}")
             return None
     
     async def get_by_tenant_and_key(self, tenant_id: int, key: str) -> Optional[List[Dict[str, Any]]]:
         """
-        Получение всех записей storage для тенанта по ключу
-        Использует индекс idx_user_storage_tenant_key для быстрого поиска
-        Значения value преобразуются в нужные типы (int, float, bool, list или str)
+        Get all storage records for tenant by key
+        Uses idx_user_storage_tenant_key index for fast search
+        Values are converted to required types (int, float, bool, list or str)
         
-        Используется для поиска пользователей по значению (find_users_by_storage_value)
+        Used for finding users by value (find_users_by_storage_value)
         """
         try:
             with self._get_session() as session:
@@ -181,9 +181,9 @@ class UserStorageRepository(BaseRepository):
                 )
                 result = session.execute(stmt).scalars().all()
                 
-                # Преобразуем value автоматически через convert_text_fields
+                # Convert value automatically via convert_text_fields
                 return await self._to_dict_list(result, convert_text_fields=['value'])
                     
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения записей по ключу {key}: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting records by key {key}: {e}")
             return None

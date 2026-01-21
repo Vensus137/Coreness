@@ -1,5 +1,5 @@
 """
-Фикстуры для тестов TaskManager
+Fixtures for TaskManager tests
 """
 import sys
 from pathlib import Path
@@ -10,7 +10,7 @@ import pytest
 from plugins.utilities.foundation.logger.logger import Logger
 from plugins.utilities.foundation.settings_manager.settings_manager import SettingsManager
 
-# Добавляем родительскую директорию плагина в sys.path
+# Add parent plugin directory to sys.path
 _plugin_dir = Path(__file__).parent.parent.parent  # plugins/utilities/core/
 if str(_plugin_dir) not in sys.path:
     sys.path.insert(0, str(_plugin_dir))
@@ -18,7 +18,7 @@ if str(_plugin_dir) not in sys.path:
 
 @pytest.fixture
 def mock_logger():
-    """Создает мок логгера"""
+    """Creates mock logger"""
     logger = Mock(spec=Logger)
     logger.get_logger = Mock(return_value=Mock())
     logger.info = Mock()
@@ -29,7 +29,7 @@ def mock_logger():
 
 @pytest.fixture
 def mock_settings_manager():
-    """Создает мок settings_manager"""
+    """Creates mock settings_manager"""
     settings_manager = Mock(spec=SettingsManager)
     settings_manager.get_plugin_settings = Mock(return_value={
         'default_queue': 'action',
@@ -45,7 +45,7 @@ def mock_settings_manager():
 
 @pytest.fixture
 def task_manager_kwargs(mock_logger, mock_settings_manager):
-    """Создает kwargs для инициализации TaskManager"""
+    """Creates kwargs for TaskManager initialization"""
     return {
         'logger': mock_logger,
         'settings_manager': mock_settings_manager

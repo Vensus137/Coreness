@@ -1,22 +1,22 @@
 """
-Арифметические модификаторы
+Arithmetic modifiers
 """
 from typing import Any, Union
 
 
 class ArithmeticModifiers:
-    """Класс с арифметическими модификаторами"""
+    """Class with arithmetic modifiers"""
     
     def __init__(self, logger):
         self.logger = logger
     
     def modifier_divide(self, value: Any, param: str) -> Union[float, None]:
-        """Деление: {field|/value}"""
+        """Division: {field|/value}"""
         if value is None:
             return None
         try:
             result = float(value) / float(param)
-            # Если результат целое число, возвращаем int
+            # If result is whole number, return int
             if result.is_integer():
                 return int(result)
             return result
@@ -24,12 +24,12 @@ class ArithmeticModifiers:
             return value
     
     def modifier_add(self, value: Any, param: str) -> Union[float, None]:
-        """Сложение: {field|+value}"""
+        """Addition: {field|+value}"""
         if value is None:
             return None
         try:
             result = float(value) + float(param)
-            # Если результат целое число, возвращаем int
+            # If result is whole number, return int
             if result.is_integer():
                 return int(result)
             return result
@@ -37,12 +37,12 @@ class ArithmeticModifiers:
             return value
     
     def modifier_subtract(self, value: Any, param: str) -> Union[float, None]:
-        """Вычитание: {field|-value}"""
+        """Subtraction: {field|-value}"""
         if value is None:
             return None
         try:
             result = float(value) - float(param)
-            # Если результат целое число, возвращаем int
+            # If result is whole number, return int
             if result.is_integer():
                 return int(result)
             return result
@@ -50,12 +50,12 @@ class ArithmeticModifiers:
             return value
     
     def modifier_multiply(self, value: Any, param: str) -> Union[float, None]:
-        """Умножение: {field|*value}"""
+        """Multiplication: {field|*value}"""
         if value is None:
             return None
         try:
             result = float(value) * float(param)
-            # Если результат целое число, возвращаем int
+            # If result is whole number, return int
             if result.is_integer():
                 return int(result)
             return result
@@ -63,7 +63,7 @@ class ArithmeticModifiers:
             return value
     
     def modifier_modulo(self, value: Any, param: str) -> int:
-        """Остаток от деления: {field|%value}"""
+        """Modulo: {field|%value}"""
         if value is None:
             return None
         try:

@@ -1,6 +1,6 @@
 """
-Тесты сложных сценариев PlaceholderProcessor
-Тесты 20-24: Сложные комбинации, асинхронные модификаторы, глубокая вложенность, реальные сценарии
+Complex scenario tests for PlaceholderProcessor
+Tests 20-24: Complex combinations, async modifiers, deep nesting, real-world scenarios
 """
 
 from conftest import assert_equal
@@ -8,8 +8,8 @@ import asyncio
 
 
 def test_modifiers_expand_detailed(processor):
-    """Тест 20: Модификатор expand (детальные тесты)"""
-    # Простой массив массивов
+    """Test 20: expand modifier (detailed tests)"""
+    # Simple array of arrays
     values_dict = {
         'keyboard': [[{'Button 1': 'action1'}, {'Button 2': 'action2'}], [{'Button 3': 'action3'}]],
     }
@@ -17,44 +17,44 @@ def test_modifiers_expand_detailed(processor):
     result = processor.process_placeholders(data, values_dict)
     inline_result = result.get('inline', [])
     
-    # КРИТИЧЕСКИЙ ТЕСТ: Проверяем что результат - список (не строка!)
-    assert isinstance(inline_result, list), "expand возвращает список, а не строку"
+    # CRITICAL TEST: Check that result is list (not string!)
+    assert isinstance(inline_result, list), "expand returns list, not string"
     
-    # Проверяем что развернуто правильно: должно быть 2 строки из keyboard + 1 статичная = 3 элемента
-    assert_equal(len(inline_result), 3, "expand разворачивает массив массивов")
+    # Check that expansion is correct: should be 2 rows from keyboard + 1 static = 3 elements
+    assert_equal(len(inline_result), 3, "expand expands array of arrays")
     
-    # КРИТИЧЕСКИЙ ТЕСТ: Проверяем что первый элемент - список (не строка!)
-    assert isinstance(inline_result[0], list), "expand первый элемент - список, а не строка"
+    # CRITICAL TEST: Check that first element is list (not string!)
+    assert isinstance(inline_result[0], list), "expand first element is list, not string"
     
-    # Проверяем что первая строка содержит Button 1 и Button 2
-    assert inline_result[0] == [{'Button 1': 'action1'}, {'Button 2': 'action2'}], "expand первая строка"
-    assert_equal(inline_result[1], [{'Button 3': 'action3'}], "expand вторая строка")
-    assert_equal(inline_result[2], {'Back': 'back'}, "expand статичный элемент")
+    # Check that first row contains Button 1 and Button 2
+    assert inline_result[0] == [{'Button 1': 'action1'}, {'Button 2': 'action2'}], "expand first row"
+    assert_equal(inline_result[1], [{'Button 3': 'action3'}], "expand second row")
+    assert_equal(inline_result[2], {'Back': 'back'}, "expand static element")
     
-    # Пустой массив массивов
+    # Empty array of arrays
     values_dict2 = {
         'empty_keyboard': [],
     }
     data2 = {'inline': ['{empty_keyboard|expand}', {'Back': 'back'}]}
     result2 = processor.process_placeholders(data2, values_dict2)
     inline_result2 = result2.get('inline', [])
-    # Пустой массив разворачивается в пустой список, но статичный элемент остается
-    assert isinstance(inline_result2, list), "expand с пустым массивом возвращает список"
+    # Empty array expands to empty list, but static element remains
+    assert isinstance(inline_result2, list), "expand with empty array returns list"
     
-    # Обычный массив (не массив массивов) не разворачивается
+    # Regular array (not array of arrays) is not expanded
     values_dict3 = {
         'simple_array': [1, 2, 3],
     }
     data3 = {'inline': ['{simple_array|expand}', {'Back': 'back'}]}
     result3 = processor.process_placeholders(data3, values_dict3)
     inline_result3 = result3.get('inline', [])
-    # Обычный массив остается как есть
-    assert isinstance(inline_result3, list), "expand с обычным массивом возвращает список"
-    # Проверяем что первый элемент - список (не строка!)
+    # Regular array remains as is
+    assert isinstance(inline_result3, list), "expand with regular array returns list"
+    # Check that first element is list (not string!)
     if len(inline_result3) > 0:
-        assert isinstance(inline_result3[0], (list, int)), "expand с обычным массивом первый элемент - список или число, не строка"
+        assert isinstance(inline_result3[0], (list, int)), "expand with regular array first element is list or number, not string"
     
-    # Множественные expand
+    # Multiple expand
     values_dict4 = {
         'kb1': [[{'A': 'a'}]],
         'kb2': [[{'B': 'b'}]],
@@ -62,12 +62,12 @@ def test_modifiers_expand_detailed(processor):
     data4 = {'inline': ['{kb1|expand}', '{kb2|expand}', {'Back': 'back'}]}
     result4 = processor.process_placeholders(data4, values_dict4)
     inline_result4 = result4.get('inline', [])
-    assert_equal(len(inline_result4), 3, "expand с множественными массивами")
-    # Проверяем что все элементы - списки или словари (не строки!)
+    assert_equal(len(inline_result4), 3, "expand with multiple arrays")
+    # Check that all elements are lists or dictionaries (not strings!)
     for i, item in enumerate(inline_result4):
-        assert isinstance(item, (list, dict)), f"expand множественные массивы элемент {i} - список или словарь, не строка"
+        assert isinstance(item, (list, dict)), f"expand multiple arrays element {i} is list or dict, not string"
     
-    # КРИТИЧЕСКИЙ ТЕСТ: Проверка что expand с модификатором в _complex_replace возвращает массив, а не строку
+    # CRITICAL TEST: Check that expand with modifier in _complex_replace returns array, not string
     values_dict5 = {
         '_cache': {
             'keyboard': [[{'Tenant 1': 'select_tenant_1'}, {'Tenant 2': 'select_tenant_2'}], [{'Tenant 3': 'select_tenant_3'}]]
@@ -77,24 +77,24 @@ def test_modifiers_expand_detailed(processor):
     result5 = processor.process_placeholders(data5, values_dict5)
     inline_result5 = result5.get('inline', [])
     
-    # Проверяем что результат - список
-    assert isinstance(inline_result5, list), "expand с точечной нотацией возвращает список, а не строку"
+    # Check that result is list
+    assert isinstance(inline_result5, list), "expand with dot notation returns list, not string"
     
-    # Проверяем что первый элемент - список (не строка!)
+    # Check that first element is list (not string!)
     if len(inline_result5) > 0:
-        assert isinstance(inline_result5[0], list), "expand с точечной нотацией первый элемент - список, а не строка"
-        # Проверяем содержимое первого элемента
+        assert isinstance(inline_result5[0], list), "expand with dot notation first element is list, not string"
+        # Check first element content
         if isinstance(inline_result5[0], list) and len(inline_result5[0]) > 0:
-            assert isinstance(inline_result5[0][0], dict), "expand с точечной нотацией первый элемент первого ряда - словарь"
+            assert isinstance(inline_result5[0][0], dict), "expand with dot notation first element of first row is dict"
     
-    # Проверяем корректность разворачивания
+    # Check expansion correctness
     if len(inline_result5) >= 2:
-        assert inline_result5[0] == [{'Tenant 1': 'select_tenant_1'}, {'Tenant 2': 'select_tenant_2'}], "expand с точечной нотацией первая строка"
-        assert_equal(inline_result5[1], [{'Tenant 3': 'select_tenant_3'}], "expand с точечной нотацией вторая строка")
+        assert inline_result5[0] == [{'Tenant 1': 'select_tenant_1'}, {'Tenant 2': 'select_tenant_2'}], "expand with dot notation first row"
+        assert_equal(inline_result5[1], [{'Tenant 3': 'select_tenant_3'}], "expand with dot notation second row")
 
 
 def test_complex_combinations(processor):
-    """Тест 21: Сложные комбинации модификаторов"""
+    """Test 21: Complex modifier combinations"""
     values_dict = {
         'price': 1000,
         'discount': 0.1,
@@ -105,50 +105,50 @@ def test_complex_combinations(processor):
         'field': None,
     }
     
-    # Сложная цепочка: цена со скидкой, форматирование, code
+    # Complex chain: price with discount, formatting, code
     result = processor.process_text_placeholders("{price|*{discount}|format:currency|code}", values_dict)
-    assert "<code>" in result, "Сложная цепочка содержит code"
-    assert "₽" in result, "Сложная цепочка содержит валюту"
+    assert "<code>" in result, "Complex chain contains code"
+    assert "₽" in result, "Complex chain contains currency"
     
-    # Условная подстановка с проверкой существования
-    result = processor.process_text_placeholders("{field|exists|value:Есть|fallback:Нет}", values_dict)
-    assert_equal(result, "Нет", "Условная подстановка с exists (False)")
+    # Conditional substitution with existence check
+    result = processor.process_text_placeholders("{field|exists|value:Exists|fallback:No}", values_dict)
+    assert_equal(result, "No", "Conditional substitution with exists (False)")
     
-    # Проверка is_null с условной подстановкой
-    result = processor.process_text_placeholders("{field|is_null|value:Пусто|fallback:Заполнено}", values_dict)
-    assert_equal(result, "Пусто", "is_null с условной подстановкой (True)")
+    # is_null check with conditional substitution
+    result = processor.process_text_placeholders("{field|is_null|value:Empty|fallback:Filled}", values_dict)
+    assert_equal(result, "Empty", "is_null with conditional substitution (True)")
     
-    # Время с преобразованием и форматированием
+    # Time with conversion and formatting
     result = processor.process_text_placeholders("{duration|seconds|/60}", values_dict)
-    assert_equal(result, 150, "Время с преобразованием в минуты")
+    assert_equal(result, 150, "Time with conversion to minutes")
     
-    # Regex с последующим форматированием
+    # Regex with subsequent formatting
     result = processor.process_text_placeholders("{text|regex:\\w+|upper}", values_dict)
-    assert_equal(result, "HELLO", "Regex с upper")
+    assert_equal(result, "HELLO", "Regex with upper")
     
-    # Список с code и list
+    # List with code and list
     result = processor.process_text_placeholders("{users|list|code}", values_dict)
-    assert "<code>" in result, "Список с list и code"
-    assert "•" in result, "Список с list и code содержит маркеры"
+    assert "<code>" in result, "List with list and code"
+    assert "•" in result, "List with list and code contains markers"
     
-    # Вложенные плейсхолдеры в сложной цепочке
+    # Nested placeholders in complex chain
     values_dict['discount_rate'] = 0.9
     result = processor.process_text_placeholders("{price|*{discount_rate}|format:currency}", values_dict)
-    assert "₽" in result, "Вложенные плейсхолдеры в арифметике"
+    assert "₽" in result, "Nested placeholders in arithmetic"
     
-    # Комбинация equals, value, fallback с вложенными плейсхолдерами
+    # Combination equals, value, fallback with nested placeholders
     values_dict['expected_status'] = 'active'
-    result = processor.process_text_placeholders("{status|equals:{expected_status}|value:ОК|fallback:Ошибка}", values_dict)
-    assert_equal(result, "ОК", "Сложная условная цепочка с вложенными плейсхолдерами")
+    result = processor.process_text_placeholders("{status|equals:{expected_status}|value:OK|fallback:Error}", values_dict)
+    assert_equal(result, "OK", "Complex conditional chain with nested placeholders")
 
 
 def test_async_modifiers(processor):
-    """Тест 22: Модификаторы ready и not_ready"""
-    # Создаем завершенный Future
+    """Test 22: ready and not_ready modifiers"""
+    # Create completed Future
     completed_future = asyncio.Future()
     completed_future.set_result("completed")
     
-    # Создаем незавершенный Future
+    # Create pending Future
     pending_future = asyncio.Future()
     
     values_dict = {
@@ -157,33 +157,33 @@ def test_async_modifiers(processor):
         'not_future': 'not a future',
     }
     
-    # ready для завершенного Future
+    # ready for completed Future
     result = processor.process_text_placeholders("{completed_action|ready}", values_dict)
-    assert_equal(result, True, "ready для завершенного Future")
+    assert_equal(result, True, "ready for completed Future")
     
-    # ready для незавершенного Future
+    # ready for pending Future
     result = processor.process_text_placeholders("{pending_action|ready}", values_dict)
-    assert_equal(result, False, "ready для незавершенного Future")
+    assert_equal(result, False, "ready for pending Future")
     
-    # not_ready для завершенного Future
+    # not_ready for completed Future
     result = processor.process_text_placeholders("{completed_action|not_ready}", values_dict)
-    assert_equal(result, False, "not_ready для завершенного Future")
+    assert_equal(result, False, "not_ready for completed Future")
     
-    # not_ready для незавершенного Future
+    # not_ready for pending Future
     result = processor.process_text_placeholders("{pending_action|not_ready}", values_dict)
-    assert_equal(result, True, "not_ready для незавершенного Future")
+    assert_equal(result, True, "not_ready for pending Future")
     
-    # ready для не-Future объекта
+    # ready for non-Future object
     result = processor.process_text_placeholders("{not_future|ready}", values_dict)
-    assert_equal(result, False, "ready для не-Future объекта")
+    assert_equal(result, False, "ready for non-Future object")
     
-    # not_ready для не-Future объекта
+    # not_ready for non-Future object
     result = processor.process_text_placeholders("{not_future|not_ready}", values_dict)
-    assert_equal(result, False, "not_ready для не-Future объекта")
+    assert_equal(result, False, "not_ready for non-Future object")
 
 
 def test_deep_nesting(processor):
-    """Тест 23: Глубокая вложенность плейсхолдеров"""
+    """Test 23: Deep placeholder nesting"""
     values_dict = {
         'a': 10,
         'b': 5,
@@ -195,70 +195,70 @@ def test_deep_nesting(processor):
         'format_type': 'currency',
     }
     
-    # Многоуровневая вложенность в арифметике
+    # Multilevel nesting in arithmetic
     result = processor.process_text_placeholders("{a|+{b}|*{c}}", values_dict)
-    assert_equal(result, 30, "Многоуровневая вложенность в арифметике")
+    assert_equal(result, 30, "Multilevel nesting in arithmetic")
     
-    # Вложенные плейсхолдеры в пути
+    # Nested placeholders in path
     result = processor.process_text_placeholders("{{field1}}", values_dict)
-    # Это должно разрешиться в 'price', затем найти {price} = 1000
-    # Просто проверяем что не падает
-    assert result is not None, "Вложенные плейсхолдеры в пути"
+    # This should resolve to 'price', then find {price} = 1000
+    # Just check it doesn't crash
+    assert result is not None, "Nested placeholders in path"
     
-    # Вложенные плейсхолдеры в fallback
+    # Nested placeholders in fallback
     result = processor.process_text_placeholders("{nonexistent|fallback:{{field1}}}", values_dict)
-    # Вложенный плейсхолдер в fallback разрешается: {field1} -> 'price', затем {price} -> 1000
-    # Просто проверяем что не падает
-    assert result is not None, "Вложенные плейсхолдеры в fallback"
+    # Nested placeholder in fallback resolves: {field1} -> 'price', then {price} -> 1000
+    # Just check it doesn't crash
+    assert result is not None, "Nested placeholders in fallback"
     
-    # Вложенные плейсхолдеры в условных модификаторах
-    result = processor.process_text_placeholders("{field1|equals:{field1}|value:Совпадает|fallback:Не совпадает}", values_dict)
-    assert_equal(result, "Совпадает", "Вложенные плейсхолдеры в equals")
+    # Nested placeholders in conditional modifiers
+    result = processor.process_text_placeholders("{field1|equals:{field1}|value:Matches|fallback:Does not match}", values_dict)
+    assert_equal(result, "Matches", "Nested placeholders in equals")
     
-    # Комплексная цепочка с вложенными плейсхолдерами
+    # Complex chain with nested placeholders
     # {field1} -> 'price', {field2} -> 'discount', {format_type} -> 'currency'
-    # Затем {price} -> 1000, {discount} -> 0.1, итого 1000 * 0.1 = 100
+    # Then {price} -> 1000, {discount} -> 0.1, total 1000 * 0.1 = 100
     result = processor.process_text_placeholders("{{field1}|*{{field2}}|format:{{format_type}}}", values_dict)
-    # Результат может быть форматированным или числом в зависимости от порядка разрешения
-    # Просто проверяем что не падает
-    assert result is not None, "Комплексная цепочка с вложенными плейсхолдерами"
+    # Result may be formatted or number depending on resolution order
+    # Just check it doesn't crash
+    assert result is not None, "Complex chain with nested placeholders"
 
 
 def test_real_world_scenarios(processor):
-    """Тест 24: Реальные сценарии использования"""
-    # Сценарий 1: Форматирование цены со скидкой
+    """Test 24: Real-world usage scenarios"""
+    # Scenario 1: Price formatting with discount
     values_dict1 = {
         'price': 1000,
         'discount': 0.15,
     }
     result = processor.process_text_placeholders("{price|*{discount}|format:currency}", values_dict1)
-    assert "₽" in result, "Реальный сценарий: цена со скидкой"
+    assert "₽" in result, "Real scenario: price with discount"
     
-    # Сценарий 2: Условное сообщение на основе статуса
+    # Scenario 2: Conditional message based on status
     values_dict2 = {
         'status': 'active',
         'user_name': 'John',
     }
-    result = processor.process_text_placeholders("{status|equals:active|value:Пользователь {user_name} активен|fallback:Пользователь {user_name} неактивен}", values_dict2)
-    assert "John" in result, "Реальный сценарий: условное сообщение"
-    assert "активен" in result, "Реальный сценарий: условное сообщение содержит статус"
+    result = processor.process_text_placeholders("{status|equals:active|value:User {user_name} is active|fallback:User {user_name} is inactive}", values_dict2)
+    assert "John" in result, "Real scenario: conditional message"
+    assert "active" in result, "Real scenario: conditional message contains status"
     
-    # Сценарий 3: Форматирование списка пользователей
+    # Scenario 3: User list formatting
     values_dict3 = {
         'users': ['john', 'jane', 'bob'],
     }
-    result = processor.process_text_placeholders("Пользователи: {users|comma}", values_dict3)
-    assert "john" in result, "Реальный сценарий: список пользователей"
-    assert "," in result, "Реальный сценарий: список пользователей содержит запятые"
+    result = processor.process_text_placeholders("Users: {users|comma}", values_dict3)
+    assert "john" in result, "Real scenario: user list"
+    assert "," in result, "Real scenario: user list contains commas"
     
-    # Сценарий 4: Обработка времени с преобразованием
+    # Scenario 4: Time processing with conversion
     values_dict4 = {
         'duration': '2h 30m',
     }
     result = processor.process_text_placeholders("{duration|seconds|/60}", values_dict4)
-    assert_equal(result, 150, "Реальный сценарий: преобразование времени в минуты")
+    assert_equal(result, 150, "Real scenario: time conversion to minutes")
     
-    # Сценарий 5: Безопасный доступ к вложенным полям с fallback
+    # Scenario 5: Safe access to nested fields with fallback
     values_dict5 = {
         'user': {
             'profile': {
@@ -266,16 +266,16 @@ def test_real_world_scenarios(processor):
             }
         }
     }
-    result = processor.process_text_placeholders("{user.profile.name|fallback:Неизвестный}", values_dict5)
-    assert_equal(result, "John", "Реальный сценарий: безопасный доступ к вложенным полям")
+    result = processor.process_text_placeholders("{user.profile.name|fallback:Unknown}", values_dict5)
+    assert_equal(result, "John", "Real scenario: safe access to nested fields")
     
-    result = processor.process_text_placeholders("{user.profile.email|fallback:Не указан}", values_dict5)
-    assert_equal(result, "Не указан", "Реальный сценарий: fallback для отсутствующего поля")
+    result = processor.process_text_placeholders("{user.profile.email|fallback:Not specified}", values_dict5)
+    assert_equal(result, "Not specified", "Real scenario: fallback for missing field")
     
-    # Сценарий 6: Обработка массива с форматированием
+    # Scenario 6: Array element formatting
     values_dict6 = {
         'items': [100, 200, 300],
     }
     result = processor.process_text_placeholders("{items[0]|format:currency}", values_dict6)
-    assert "₽" in result, "Реальный сценарий: форматирование элемента массива"
+    assert "₽" in result, "Real scenario: array element formatting"
 

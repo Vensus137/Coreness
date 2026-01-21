@@ -1,6 +1,6 @@
 """
-Event Processor - сервис для обработки событий от пулинга
-Обертка над core модулями для интеграции с ActionHub
+Event Processor - service for processing events from polling
+Wrapper over core modules for ActionHub integration
 """
 
 from typing import Any, Dict
@@ -10,8 +10,8 @@ from .core.event_handler import EventHandler
 
 class EventProcessor:
     """
-    Сервис для обработки событий от пулинга
-    Обертка над core модулями для интеграции с ActionHub
+    Service for processing events from polling
+    Wrapper over core modules for ActionHub integration
     """
     
     def __init__(self, **kwargs):
@@ -19,7 +19,7 @@ class EventProcessor:
         self.settings_manager = kwargs['settings_manager']
         self.action_hub = kwargs['action_hub']
         
-        # Создаем обработчик событий
+        # Create event handler
         self.event_handler = EventHandler(
             logger=self.logger,
             action_hub=self.action_hub,
@@ -31,50 +31,50 @@ class EventProcessor:
             cache_manager=kwargs['cache_manager']
         )
         
-        # Регистрируем себя в ActionHub
+        # Register ourselves in ActionHub
         self.action_hub.register('event_processor', self)
     
     def shutdown(self):
-        """Синхронный graceful shutdown сервиса"""
-        self.logger.info("Останавливаем сервис...")
-        # Очищаем ресурсы через event_handler
+        """Synchronous graceful service shutdown"""
+        self.logger.info("Stopping service...")
+        # Clean up resources through event_handler
         import asyncio
         try:
-            # Пытаемся очистить ресурсы в существующем event loop
+            # Try to clean up resources in existing event loop
             loop = asyncio.get_event_loop()
             if loop.is_running():
-                # Если loop запущен, создаем задачу для очистки
+                # If loop running, create task for cleanup
                 loop.create_task(self.event_handler.cleanup())
             else:
-                # Если loop не запущен, запускаем его для очистки
+                # If loop not running, run it for cleanup
                 loop.run_until_complete(self.event_handler.cleanup())
         except RuntimeError:
-            # Если нет event loop, создаем новый
+            # If no event loop, create new one
             asyncio.run(self.event_handler.cleanup())
         except Exception as e:
-            self.logger.warning(f"Ошибка очистки ресурсов: {e}")
+            self.logger.warning(f"Error cleaning up resources: {e}")
         
-        self.logger.info("Сервис остановлен")
+        self.logger.info("Service stopped")
     
-    # === Actions для ActionHub ===
+    # === Actions for ActionHub ===
     
     async def process_event(self, data: dict) -> Dict[str, Any]:
         """
-        Обработка события от пулинга
+        Process event from polling
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
-            # Обрабатываем событие через event_handler
+            # Validation is done centrally in ActionRegistry
+            # Process event through event_handler
             await self.event_handler.handle_raw_event(data)
             
             return {"result": "success"}
                 
         except Exception as e:
-            self.logger.error(f"Ошибка обработки события: {e}")
+            self.logger.error(f"Error processing event: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }

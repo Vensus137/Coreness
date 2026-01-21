@@ -1,5 +1,5 @@
 """
-Unit-тесты для WebhookManager
+Unit tests for WebhookManager
 """
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
@@ -10,7 +10,7 @@ from modules.webhook_manager import WebhookManager
 
 @pytest.fixture
 def mock_cache_manager():
-    """Создает мок CacheManager"""
+    """Create mock CacheManager"""
     mock = MagicMock()
     mock.set = AsyncMock(return_value=True)
     mock.get = AsyncMock(return_value=None)
@@ -19,7 +19,7 @@ def mock_cache_manager():
 
 @pytest.fixture
 def mock_logger():
-    """Создает мок логгера"""
+    """Create mock logger"""
     logger = Mock()
     logger.info = Mock()
     logger.warning = Mock()
@@ -29,7 +29,7 @@ def mock_logger():
 
 @pytest.fixture
 def mock_settings_manager():
-    """Создает мок SettingsManager"""
+    """Create mock SettingsManager"""
     mock = MagicMock()
     mock.get_plugin_settings = Mock(return_value={
         'cache_ttl': 315360000,
@@ -40,7 +40,7 @@ def mock_settings_manager():
 
 @pytest.fixture
 def mock_http_server():
-    """Создает мок HTTPServer"""
+    """Create mock HTTPServer"""
     mock = MagicMock()
     mock.get_webhook_url = Mock(return_value='https://123.45.67.89:8443/webhooks/telegram')
     mock.get_certificate = Mock(return_value=(b'cert_pem', b'key_pem'))
@@ -49,7 +49,7 @@ def mock_http_server():
 
 @pytest.fixture
 def webhook_manager(mock_cache_manager, mock_logger, mock_settings_manager, mock_http_server):
-    """Создает экземпляр WebhookManager"""
+    """Create WebhookManager instance"""
     return WebhookManager(
         mock_cache_manager,
         mock_logger,
@@ -59,32 +59,32 @@ def webhook_manager(mock_cache_manager, mock_logger, mock_settings_manager, mock
 
 
 def test_generate_secret_token(webhook_manager):
-    """Тест генерации secret_token"""
+    """Test secret_token generation"""
     bot_id = 123
     secret_token = webhook_manager._generate_secret_token(bot_id)
     
-    # Проверяем что токен - это MD5 хэш
-    assert len(secret_token) == 32  # MD5 hex = 32 символа
+    # Check that token is MD5 hash
+    assert len(secret_token) == 32  # MD5 hex = 32 characters
     assert secret_token.isalnum() or all(c in '0123456789abcdef' for c in secret_token)
     
-    # Проверяем что для одного bot_id и startup_timestamp токен одинаковый
+    # Check that for same bot_id and startup_timestamp token is same
     token2 = webhook_manager._generate_secret_token(bot_id)
     assert secret_token == token2
     
-    # Проверяем что для разных bot_id токены разные
+    # Check that for different bot_id tokens are different
     token3 = webhook_manager._generate_secret_token(456)
     assert secret_token != token3
 
 
 @pytest.mark.asyncio
 async def test_save_secret_token(webhook_manager, mock_cache_manager):
-    """Тест сохранения secret_token в кэш"""
+    """Test saving secret_token to cache"""
     secret_token = "test_secret_token"
     bot_id = 123
     
     await webhook_manager._save_secret_token(secret_token, bot_id)
     
-    # Проверяем что set был вызван с правильными параметрами
+    # Check that set was called with correct parameters
     mock_cache_manager.set.assert_called_once()
     call_args = mock_cache_manager.set.call_args[0]
     assert 'webhook_secret:test_secret_token' in call_args[0]
@@ -93,7 +93,7 @@ async def test_save_secret_token(webhook_manager, mock_cache_manager):
 
 @pytest.mark.asyncio
 async def test_get_bot_id_by_secret_token_found(webhook_manager, mock_cache_manager):
-    """Тест получения bot_id по secret_token (найден)"""
+    """Test getting bot_id by secret_token (found)"""
     secret_token = "test_secret_token"
     bot_id = 123
     mock_cache_manager.get = AsyncMock(return_value=bot_id)
@@ -106,7 +106,7 @@ async def test_get_bot_id_by_secret_token_found(webhook_manager, mock_cache_mana
 
 @pytest.mark.asyncio
 async def test_get_bot_id_by_secret_token_not_found(webhook_manager, mock_cache_manager):
-    """Тест получения bot_id по secret_token (не найден)"""
+    """Test getting bot_id by secret_token (not found)"""
     secret_token = "test_secret_token"
     mock_cache_manager.get = AsyncMock(return_value=None)
     
@@ -118,21 +118,21 @@ async def test_get_bot_id_by_secret_token_not_found(webhook_manager, mock_cache_
 
 @pytest.mark.asyncio
 async def test_set_webhook_success(webhook_manager, mock_http_server, mock_cache_manager):
-    """Тест успешной установки вебхука"""
+    """Test successful webhook setup"""
     bot_id = 123
     bot_token = "123456:ABC-DEF"
     
-    # Мокаем успешный ответ от Telegram API
+    # Mock successful response from Telegram API
     mock_response = Mock()
     mock_response.json = AsyncMock(return_value={'ok': True})
     mock_response.status = 200
     mock_response.__aenter__ = AsyncMock(return_value=mock_response)
     mock_response.__aexit__ = AsyncMock(return_value=False)
     
-    # Мокаем post метод который возвращает context manager
+    # Mock post method that returns context manager
     mock_post = Mock(return_value=mock_response)
     
-    # Мокаем session
+    # Mock session
     mock_session = Mock()
     mock_session.post = mock_post
     mock_session.__aenter__ = AsyncMock(return_value=mock_session)
@@ -145,15 +145,15 @@ async def test_set_webhook_success(webhook_manager, mock_http_server, mock_cache
         assert 'webhook_url' in result['response_data']
         assert 'secret_token' in result['response_data']
         
-        # Проверяем что secret_token был сохранен в кэш
+        # Check that secret_token was saved to cache
         mock_cache_manager.set.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_set_webhook_no_http_server(mock_cache_manager, mock_logger, mock_settings_manager):
-    """Тест установки вебхука без http_server (http_server теперь обязателен, но для теста создаем с None)"""
+    """Test webhook setup without http_server (http_server is now required, but for test create with None)"""
     from modules.webhook_manager import WebhookManager
-    # Создаем WebhookManager с None для теста (в реальном коде это не должно происходить)
+    # Create WebhookManager with None for test (in real code this should not happen)
     webhook_manager = WebhookManager(mock_cache_manager, mock_logger, mock_settings_manager, None)
     bot_id = 123
     bot_token = "123456:ABC-DEF"
@@ -166,7 +166,7 @@ async def test_set_webhook_no_http_server(mock_cache_manager, mock_logger, mock_
 
 @pytest.mark.asyncio
 async def test_set_webhook_no_external_url(webhook_manager, mock_http_server):
-    """Тест установки вебхука без external_url"""
+    """Test webhook setup without external_url"""
     mock_http_server.get_webhook_url = Mock(return_value=None)
     bot_id = 123
     bot_token = "123456:ABC-DEF"
@@ -179,11 +179,11 @@ async def test_set_webhook_no_external_url(webhook_manager, mock_http_server):
 
 @pytest.mark.asyncio
 async def test_set_webhook_telegram_api_error(webhook_manager, mock_http_server, mock_cache_manager):
-    """Тест установки вебхука с ошибкой Telegram API"""
+    """Test webhook setup with Telegram API error"""
     bot_id = 123
     bot_token = "123456:ABC-DEF"
     
-    # Мокаем ошибку от Telegram API
+    # Mock error from Telegram API
     mock_response = Mock()
     mock_response.json = AsyncMock(return_value={
         'ok': False,
@@ -210,11 +210,11 @@ async def test_set_webhook_telegram_api_error(webhook_manager, mock_http_server,
 
 @pytest.mark.asyncio
 async def test_set_webhook_conflict_409(webhook_manager, mock_http_server, mock_cache_manager):
-    """Тест установки вебхука с конфликтом (409)"""
+    """Test webhook setup with conflict (409)"""
     bot_id = 123
     bot_token = "123456:ABC-DEF"
     
-    # Первый ответ - конфликт 409
+    # First response - conflict 409
     mock_response_409 = Mock()
     mock_response_409.json = AsyncMock(return_value={
         'ok': False,
@@ -224,13 +224,13 @@ async def test_set_webhook_conflict_409(webhook_manager, mock_http_server, mock_
     mock_response_409.__aenter__ = AsyncMock(return_value=mock_response_409)
     mock_response_409.__aexit__ = AsyncMock(return_value=False)
     
-    # Второй ответ после удаления - успех
+    # Second response after deletion - success
     mock_response_success = Mock()
     mock_response_success.json = AsyncMock(return_value={'ok': True})
     mock_response_success.__aenter__ = AsyncMock(return_value=mock_response_success)
     mock_response_success.__aexit__ = AsyncMock(return_value=False)
     
-    # Мокаем delete_webhook
+    # Mock delete_webhook
     mock_response_delete = Mock()
     mock_response_delete.json = AsyncMock(return_value={'ok': True})
     mock_response_delete.__aenter__ = AsyncMock(return_value=mock_response_delete)
@@ -245,17 +245,17 @@ async def test_set_webhook_conflict_409(webhook_manager, mock_http_server, mock_
     with patch('modules.webhook_manager.aiohttp.ClientSession', return_value=mock_session):
         result = await webhook_manager.set_webhook(bot_id, bot_token)
         
-        # Должен быть успех после обработки конфликта
+        # Should be success after conflict handling
         assert result['result'] == 'success'
 
 
 @pytest.mark.asyncio
 async def test_delete_webhook_success(webhook_manager):
-    """Тест успешного удаления вебхука"""
+    """Test successful webhook deletion"""
     bot_token = "123456:ABC-DEF"
     bot_id = 123
     
-    # Мокаем успешный ответ от Telegram API
+    # Mock successful response from Telegram API
     mock_response = Mock()
     mock_response.json = AsyncMock(return_value={'ok': True})
     mock_response.__aenter__ = AsyncMock(return_value=mock_response)
@@ -275,11 +275,11 @@ async def test_delete_webhook_success(webhook_manager):
 
 @pytest.mark.asyncio
 async def test_delete_webhook_already_deleted(webhook_manager):
-    """Тест удаления вебхука который уже удален"""
+    """Test deleting webhook that is already deleted"""
     bot_token = "123456:ABC-DEF"
     bot_id = 123
     
-    # Мокаем ответ что вебхук уже удален
+    # Mock response that webhook is already deleted
     mock_response = Mock()
     mock_response.json = AsyncMock(return_value={
         'ok': False,
@@ -297,6 +297,6 @@ async def test_delete_webhook_already_deleted(webhook_manager):
     with patch('modules.webhook_manager.aiohttp.ClientSession', return_value=mock_session):
         result = await webhook_manager.delete_webhook(bot_token, bot_id)
         
-        # Должен вернуть success даже если уже удален
+        # Should return success even if already deleted
         assert result['result'] == 'success'
 

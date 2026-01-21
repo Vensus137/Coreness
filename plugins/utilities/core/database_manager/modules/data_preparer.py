@@ -8,17 +8,17 @@ from sqlalchemy.orm import DeclarativeMeta
 
 class DataPreparer:
     """
-    Подготовщик данных для работы с SQLAlchemy моделями.
-    Автоматически приводит данные к нужным типам на основе схемы таблицы.
+    Data preparer for working with SQLAlchemy models.
+    Automatically converts data to required types based on table schema.
     """
     
     def __init__(self, **kwargs):
         self.logger = kwargs['logger']
         self.datetime_formatter = kwargs['datetime_formatter']
-        self._model_fields_cache = {}  # Кэш полей моделей
+        self._model_fields_cache = {}  # Model fields cache
     
     def _get_model_fields(self, model: DeclarativeMeta) -> set:
-        """Получает список полей модели с кэшированием."""
+        """Gets list of model fields with caching."""
         model_name = model.__name__
         if model_name not in self._model_fields_cache:
             self._model_fields_cache[model_name] = set(model.__table__.columns.keys())
@@ -26,42 +26,42 @@ class DataPreparer:
     
     async def prepare_for_update(self, model: DeclarativeMeta, fields: Dict[str, Any],
                           json_fields: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
-        """Подготавливает поля для обновления записи с автоматическим добавлением служебных полей."""
-        # Получаем список полей модели
+        """Prepares fields for updating record with automatic addition of service fields."""
+        # Get list of model fields
         model_fields = self._get_model_fields(model)
         
-        # Определяем служебные поля, которые есть в модели
+        # Determine service fields that exist in model
         service_fields = []
         if 'updated_at' in model_fields:
             service_fields.append('updated_at')
         if 'processed_at' in model_fields:
             service_fields.append('processed_at')
         
-        # Исключаем только служебные поля (разрешаем None значения для nullable полей)
+        # Exclude only service fields (allow None values for nullable fields)
         user_fields = {k: v for k, v in fields.items() if k not in service_fields}
         if not user_fields:
-            return None  # Нет полей для обновления
+            return None  # No fields to update
         
-        # Добавляем служебные поля если их нет
-        all_fields = user_fields.copy()  # Используем все поля (включая None для nullable полей)
+        # Add service fields if they don't exist
+        all_fields = user_fields.copy()  # Use all fields (including None for nullable fields)
         for service_field in service_fields:
             if service_field not in all_fields:
                 all_fields[service_field] = await self.datetime_formatter.now_local()
         
-        # Подготавливаем поля с флагом is_update=True
+        # Prepare fields with is_update=True flag
         return await self.prepare_fields(model, all_fields, json_fields=json_fields, is_update=True)
     
     async def prepare_for_insert(self, model: DeclarativeMeta, fields: Dict[str, Any],
                           json_fields: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
-        """Подготавливает поля для создания новой записи с автоматическим добавлением служебных полей."""
-        # Проверяем, есть ли поля для создания
+        """Prepares fields for creating new record with automatic addition of service fields."""
+        # Check if there are fields for creation
         if not fields:
             return None
         
-        # Получаем список полей модели
+        # Get list of model fields
         model_fields = self._get_model_fields(model)
         
-        # Определяем служебные поля, которые есть в модели
+        # Determine service fields that exist in model
         service_fields = []
         if 'created_at' in model_fields:
             service_fields.append('created_at')
@@ -70,55 +70,55 @@ class DataPreparer:
         if 'processed_at' in model_fields:
             service_fields.append('processed_at')
         
-        # Добавляем служебные поля если их нет
+        # Add service fields if they don't exist
         all_fields = fields.copy()
         for service_field in service_fields:
             if service_field not in all_fields:
                 all_fields[service_field] = await self.datetime_formatter.now_local()
         
-        # Подготавливаем поля с флагом is_update=False
+        # Prepare fields with is_update=False flag
         return await self.prepare_fields(model, all_fields, json_fields=json_fields, is_update=False)
     
     async def prepare_fields(self, model: DeclarativeMeta, fields: Dict[str, Any], 
                       json_fields: Optional[List[str]] = None, is_update: bool = False) -> Optional[Dict[str, Any]]:
-        """Подготавливает поля для создания/обновления записи."""
+        """Prepares fields for creating/updating record."""
         try:
-            # Получаем разрешенные поля из модели
+            # Get allowed fields from model
             allowed_fields = self._get_model_fields(model)
             
-            # 🚀 ИСКЛЮЧАЕМ PRIMARY KEY при обновлении
+            # 🚀 EXCLUDE PRIMARY KEY on update
             pk_columns = set()
             if is_update:
                 pk_columns = {col.name for col in model.__table__.primary_key.columns}
                 allowed_fields = allowed_fields - pk_columns
             
-            # Фильтруем поля
+            # Filter fields
             result = {k: v for k, v in fields.items() if k in allowed_fields}
             ignored_fields = set(fields.keys()) - allowed_fields
             
-            # Исключаем PK колонки из предупреждения - они специально исключены при обновлении
+            # Exclude PK columns from warning - they are specifically excluded on update
             if is_update:
                 ignored_fields = ignored_fields - pk_columns
             
             if ignored_fields:
-                self.logger.warning(f"Игнорируются несуществующие поля: {ignored_fields}")
+                self.logger.warning(f"Ignoring non-existent fields: {ignored_fields}")
             
             if not result:
-                self.logger.warning("Нет валидных полей для обработки")
+                self.logger.warning("No valid fields to process")
                 return None
             
-            # Приводим поля к нужным типам
+            # Convert fields to required types
             result = await self._convert_field_types(model, result, json_fields)
             
             return result
             
         except Exception as e:
-            self.logger.error(f"Ошибка подготовки полей: {e}")
+            self.logger.error(f"Error preparing fields: {e}")
             return None
     
     async def _convert_field_types(self, model: DeclarativeMeta, fields: Dict[str, Any], 
                            json_fields: Optional[List[str]] = None) -> Dict[str, Any]:
-        """Приводит поля к нужным типам на основе схемы таблицы."""
+        """Converts fields to required types based on table schema."""
         result = {}
         
         for field_name, value in fields.items():
@@ -134,77 +134,77 @@ class DataPreparer:
                 converted_value = await self._convert_single_field(column, value, field_name, json_fields)
                 result[field_name] = converted_value
             except Exception as e:
-                self.logger.error(f"Ошибка конвертации поля {field_name}: {e}")
-                result[field_name] = value  # Оставляем исходное значение
+                self.logger.error(f"Error converting field {field_name}: {e}")
+                result[field_name] = value  # Keep original value
         
         return result
     
     async def _convert_single_field(self, column: Column, value: Any, field_name: str, 
                             json_fields: Optional[List[str]] = None) -> Any:
-        """Конвертирует одно поле к нужному типу."""
-        # Определяем тип колонки
+        """Converts single field to required type."""
+        # Determine column type
         column_type = type(column.type)
         
-        # JSON поля
+        # JSON fields
         if json_fields and field_name in json_fields:
-            # Для JSONB колонок SQLAlchemy ожидает Python dict/list, а не JSON строку
+            # For JSONB columns SQLAlchemy expects Python dict/list, not JSON string
             if column_type == JSONB:
                 if isinstance(value, str):
-                    # Если значение - строка, пытаемся распарсить в dict/list
+                    # If value is string, try to parse into dict/list
                     try:
                         return json.loads(value)
                     except json.JSONDecodeError:
-                        self.logger.warning(f"Поле {field_name} содержит невалидный JSON: {value[:100]}...")
+                        self.logger.warning(f"Field {field_name} contains invalid JSON: {value[:100]}...")
                         return value
                 else:
-                    # Если значение уже dict/list - возвращаем как есть
+                    # If value already dict/list - return as is
                     return value
             else:
-                # Для обычных JSON колонок (не JSONB) сериализуем в строку
+                # For regular JSON columns (not JSONB) serialize to string
                 if not isinstance(value, str):
                     result = json.dumps(value, ensure_ascii=False, default=str)
                     return result
                 else:
-                    # Если значение уже строка, проверяем что это валидный JSON
+                    # If value already string, check that it's valid JSON
                     try:
-                        json.loads(value)  # Проверяем валидность
-                        return value  # Возвращаем как есть
+                        json.loads(value)  # Check validity
+                        return value  # Return as is
                     except json.JSONDecodeError:
-                        self.logger.warning(f"Поле {field_name} содержит невалидный JSON: {value[:100]}...")
+                        self.logger.warning(f"Field {field_name} contains invalid JSON: {value[:100]}...")
                         return value
         
-        # Строковые типы
+        # String types
         if column_type in (String, Text, JSON, JSONB):
-            # Для Text колонок: если значение - массив или словарь, сериализуем в JSON строку
+            # For Text columns: if value is array or dictionary, serialize to JSON string
             if column_type == Text and isinstance(value, (list, dict)):
                 return json.dumps(value, ensure_ascii=False, default=str)
             return str(value) if value is not None else None
         
-        # Целочисленные типы
+        # Integer types
         elif column_type in (Integer, BigInteger):
             return int(value) if value is not None else None
         
-        # Булевы типы
+        # Boolean types
         elif column_type == Boolean:
             if value is None:
                 return None
             if isinstance(value, str):
-                # Преобразуем только строки 'true' и 'false' в булевы значения
+                # Convert only strings 'true' and 'false' to boolean values
                 value_lower = value.lower().strip()
                 if value_lower == 'true':
                     return True
                 if value_lower == 'false':
                     return False
-                # Для других строк используем явное приведение
+                # For other strings use explicit conversion
                 return bool(value)
             if isinstance(value, bool):
                 return value
             if isinstance(value, int):
                 return bool(value)
-            # Для других типов используем явное приведение
+            # For other types use explicit conversion
             return bool(value)
         
-        # Дата/время
+        # Date/time
         elif column_type in (DateTime, TIMESTAMP):
             if isinstance(value, str):
                 try:
@@ -213,5 +213,5 @@ class DataPreparer:
                     return await self.datetime_formatter.now_local()
             return value
         
-        # Для остальных типов возвращаем как есть
+        # For other types return as is
         return value

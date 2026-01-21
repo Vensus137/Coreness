@@ -6,8 +6,8 @@ services:
     container_name: app
     restart: always
     working_dir: /workspace
-    # Graceful shutdown: даем приложению время на корректное завершение (15 секунд)
-    # Приложение имеет total_shutdown = 5 секунд, но добавляем запас для надежности
+    # Graceful shutdown: give application time for correct termination (15 seconds)
+    # Application has total_shutdown = 5 seconds, but add margin for reliability
     stop_grace_period: 15s
     volumes:
       - ..:/workspace
@@ -16,17 +16,17 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-dev}
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
-    # Запуск через Supervisor для автоперезапуска процесса при падении
+    # Launch via Supervisor for automatic process restart on crash
     command: /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
-    # depends_on убран из базового файла - зависимости определяются в файлах окружений (test/prod)
+    # depends_on removed from base file - dependencies defined in environment files (test/prod)
 
   postgres:
     image: pgvector/pgvector:pg18
     container_name: postgres
     restart: always
-    # НЕ указываем user: postgres - стандартный entrypoint сам управляет пользователем
-    # Он запускается от root, исправляет права директории (если нужно) и переключается на postgres
-    # Это позволяет автоматически инициализировать БД при первой установке
+    # Do NOT specify user: postgres - standard entrypoint manages user itself
+    # It runs as root, fixes directory permissions (if needed) and switches to postgres
+    # This allows automatic DB initialization on first installation
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-core_db}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -34,38 +34,38 @@ services:
       PGDATA: /var/lib/postgresql/data
     volumes:
       - ../data/postgresql:/var/lib/postgresql/data
-      # Скрипт инициализации для автоматической установки расширения pgvector
+      # Initialization script for automatic pgvector extension installation
       - ./init-pgvector.sql:/docker-entrypoint-initdb.d/01-init-pgvector.sql:ro
-      # Конфигурация PostgreSQL монтируется в окружениях (test/prod)
-    # Порты пробрасываются в файлах окружений (test/prod)
+      # PostgreSQL configuration mounted in environments (test/prod)
+    # Ports forwarded in environment files (test/prod)
     # Test: 5433:5432, Prod: 5432:5432
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    # Используем стандартный entrypoint PostgreSQL
-    # ВАЖНО: Для bind mount права директории на хосте нельзя изменить из контейнера
-    # Стандартный entrypoint запускается от root и может создать файлы с правильными правами внутри директории
-    # Но если директория на хосте принадлежит root и не пустая, могут быть проблемы
-    # РЕШЕНИЕ: Перед первым запуском на хосте выполните:
-    #   rm -rf <путь_к_проекту>/data/postgresql  # Удалить пустую директорию
-    #   # Или исправить права:
-    #   chown -R 999:999 <путь_к_проекту>/data/postgresql
-    #   chmod 700 <путь_к_проекту>/data/postgresql
-    # Стандартный entrypoint запускается от root, инициализирует БД если директория пустая, затем переключается на postgres
-    # Кастомные конфиги применяются через параметры командной строки postgres (если существуют)
+    # Use standard PostgreSQL entrypoint
+    # IMPORTANT: For bind mount, directory permissions on host cannot be changed from container
+    # Standard entrypoint runs as root and can create files with correct permissions inside directory
+    # But if directory on host belongs to root and is not empty, there may be problems
+    # SOLUTION: Before first run on host execute:
+    #   rm -rf <project_path>/data/postgresql  # Remove empty directory
+    #   # Or fix permissions:
+    #   chown -R 999:999 <project_path>/data/postgresql
+    #   chmod 700 <project_path>/data/postgresql
+    # Standard entrypoint runs as root, initializes DB if directory is empty, then switches to postgres
+    # Custom configs applied via postgres command line parameters (if exist)
     entrypoint: ["/bin/bash", "-c"]
     command:
       - |
-        # Исправляем права директории перед проверкой (на случай если они неправильные)
-        # Это нужно для того, чтобы стандартный entrypoint мог прочитать PG_VERSION
+        # Fix directory permissions before check (in case they're incorrect)
+        # This is needed so standard entrypoint can read PG_VERSION
         if [ -d /var/lib/postgresql/data ]; then
           chown -R postgres:postgres /var/lib/postgresql/data 2>/dev/null || true
           chmod 700 /var/lib/postgresql/data 2>/dev/null || true
         fi
-        # Применяем кастомные конфиги только если они существуют
-        # Стандартный entrypoint сам проверит наличие PG_VERSION и инициализирует БД если нужно
+        # Apply custom configs only if they exist
+        # Standard entrypoint will check for PG_VERSION and initialize DB if needed
         if [ -f /etc/postgresql/postgresql.conf ] && [ -s /etc/postgresql/postgresql.conf ] && [ -f /etc/postgresql/pg_hba.conf ] && [ -s /etc/postgresql/pg_hba.conf ]; then
           exec docker-entrypoint.sh postgres -c config_file=/etc/postgresql/postgresql.conf -c hba_file=/etc/postgresql/pg_hba.conf
         elif [ -f /etc/postgresql/postgresql.conf ] && [ -s /etc/postgresql/postgresql.conf ]; then

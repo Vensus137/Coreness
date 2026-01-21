@@ -1,5 +1,5 @@
 """
-Тесты функциональности ScenarioEngine с проверкой кэширования сценариев
+Tests for ScenarioEngine functionality with scenario caching verification
 """
 from unittest.mock import AsyncMock
 
@@ -8,11 +8,11 @@ import pytest
 
 @pytest.mark.asyncio
 class TestScenarioEngineCache:
-    """Тесты кэширования сценариев в ScenarioEngine"""
+    """Tests for scenario caching in ScenarioEngine"""
     
     async def test_process_event_loads_scenarios_on_first_request(self, scenario_engine, mock_data_loader):
-        """Проверка: при первом запросе сценарии загружаются из БД и кэшируются"""
-        # Подготавливаем данные
+        """Check: on first request scenarios are loaded from DB and cached"""
+        # Prepare data
         tenant_id = 1
         mock_scenarios = [
             {
@@ -22,10 +22,10 @@ class TestScenarioEngineCache:
             }
         ]
         
-        # Настраиваем мок data_loader для возврата сценариев
+        # Configure mock data_loader to return scenarios
         mock_data_loader.load_scenarios_by_tenant = AsyncMock(return_value=mock_scenarios)
         
-        # Создаем событие с правильной структурой
+        # Create event with correct structure
         event = {
             'system': {
                 'tenant_id': tenant_id
@@ -33,18 +33,18 @@ class TestScenarioEngineCache:
             'event_type': 'message'
         }
         
-        # Первый запрос - должен вызвать load_scenarios_by_tenant
+        # First request - should call load_scenarios_by_tenant
         await scenario_engine.process_event(event)
         
-        # Проверяем, что data_loader был вызван
+        # Check that data_loader was called
         mock_data_loader.load_scenarios_by_tenant.assert_called_once_with(tenant_id)
         
-        # Проверяем, что кэш заполнен
+        # Check that cache is filled
         assert await scenario_engine.cache.has_tenant_cache(tenant_id) is True
     
     async def test_process_event_uses_cache_on_second_request(self, scenario_engine, mock_data_loader):
-        """Проверка: при повторном запросе сценарии берутся из кэша (не из БД)"""
-        # Подготавливаем данные
+        """Check: on second request scenarios are taken from cache (not from DB)"""
+        # Prepare data
         tenant_id = 1
         mock_scenarios = [
             {
@@ -54,10 +54,10 @@ class TestScenarioEngineCache:
             }
         ]
         
-        # Настраиваем мок data_loader
+        # Configure mock data_loader
         mock_data_loader.load_scenarios_by_tenant = AsyncMock(return_value=mock_scenarios)
         
-        # Создаем событие с правильной структурой
+        # Create event with correct structure
         event = {
             'system': {
                 'tenant_id': tenant_id
@@ -65,21 +65,21 @@ class TestScenarioEngineCache:
             'event_type': 'message'
         }
         
-        # Первый запрос - загружает из БД
+        # First request - loads from DB
         await scenario_engine.process_event(event)
         
-        # Сбрасываем счетчик вызовов
+        # Reset call counter
         mock_data_loader.load_scenarios_by_tenant.reset_mock()
         
-        # Второй запрос - должен использовать кэш
+        # Second request - should use cache
         await scenario_engine.process_event(event)
         
-        # Проверяем, что data_loader НЕ был вызван повторно
+        # Check that data_loader was NOT called again
         mock_data_loader.load_scenarios_by_tenant.assert_not_called()
     
     async def test_process_event_metadata_correct(self, scenario_engine, mock_data_loader):
-        """Проверка: метаданные сценариев корректны для поиска"""
-        # Подготавливаем данные
+        """Check: scenario metadata is correct for search"""
+        # Prepare data
         tenant_id = 1
         mock_scenarios = [
             {
@@ -89,10 +89,10 @@ class TestScenarioEngineCache:
             }
         ]
         
-        # Настраиваем мок data_loader
+        # Configure mock data_loader
         mock_data_loader.load_scenarios_by_tenant = AsyncMock(return_value=mock_scenarios)
         
-        # Создаем событие с правильной структурой
+        # Create event with correct structure
         event = {
             'system': {
                 'tenant_id': tenant_id
@@ -100,21 +100,21 @@ class TestScenarioEngineCache:
             'event_type': 'message'
         }
         
-        # Обрабатываем событие
+        # Process event
         await scenario_engine.process_event(event)
         
-        # Получаем метаданные
+        # Get metadata
         metadata = await scenario_engine.cache.get_scenario_metadata(tenant_id)
         
-        # Проверяем структуру метаданных
+        # Check metadata structure
         assert metadata is not None
         assert 'search_tree' in metadata
         assert 'scenario_index' in metadata
         assert 'scenario_name_index' in metadata
     
     async def test_reload_tenant_scenarios_reloads_from_db(self, scenario_engine, mock_data_loader):
-        """Проверка: reload_tenant_scenarios перезагружает сценарии из БД"""
-        # Подготавливаем данные
+        """Check: reload_tenant_scenarios reloads scenarios from DB"""
+        # Prepare data
         tenant_id = 1
         mock_scenarios_1 = [
             {
@@ -131,10 +131,10 @@ class TestScenarioEngineCache:
             }
         ]
         
-        # Настраиваем мок data_loader для первого запроса
+        # Configure mock data_loader for first request
         mock_data_loader.load_scenarios_by_tenant = AsyncMock(return_value=mock_scenarios_1)
         
-        # Создаем событие с правильной структурой
+        # Create event with correct structure
         event = {
             'system': {
                 'tenant_id': tenant_id
@@ -142,27 +142,27 @@ class TestScenarioEngineCache:
             'event_type': 'message'
         }
         
-        # Первый запрос - загружает из БД
+        # First request - loads from DB
         await scenario_engine.process_event(event)
         
-        # Проверяем, что кэш заполнен
+        # Check that cache is filled
         assert await scenario_engine.cache.has_tenant_cache(tenant_id) is True
         
-        # Инвалидируем кэш
+        # Invalidate cache
         await scenario_engine.cache.reload_tenant_scenarios(tenant_id)
         
-        # Проверяем, что кэш очищен
+        # Check that cache is cleared
         assert await scenario_engine.cache.has_tenant_cache(tenant_id) is False
         
-        # Настраиваем мок для второго запроса (другие данные)
+        # Configure mock for second request (different data)
         mock_data_loader.load_scenarios_by_tenant = AsyncMock(return_value=mock_scenarios_2)
         
-        # Второй запрос - должен загрузить новые данные из БД
+        # Second request - should load new data from DB
         await scenario_engine.process_event(event)
         
-        # Проверяем, что data_loader был вызван снова
+        # Check that data_loader was called again
         assert mock_data_loader.load_scenarios_by_tenant.call_count == 1
         
-        # Проверяем, что кэш заполнен новыми данными
+        # Check that cache is filled with new data
         assert await scenario_engine.cache.has_tenant_cache(tenant_id) is True
 

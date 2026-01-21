@@ -1,5 +1,5 @@
 """
-Репозиторий для работы с хранилищем данных тенанта (tenant_storage)
+Repository for working with tenant data storage (tenant_storage)
 """
 
 from typing import Any, Dict, List, Optional
@@ -12,7 +12,7 @@ from .base import BaseRepository
 
 class TenantStorageRepository(BaseRepository):
     """
-    Репозиторий для работы с хранилищем данных тенанта
+    Repository for working with tenant data storage
     """
     
     async def get_records(
@@ -25,29 +25,29 @@ class TenantStorageRepository(BaseRepository):
         limit: Optional[int] = None
     ) -> Optional[List[Dict[str, Any]]]:
         """
-        Универсальное получение записей storage
+        Universal get storage records
         
-        Логика определения режима:
-        - Если все параметры None - получить все записи тенанта
-        - Если указан только group_key/group_key_pattern - получить группу/группы
-        - Если указаны group_key/pattern + key/pattern - получить значение/значения
+        Mode determination logic:
+        - If all parameters None - get all tenant records
+        - If only group_key/group_key_pattern specified - get group/groups
+        - If group_key/pattern + key/pattern specified - get value/values
         
-        Значения value преобразуются в нужные типы (int, float, bool, list, dict или str)
+        Values are converted to required types (int, float, bool, list, dict or str)
         
-        limit: опциональное ограничение на количество возвращаемых записей
+        limit: optional limit on number of returned records
         """
         try:
             with self._get_session() as session:
                 conditions = [TenantStorage.tenant_id == tenant_id]
                 
-                # Группа: если есть точное значение - используем его, иначе паттерн
+                # Group: if exact value exists - use it, otherwise pattern
                 if group_key:
                     conditions.append(TenantStorage.group_key == group_key)
                 elif group_key_pattern:
                     conditions.append(TenantStorage.group_key.ilike(group_key_pattern))
                 
-                # Ключ: если есть точное значение - используем его, иначе паттерн
-                # Преобразуем key в строку, т.к. в БД key имеет тип String
+                # Key: if exact value exists - use it, otherwise pattern
+                # Convert key to string, as key has String type in DB
                 if key:
                     conditions.append(TenantStorage.key == str(key))
                 elif key_pattern:
@@ -55,17 +55,17 @@ class TenantStorageRepository(BaseRepository):
                 
                 stmt = select(TenantStorage).where(*conditions)
                 
-                # Применяем лимит, если указан
+                # Apply limit if specified
                 if limit is not None and limit > 0:
                     stmt = stmt.limit(limit)
                 
                 result = session.execute(stmt).scalars().all()
                 
-                # Преобразуем value автоматически через convert_text_fields
+                # Convert value automatically via convert_text_fields
                 return await self._to_dict_list(result, convert_text_fields=['value'])
                     
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения записей storage: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting storage records: {e}")
             return None
     
     async def delete_records(
@@ -77,27 +77,27 @@ class TenantStorageRepository(BaseRepository):
         key_pattern: Optional[str] = None
     ) -> Optional[int]:
         """
-        Универсальное удаление записей storage
+        Universal delete storage records
         
-        Логика:
-        - Если указан key или key_pattern - удаляются значения (записи с указанными ключами)
-        - Если key/key_pattern не указаны, но указаны group_key/pattern - удаляются группы (все записи группы)
-        - Если все параметры None - удаляются все записи тенанта
+        Logic:
+        - If key or key_pattern specified - delete values (records with specified keys)
+        - If key/key_pattern not specified, but group_key/pattern specified - delete groups (all group records)
+        - If all parameters None - delete all tenant records
         
-        Возвращает количество удаленных записей
+        Returns number of deleted records
         """
         try:
             with self._get_session() as session:
                 conditions = [TenantStorage.tenant_id == tenant_id]
                 
-                # Группа: если есть точное значение - используем его, иначе паттерн
+                # Group: if exact value exists - use it, otherwise pattern
                 if group_key:
                     conditions.append(TenantStorage.group_key == group_key)
                 elif group_key_pattern:
                     conditions.append(TenantStorage.group_key.ilike(group_key_pattern))
                 
-                # Ключ: если есть точное значение - используем его, иначе паттерн
-                # Преобразуем key в строку, т.к. в БД key имеет тип String
+                # Key: if exact value exists - use it, otherwise pattern
+                # Convert key to string, as key has String type in DB
                 if key:
                     conditions.append(TenantStorage.key == str(key))
                 elif key_pattern:
@@ -110,7 +110,7 @@ class TenantStorageRepository(BaseRepository):
                 return result.rowcount
                     
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка удаления записей storage: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error deleting storage records: {e}")
             return None
     
     async def set_records(
@@ -119,32 +119,32 @@ class TenantStorageRepository(BaseRepository):
         values: Dict[str, Dict[str, Any]]
     ) -> Optional[bool]:
         """
-        Универсальная установка записей storage (batch для всех групп)
+        Universal set storage records (batch for all groups)
         
-        Принимает структуру {group_key: {key: value}} для установки одного или множества значений
-        Оптимизированная версия: сначала получаем все существующие записи одним запросом,
-        затем выполняем batch insert/update
+        Accepts structure {group_key: {key: value}} for setting one or multiple values
+        Optimized version: first get all existing records with one query,
+        then perform batch insert/update
         """
         try:
             if not values:
-                return True  # Нет данных для установки
+                return True  # No data to set
             
             with self._get_session() as session:
-                # Собираем все ключи для проверки существования
+                # Collect all keys for existence check
                 all_keys_to_check = []
                 for group_key, group_data in values.items():
                     for key in group_data.keys():
                         all_keys_to_check.append((group_key, key))
                 
-                # Получаем все существующие записи одним запросом
+                # Get all existing records with one query
                 existing_records = set()
                 if all_keys_to_check:
-                    # Строим условия для всех комбинаций tenant_id + group_key + key
+                    # Build conditions for all combinations of tenant_id + group_key + key
                     from sqlalchemy import or_
                     combined_conditions = []
                     
                     for group_key, key in all_keys_to_check:
-                        # Преобразуем key в строку, т.к. в БД key имеет тип String
+                        # Convert key to string, as key has String type in DB
                         combined_conditions.append(
                             (TenantStorage.tenant_id == tenant_id) &
                             (TenantStorage.group_key == str(group_key)) & 
@@ -159,13 +159,13 @@ class TenantStorageRepository(BaseRepository):
                         ).all()
                         existing_records = {(r.tenant_id, r.group_key, r.key) for r in existing}
                 
-                # Разделяем на insert и update
+                # Split into insert and update
                 to_insert = []
                 to_update = []
                 
                 for group_key, group_data in values.items():
                     for key, value in group_data.items():
-                        # Преобразуем key в строку для сравнения и сохранения, т.к. в БД key имеет тип String
+                        # Convert key to string for comparison and saving, as key has String type in DB
                         key_str = str(key)
                         group_key_str = str(group_key)
                         if (tenant_id, group_key_str, key_str) in existing_records:
@@ -178,7 +178,7 @@ class TenantStorageRepository(BaseRepository):
                                 'value': value
                             })
                 
-                # Batch insert для новых записей
+                # Batch insert for new records
                 if to_insert:
                     prepared_inserts = []
                     for record in to_insert:
@@ -192,7 +192,7 @@ class TenantStorageRepository(BaseRepository):
                     if prepared_inserts:
                         session.execute(insert(TenantStorage), prepared_inserts)
                 
-                # Batch update для существующих записей
+                # Batch update for existing records
                 if to_update:
                     for group_key, key, value in to_update:
                         prepared_fields = await self.data_preparer.prepare_for_update(
@@ -200,7 +200,7 @@ class TenantStorageRepository(BaseRepository):
                             fields={'value': value},
                             json_fields=[]
                         )
-                        # Преобразуем key и group_key в строки, т.к. в БД они имеют тип String
+                        # Convert key and group_key to strings, as they have String type in DB
                         stmt = update(TenantStorage).where(
                             TenantStorage.tenant_id == tenant_id,
                             TenantStorage.group_key == str(group_key),
@@ -212,17 +212,17 @@ class TenantStorageRepository(BaseRepository):
                 return True
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка установки записей storage: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error setting storage records: {e}")
             return None
     
     async def delete_groups_batch(self, tenant_id: int, group_keys: List[str]) -> Optional[int]:
         """
-        Batch удаление нескольких групп одним запросом
+        Batch delete multiple groups with one query
         
-        Оптимизированное удаление: удаляет все указанные группы одним SQL-запросом
-        вместо множества отдельных запросов.
+        Optimized deletion: deletes all specified groups with one SQL query
+        instead of multiple separate queries.
         
-        Возвращает количество удаленных записей
+        Returns number of deleted records
         """
         try:
             if not group_keys:
@@ -231,7 +231,7 @@ class TenantStorageRepository(BaseRepository):
             with self._get_session() as session:
                 from sqlalchemy import or_
                 
-                # Строим OR-условия для всех групп
+                # Build OR conditions for all groups
                 group_conditions = [
                     TenantStorage.group_key == group_key 
                     for group_key in group_keys
@@ -252,15 +252,15 @@ class TenantStorageRepository(BaseRepository):
                     return 0
                     
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка batch удаления групп storage: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error batch deleting storage groups: {e}")
             return None
     
     async def get_group_keys(self, tenant_id: int, limit: Optional[int] = None) -> Optional[List[str]]:
         """
-        Получение списка уникальных ключей групп для тенанта
+        Get list of unique group keys for tenant
         
-        Возвращает список всех уникальных group_key для указанного tenant_id
-        limit: опциональное ограничение на количество возвращаемых групп
+        Returns list of all unique group_key for specified tenant_id
+        limit: optional limit on number of returned groups
         """
         try:
             with self._get_session() as session:
@@ -268,7 +268,7 @@ class TenantStorageRepository(BaseRepository):
                     TenantStorage.tenant_id == tenant_id
                 ).order_by(TenantStorage.group_key)
                 
-                # Применяем лимит, если указан
+                # Apply limit if specified
                 if limit is not None and limit > 0:
                     stmt = stmt.limit(limit)
                 
@@ -276,5 +276,5 @@ class TenantStorageRepository(BaseRepository):
                 return list(result) if result else []
                     
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения списка групп storage: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting storage group keys list: {e}")
             return None

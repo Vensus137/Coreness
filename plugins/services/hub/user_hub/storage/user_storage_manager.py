@@ -1,5 +1,5 @@
 """
-UserStorageManager - подмодуль для работы с хранилищем данных пользователя
+UserStorageManager - submodule for working with user data storage
 """
 
 import json
@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Optional
 
 class UserStorageManager:
     """
-    Подмодуль для работы с хранилищем данных пользователя
-    Управляет key-value данными пользователя (без групп, плоская структура)
+    Submodule for working with user data storage
+    Manages user key-value data (without groups, flat structure)
     """
     
     def __init__(self, database_manager, logger, settings_manager):
@@ -17,7 +17,7 @@ class UserStorageManager:
         self.logger = logger
         self.settings_manager = settings_manager
         
-        # Получаем лимит записей из настроек один раз при инициализации
+        # Get record limit from settings once on initialization
         service_settings = self.settings_manager.get_plugin_settings('user_hub')
         self.storage_max_records = service_settings.get('storage_max_records', 100)
     
@@ -27,15 +27,15 @@ class UserStorageManager:
         limit: Optional[int] = None
     ) -> Dict[str, Any]:
         """
-        Получение значений storage для пользователя
-        Поддерживает получение всех значений, конкретного значения, а также поиск по паттернам
+        Get storage values for user
+        Supports getting all values, specific value, and pattern search
         """
         try:
-            # Используем лимит из настроек, если не указан явно
+            # Use limit from settings if not explicitly specified
             if limit is None:
                 limit = self.storage_max_records
             
-            # Используем универсальный метод получения
+            # Use universal get method
             master_repo = self.database_manager.get_master_repository()
             records = await master_repo.get_user_storage_records(
                 tenant_id, user_id, key, key_pattern, limit
@@ -44,32 +44,32 @@ class UserStorageManager:
             if not records:
                 return {"result": "not_found"}
             
-            # Определяем, что именно было запрошено для упрощения структуры ответа
+            # Determine what was requested to simplify response structure
             if key and not key_pattern:
-                # Запрошен конкретный ключ (точное значение) - возвращаем только value
+                # Specific key requested (exact value) - return only value
                 first_record = records[0]
                 user_storage_values = first_record.get('value')
             else:
-                # Запрошен весь storage (ничего не указано) или паттерн для ключей
-                # Возвращаем структуру {key: value, key2: value2}
+                # Entire storage requested (nothing specified) or pattern for keys
+                # Return structure {key: value, key2: value2}
                 user_storage_values = {}
                 for record in records:
                     k = record.get('key')
                     v = record.get('value')
-                    # Проверяем наличие ключа (защита от некорректных данных)
+                    # Check key presence (protection against incorrect data)
                     if k is not None:
                         user_storage_values[k] = v
             
-            # Базовый ответ со структурированными данными
+            # Base response with structured data
             response_data = {
                 "user_storage_values": user_storage_values
             }
             
-            # Если запрошен форматированный вывод
+            # If formatted output requested
             if format_yaml:
                 import yaml
-                # Для примитивов (строки, числа, bool) не используем YAML форматирование,
-                # чтобы избежать добавления маркера конца документа (...)
+                # For primitives (strings, numbers, bool) don't use YAML formatting,
+                # to avoid adding document end marker (...)
                 if isinstance(user_storage_values, (str, int, float, bool)) or user_storage_values is None:
                     formatted_text = str(user_storage_values) if user_storage_values is not None else "null"
                 else:
@@ -79,7 +79,7 @@ class UserStorageManager:
                         default_flow_style=False,
                         sort_keys=False
                     )
-                    # Убираем лишние переносы строк в конце
+                    # Remove extra newlines at end
                     formatted_text = formatted_text.rstrip()
                 response_data["formatted_text"] = formatted_text
             
@@ -89,7 +89,7 @@ class UserStorageManager:
             }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка получения storage данных: {e}")
+            self.logger.error(f"Error getting storage data: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -103,50 +103,50 @@ class UserStorageManager:
         values: Optional[Dict[str, Any]] = None, format_yaml: bool = False
     ) -> Dict[str, Any]:
         """
-        Установка значений storage для пользователя
-        Поддерживает смешанный подход с приоритетом: key -> value -> values
-        - Если указан key: должен быть указан value (устанавливается одно значение)
-        - Если указан values (без key): устанавливается полная структура {key: value}
+        Set storage values for user
+        Supports mixed approach with priority: key -> value -> values
+        - If key specified: value must be specified (sets single value)
+        - If values specified (without key): sets full structure {key: value}
         """
         try:
-            # Определяем режим и формируем структуру для записи в БД
-            # Приоритет: key -> value -> values
+            # Determine mode and form structure for DB write
+            # Priority: key -> value -> values
             if key:
-                # Режим с key - должен быть указан value
+                # Mode with key - value must be specified
                 if value is not None:
-                    # Режим: key + value - устанавливается одно значение
+                    # Mode: key + value - sets single value
                     final_values = {key: value}
-                    return_mode = "single_value"  # Вернуть только value
+                    return_mode = "single_value"  # Return only value
                 else:
                     return {
                         "result": "error",
                         "error": {
                             "code": "VALIDATION_ERROR",
-                            "message": "При указании key необходимо указать value"
+                            "message": "When key is specified, value must be specified"
                         }
                     }
             elif values:
-                # Режим: полная структура values (без key)
+                # Mode: full values structure (without key)
                 if not isinstance(values, dict):
                     return {
                         "result": "error",
                         "error": {
                             "code": "VALIDATION_ERROR",
-                            "message": "Параметр values должен быть объектом {key: value}"
+                            "message": "values parameter must be object {key: value}"
                         }
                     }
                 final_values = values
-                return_mode = "structure"  # Вернуть {key: value}
+                return_mode = "structure"  # Return {key: value}
             else:
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Необходимо указать либо values (полная структура), либо key с value"
+                        "message": "Must specify either values (full structure) or key with value"
                     }
                 }
             
-            # Используем универсальный метод установки (batch для всех ключей)
+            # Use universal set method (batch for all keys)
             master_repo = self.database_manager.get_master_repository()
             success = await master_repo.set_user_storage_records(tenant_id, user_id, final_values)
             
@@ -155,28 +155,28 @@ class UserStorageManager:
                     "result": "error",
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": "Не удалось установить значения"
+                        "message": "Failed to set values"
                     }
                 }
             
-            # Определяем формат ответа аналогично get_storage на основе входных параметров
+            # Determine response format similar to get_storage based on input parameters
             if return_mode == "single_value":
-                # Установлено одно значение (key + value) - возвращаем только value (как в get_storage для одного ключа)
+                # Single value set (key + value) - return only value (like get_storage for single key)
                 user_storage_values = final_values[key]
             else:
-                # Установлена структура - возвращаем {key: value} (как в get_storage для нескольких ключей)
+                # Structure set - return {key: value} (like get_storage for multiple keys)
                 user_storage_values = final_values
             
-            # Базовый ответ со структурированными данными
+            # Base response with structured data
             response_data = {
                 "user_storage_values": user_storage_values
             }
             
-            # Если запрошен форматированный вывод
+            # If formatted output requested
             if format_yaml:
                 import yaml
-                # Для примитивов (строки, числа, bool) не используем YAML форматирование,
-                # чтобы избежать добавления маркера конца документа (...)
+                # For primitives (strings, numbers, bool) don't use YAML formatting,
+                # to avoid adding document end marker (...)
                 if isinstance(user_storage_values, (str, int, float, bool)) or user_storage_values is None:
                     formatted_text = str(user_storage_values) if user_storage_values is not None else "null"
                 else:
@@ -186,7 +186,7 @@ class UserStorageManager:
                         default_flow_style=False,
                         sort_keys=False
                     )
-                    # Убираем лишние переносы строк в конце
+                    # Remove extra newlines at end
                     formatted_text = formatted_text.rstrip()
                 response_data["formatted_text"] = formatted_text
             
@@ -196,7 +196,7 @@ class UserStorageManager:
             }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка установки storage данных: {e}")
+            self.logger.error(f"Error setting storage data: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -209,11 +209,11 @@ class UserStorageManager:
         self, tenant_id: int, user_id: int, key: Optional[str] = None, key_pattern: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Удаление значений из storage
-        Если указан key или key_pattern - удаляется значение/значения, иначе удаляются все записи пользователя
+        Delete values from storage
+        If key or key_pattern specified - deletes value/values, otherwise deletes all user records
         """
         try:
-            # Используем универсальный метод удаления
+            # Use universal delete method
             master_repo = self.database_manager.get_master_repository()
             deleted_count = await master_repo.delete_user_storage_records(
                 tenant_id, user_id, key, key_pattern
@@ -225,7 +225,7 @@ class UserStorageManager:
                 return {"result": "not_found"}
                 
         except Exception as e:
-            self.logger.error(f"Ошибка удаления storage данных: {e}")
+            self.logger.error(f"Error deleting storage data: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -236,52 +236,52 @@ class UserStorageManager:
     
     def _normalize_value(self, value: Any) -> str:
         """
-        Нормализация значения для сравнения
-        Для JSON значений: парсит и сериализует обратно с нормализацией
-        Для простых значений: преобразует в строку
+        Normalize value for comparison
+        For JSON values: parses and serializes back with normalization
+        For simple values: converts to string
         """
         if value is None:
             return ""
         
-        # Если значение уже строка, проверяем является ли оно JSON
+        # If value is already string, check if it's JSON
         if isinstance(value, str):
             try:
-                # Пытаемся распарсить как JSON
+                # Try to parse as JSON
                 parsed = json.loads(value)
-                # Сериализуем обратно с нормализацией (sort_keys=True для dict)
+                # Serialize back with normalization (sort_keys=True for dict)
                 return json.dumps(parsed, sort_keys=True, ensure_ascii=False)
             except (json.JSONDecodeError, TypeError):
-                # Не JSON, возвращаем как есть
+                # Not JSON, return as is
                 return str(value)
         
-        # Если значение - dict или list, сериализуем в JSON с нормализацией
+        # If value is dict or list, serialize to JSON with normalization
         if isinstance(value, (dict, list)):
             return json.dumps(value, sort_keys=True, ensure_ascii=False)
         
-        # Для простых типов (int, float, bool) преобразуем в строку
+        # For simple types (int, float, bool) convert to string
         return str(value)
     
     async def find_users_by_storage_value(self, tenant_id: int, key: str, value: Any) -> List[int]:
         """
-        Поиск пользователей по ключу и значению в storage
-        Использует индекс для быстрого поиска по tenant_id и key, затем фильтрует по value в памяти
+        Search users by key and value in storage
+        Uses index for fast search by tenant_id and key, then filters by value in memory
         """
         try:
-            # Получаем все записи по tenant_id и key (быстро через индекс)
+            # Get all records by tenant_id and key (fast through index)
             master_repo = self.database_manager.get_master_repository()
             records = await master_repo.get_user_storage_by_tenant_and_key(tenant_id, key)
             
             if not records:
                 return []
             
-            # Нормализуем искомое значение один раз
+            # Normalize search value once
             normalized_target_value = self._normalize_value(value)
             
-            # Фильтруем записи по значению в памяти
+            # Filter records by value in memory
             matching_user_ids = []
             for record in records:
                 record_value = record.get('value')
-                # Нормализуем значение из БД для сравнения (JSON объекты могут иметь разный порядок ключей)
+                # Normalize value from DB for comparison (JSON objects may have different key order)
                 normalized_record_value = self._normalize_value(record_value)
                 
                 if normalized_record_value == normalized_target_value:
@@ -289,9 +289,9 @@ class UserStorageManager:
                     if user_id is not None:
                         matching_user_ids.append(user_id)
             
-            # Убираем дубликаты (на случай если у пользователя несколько записей с одинаковым значением)
+            # Remove duplicates (in case user has multiple records with same value)
             return list(set(matching_user_ids))
             
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка поиска пользователей по storage key={key}, value={value}: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error searching users by storage key={key}, value={value}: {e}")
             return []

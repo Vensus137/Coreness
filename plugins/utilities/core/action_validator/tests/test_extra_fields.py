@@ -1,13 +1,13 @@
 """
-Тесты обработки лишних полей
+Tests for handling extra fields
 """
 
 
 class TestExtraFields:
-    """Тесты лишних полей"""
+    """Tests for extra fields"""
 
     def test_extra_fields_ignored(self, validator):
-        """Проверка: лишние поля игнорируются при валидации"""
+        """Check: extra fields are ignored during validation"""
         result = validator.validate_action_input('test_service', 'simple_action', {
             'name': 'Test',
             'age': 25,
@@ -15,6 +15,6 @@ class TestExtraFields:
             'extra_field_2': 12345,
             'extra_field_3': {'nested': 'data'}
         })
-        # Валидация должна пройти успешно, т.к. обязательные поля присутствуют
+        # Validation should pass successfully, as required fields are present
         assert result.get('result') == 'success'
 

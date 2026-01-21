@@ -5,31 +5,31 @@ services:
       service: app
     image: app:latest
     container_name: app
-    restart: always  # Для prod - всегда перезапускать
+    restart: always  # For prod - always restart
     environment:
       - ENVIRONMENT=prod
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
-    # Для prod: код в образе (без volume для всего проекта), только данные/конфиги
-    # Volumes полностью переопределяют базовые volumes из docker-compose.yml
+    # For prod: code in image (without volume for entire project), only data/configs
+    # Volumes completely override base volumes from docker-compose.yml
     volumes:
       - ./supervisord.conf:/etc/supervisor/conf.d/supervisord.conf:ro
-      # Данные (база данных и другие данные) - должны быть доступны и изменяемы
+      # Data (database and other data) - must be accessible and writable
       - ../data:/workspace/data:rw
-      # Конфигурация (может изменяться через системные действия, например у системных тенантов)
+      # Configuration (can be changed via system actions, e.g. for system tenants)
       - ../config:/workspace/config:rw
-      # Логи (для удобства просмотра и отладки)
+      # Logs (for convenient viewing and debugging)
       - ../logs:/workspace/logs:rw
-    # Проброс порта для вебхуков (GitHub и Telegram) - prod окружение
+    # Port forwarding for webhooks (GitHub and Telegram) - prod environment
     ports:
-      - "443:443"  # HTTPS сервер для вебхуков (prod) - стандартный HTTPS порт, разрешен Telegram
+      - "443:443"  # HTTPS server for webhooks (prod) - standard HTTPS port, allowed by Telegram
     depends_on:
       postgres:
         condition: service_healthy
     
-    # Ресурсы настраиваются локально через docker-compose.override.yml
-    # Используйте: ./docker/compose resources set app --cpus 2 --memory 2G
-    # или после установки: dc resources set app --cpus 2 --memory 2G
+    # Resources configured locally via docker-compose.override.yml
+    # Use: ./docker/compose resources set app --cpus 2 --memory 2G
+    # or after installation: dc resources set app --cpus 2 --memory 2G
 
   postgres:
     extends:
@@ -42,12 +42,12 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-coreness1234}
       PGDATA: /var/lib/postgresql/data
     volumes:
-      # Переопределяем volumes для монтирования prod конфига
+      # Override volumes for mounting prod config
       - ../data/postgresql:/var/lib/postgresql/data
-      # Скрипт инициализации для автоматической установки расширения pgvector
+      # Initialization script for automatic pgvector extension installation
       - ./init-pgvector.sql:/docker-entrypoint-initdb.d/01-init-pgvector.sql:ro
       - ./postgresql.prod.conf:/etc/postgresql/postgresql.conf:ro
       - ./pg_hba.prod.conf:/etc/postgresql/pg_hba.conf:ro
     ports:
-      - "5432:5432"  # Prod окружение использует стандартный порт 5432
+      - "5432:5432"  # Prod environment uses standard port 5432
 

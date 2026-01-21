@@ -1,5 +1,5 @@
 """
-Утилита для управления данными пользователей с кэшированием
+Utility for managing user data with caching
 """
 
 from datetime import datetime, timedelta
@@ -8,10 +8,10 @@ from typing import Any, Dict, Optional
 
 class UserManager:
     """
-    Утилита для управления данными пользователей с кэшированием
-    - Автоматическое сохранение данных пользователей
-    - Кэширование для предотвращения частых обращений к БД
-    - Предоставление API для работы с данными пользователей
+    Utility for managing user data with caching
+    - Automatic user data saving
+    - Caching to prevent frequent DB access
+    - API for working with user data
     """
     
     def __init__(self, **kwargs):
@@ -21,95 +21,95 @@ class UserManager:
         self.datetime_formatter = kwargs['datetime_formatter']
         self.cache_manager = kwargs['cache_manager']
         
-        # Получаем настройки через settings_manager
+        # Get settings through settings_manager
         settings = self.settings_manager.get_plugin_settings("user_manager")
         
-        # TTL для кэша (используется при явном указании, иначе берется из cache_manager)
-        self.cache_ttl = settings.get('cache_ttl', 600)  # 10 минут по умолчанию
+        # TTL for cache (used when explicitly specified, otherwise taken from cache_manager)
+        self.cache_ttl = settings.get('cache_ttl', 600)  # 10 minutes by default
         
-        # Получаем мастер-репозиторий
+        # Get master repository
         self._master_repository = None
     
     def _get_master_repository(self):
-        """Получение мастер-репозитория (ленивая инициализация)"""
+        """Get master repository (lazy initialization)"""
         if self._master_repository is None:
             self._master_repository = self.database_manager.get_master_repository()
         return self._master_repository
     
     def _get_cache_key(self, user_id: int, tenant_id: int) -> str:
-        """Генерация ключа кэша в формате cache_manager"""
+        """Generate cache key in cache_manager format"""
         return f"user:{user_id}:{tenant_id}"
     
     async def save_user_data(self, user_data: Dict[str, Any]) -> bool:
         """
-        Сохранение данных пользователя с кэшированием
+        Save user data with caching
         """
         try:
             user_id = user_data.get('user_id')
             tenant_id = user_data.get('tenant_id')
             
             if not user_id or not tenant_id:
-                self.logger.warning("[UserManager] user_id и tenant_id обязательны для сохранения данных пользователя")
+                self.logger.warning("[UserManager] user_id and tenant_id are required for saving user data")
                 return False
             
             cache_key = self._get_cache_key(user_id, tenant_id)
             
-            # Проверяем кэш через cache_manager
+            # Check cache through cache_manager
             cached_data = await self.cache_manager.get(cache_key)
             if cached_data is not None:
-                # Данные есть в кэше - ничего не делаем
+                # Data exists in cache - do nothing
                 return True
             
-            # Получаем мастер-репозиторий
+            # Get master repository
             master_repo = self._get_master_repository()
             
-            # Проверяем, существует ли пользователь
+            # Check if user exists
             existing_user = await master_repo.get_user_by_id(user_id, tenant_id)
             
             if existing_user is not None:
-                # Обновляем существующего пользователя
+                # Update existing user
                 success = await master_repo.update_user(user_id, tenant_id, user_data)
                 if not success:
-                    self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Ошибка обновления пользователя")
+                    self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Error updating user")
                     return False
             else:
-                # Создаем нового пользователя
+                # Create new user
                 success = await master_repo.create_user(user_data)
                 if not success:
-                    self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Ошибка создания пользователя")
+                    self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Error creating user")
                     return False
             
-            # Загружаем полные данные из БД после операции
+            # Load full data from DB after operation
             full_user_data = await master_repo.get_user_by_id(user_id, tenant_id)
             
-            # Сохраняем полные данные в кэш через cache_manager
+            # Save full data to cache through cache_manager
             await self.cache_manager.set(cache_key, full_user_data.copy(), ttl=self.cache_ttl)
             
             return True
                 
         except Exception as e:
-            self.logger.error(f"Ошибка в save_user_data: {e}")
+            self.logger.error(f"Error in save_user_data: {e}")
             return False
     
     async def get_user_by_id(self, user_id: int, tenant_id: int, force_refresh: bool = False) -> Optional[Dict[str, Any]]:
         """
-        Получение данных пользователя
+        Get user data
         """
         try:
             cache_key = self._get_cache_key(user_id, tenant_id)
             
-            # Проверяем кэш через cache_manager (если не принудительное обновление)
+            # Check cache through cache_manager (if not forced refresh)
             if not force_refresh:
                 cached_data = await self.cache_manager.get(cache_key)
                 if cached_data is not None:
                     return cached_data.copy()
             
-            # Получаем из БД
+            # Get from DB
             master_repo = self._get_master_repository()
             user_data = await master_repo.get_user_by_id(user_id, tenant_id)
             
             if user_data:
-                # Сохраняем в кэш через cache_manager
+                # Save to cache through cache_manager
                 await self.cache_manager.set(cache_key, user_data.copy(), ttl=self.cache_ttl)
                 
                 return user_data
@@ -117,15 +117,15 @@ class UserManager:
                 return None
                 
         except Exception as e:
-            self.logger.error(f"Ошибка в get_user_data: {e}")
+            self.logger.error(f"Error in get_user_data: {e}")
             return None
     
     async def set_user_state(self, user_id: int, tenant_id: int, state: Optional[str], expires_in_seconds: Optional[int] = None) -> Optional[Dict[str, Any]]:
         """
-        Установка состояния пользователя с возвратом полных данных пользователя
+        Set user state with return of full user data
         """
         try:
-            # Если состояние None или пустая строка - сбрасываем
+            # If state is None or empty string - reset
             if state is None or state == "":
                 success = await self.clear_user_state(user_id, tenant_id)
                 if success:
@@ -133,16 +133,16 @@ class UserManager:
                 else:
                     return None
             
-            # Вычисляем время истечения
+            # Calculate expiration time
             if expires_in_seconds is None or expires_in_seconds == 0:
-                # Навсегда - устанавливаем дату в 3000 году
+                # Forever - set date to year 3000
                 expires_at = datetime(3000, 1, 1, 0, 0, 0)
             else:
-                # Добавляем секунды к текущему времени
+                # Add seconds to current time
                 current_time = await self.datetime_formatter.now_local()
                 expires_at = current_time + timedelta(seconds=expires_in_seconds)
             
-            # Обновляем БД
+            # Update DB
             master_repo = self._get_master_repository()
             success = await master_repo.update_user(user_id, tenant_id, {
                 'user_state': state,
@@ -150,28 +150,28 @@ class UserManager:
             })
             
             if success:
-                # Получаем обновленные данные (принудительно)
+                # Get updated data (forced)
                 return await self.get_user_by_id(user_id, tenant_id, force_refresh=True)
             else:
-                self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Ошибка установки состояния")
+                self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Error setting state")
                 return None
                 
         except Exception as e:
-            self.logger.error(f"Ошибка в set_user_state: {e}")
+            self.logger.error(f"Error in set_user_state: {e}")
             return None
     
     async def _validate_user_state(self, user_id: int, tenant_id: int, state: Optional[str], expires_at: Optional[datetime]) -> Optional[str]:
         """
-        Валидация состояния пользователя с проверкой истечения
+        Validate user state with expiration check
         """
-        # Проверяем истечение
+        # Check expiration
         if state is not None and expires_at is None:
-            # Ошибка - есть состояние, но нет даты истечения, очищаем состояние
-            self.logger.warning(f"[Tenant-{tenant_id}] [User-{user_id}] Состояние без даты истечения - очищаем")
+            # Error - has state but no expiration date, clear state
+            self.logger.warning(f"[Tenant-{tenant_id}] [User-{user_id}] State without expiration date - clearing")
             await self.clear_user_state(user_id, tenant_id)
             return None
         elif expires_at is not None and await self.datetime_formatter.now_local() > expires_at:
-            # Состояние истекло - очищаем
+            # State expired - clear
             await self.clear_user_state(user_id, tenant_id)
             return None
         
@@ -179,18 +179,18 @@ class UserManager:
 
     async def get_user_state(self, user_id: int, tenant_id: int) -> Optional[Dict[str, Any]]:
         """
-        Получение состояния пользователя с проверкой истечения
-        Возвращает словарь с состоянием и временем истечения
+        Get user state with expiration check
+        Returns dictionary with state and expiration time
         """
         try:
-            # Получаем данные пользователя (метод сам работает с кэшем)
+            # Get user data (method works with cache itself)
             user_data = await self.get_user_by_id(user_id, tenant_id)
             
             if user_data:
                 state = user_data.get('user_state')
                 expires_at = user_data.get('user_state_expired_at')
                 
-                # Проверяем истечение
+                # Check expiration
                 validated_state = await self._validate_user_state(user_id, tenant_id, state, expires_at)
                 
                 return {
@@ -204,15 +204,15 @@ class UserManager:
                 }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка в get_user_state: {e}")
+            self.logger.error(f"Error in get_user_state: {e}")
             return None
     
     async def clear_user_state(self, user_id: int, tenant_id: int) -> bool:
         """
-        Очистка состояния пользователя
+        Clear user state
         """
         try:
-            # Обновляем БД
+            # Update DB
             master_repo = self._get_master_repository()
             success = await master_repo.update_user(user_id, tenant_id, {
                 'user_state': None,
@@ -220,14 +220,14 @@ class UserManager:
             })
             
             if success:
-                # Очищаем кэш для этого пользователя через cache_manager
+                # Clear cache for this user through cache_manager
                 cache_key = self._get_cache_key(user_id, tenant_id)
                 await self.cache_manager.delete(cache_key)
                 return True
             else:
-                self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Ошибка очистки состояния")
+                self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Error clearing state")
                 return False
                 
         except Exception as e:
-            self.logger.error(f"Ошибка в clear_user_state: {e}")
+            self.logger.error(f"Error in clear_user_state: {e}")
             return False

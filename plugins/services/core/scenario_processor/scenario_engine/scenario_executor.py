@@ -1,6 +1,6 @@
 """
-Исполнитель сценариев
-Выполняет сценарии, координирует выполнение шагов и обработку переходов
+Scenario executor
+Executes scenarios, coordinates step execution and transition handling
 """
 
 from typing import Any, Callable, Dict, Optional, Tuple
@@ -8,10 +8,10 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 class ScenarioExecutor:
     """
-    Исполнитель сценариев
-    - Выполнение сценариев по ID и по имени
-    - Координация выполнения шагов
-    - Обработка переходов между шагами
+    Scenario executor
+    - Execute scenarios by ID and by name
+    - Coordinate step execution
+    - Handle transitions between steps
     """
     
     def __init__(self, logger, step_executor, transition_handler, cache_manager):
@@ -21,51 +21,51 @@ class ScenarioExecutor:
         self.cache_manager = cache_manager
     
     async def execute_scenario(self, tenant_id: int, scenario_id: int, event: Dict[str, Any], scenario_metadata: Dict[str, Any], execute_scenario_by_name_func: Callable) -> Tuple[str, Optional[Dict[str, Any]]]:
-        """Выполнение сценария по ID для конкретного tenant'а. Возвращает кортеж (result, cache)"""
+        """Execute scenario by ID for specific tenant. Returns tuple (result, cache)"""
         try:
-            # Используем метаданные сценариев для изоляции обработки
+            # Use scenario metadata for isolated processing
             scenario_data = scenario_metadata['scenario_index'].get(scenario_id)
             if not scenario_data:
-                self.logger.warning(f"Сценарий {scenario_id} не найден в справочнике для tenant {tenant_id}")
+                self.logger.warning(f"Scenario {scenario_id} not found in index for tenant {tenant_id}")
                 return ('error', None)
             
-            # Получаем шаги сценария (tuple)
+            # Get scenario steps (tuple)
             step = scenario_data.get('step', ())
             if not step:
-                self.logger.warning(f"Сценарий {scenario_id} не содержит шагов для tenant {tenant_id}")
+                self.logger.warning(f"Scenario {scenario_id} has no steps for tenant {tenant_id}")
                 return ('error', None)
             
-            # Сортируем шаги по порядку (sorted работает с tuple, возвращает list)
+            # Sort steps by order (sorted works with tuple, returns list)
             sorted_step = sorted(step, key=lambda x: x.get('step_order', 0))
             
-            scenario_name = scenario_data.get('data', {}).get('name', f'Сценарий {scenario_id}')
+            scenario_name = scenario_data.get('data', {}).get('name', f'Scenario {scenario_id}')
             
-            # Создаем копию события для накопления данных между шагами
+            # Create copy of event for accumulating data between steps
             data = event.copy()
-            data['tenant_id'] = tenant_id  # Добавляем tenant_id в данные
-            data['_scenario_metadata'] = scenario_metadata  # Добавляем метаданные сценариев для использования в execute_scenario action
+            data['tenant_id'] = tenant_id  # Add tenant_id to data
+            data['_scenario_metadata'] = scenario_metadata  # Add scenario metadata for use in execute_scenario action
             
-            # Инициализируем цепочку сценариев для отладки
-            # Если цепочка уже есть (при прыжке из другого сценария), используем её, иначе создаем новую
+            # Initialize scenario chain for debugging
+            # If chain already exists (when jumping from another scenario), use it, otherwise create new one
             if 'scenario_chain' not in data or not isinstance(data.get('scenario_chain'), list):
                 data['scenario_chain'] = [scenario_name]
             else:
-                # Добавляем текущий сценарий в цепочку (копируем массив, чтобы не изменять оригинал)
+                # Add current scenario to chain (copy array to avoid modifying original)
                 data['scenario_chain'] = data['scenario_chain'].copy()
                 data['scenario_chain'].append(scenario_name)
             
-            # Выполняем каждый шаг
-            # Используем while вместо for, чтобы поддерживать отрицательные значения move_steps для возврата назад
+            # Execute each step
+            # Use while instead of for to support negative move_steps values for going back
             i = 0
             while i < len(sorted_step):
                 step_data = sorted_step[i]
                 params = step_data.get('params', {})
                 
-                # Выполняем шаг
+                # Execute step
                 step_result = await self.step_executor.execute_step(step_data, data)
                 transition = step_data.get('transition', [])
                 
-                # Мержим response_data в _cache
+                # Merge response_data into _cache
                 response_data = step_result.get('response_data', {})
                 if response_data:
                     self.cache_manager.merge_response_data(
@@ -75,28 +75,28 @@ class ScenarioExecutor:
                         params=params
                     )
                 
-                # Добавляем ошибку из действия в атрибут last_error (только если она не None)
+                # Add error from action to last_error attribute (only if it's not None)
                 error = step_result.get('error')
                 if error is not None:
                     data['last_error'] = error
                 
-                # Добавляем результат выполнения действия в атрибут last_result (для отладки)
+                # Add action execution result to last_result attribute (for debugging)
                 result = step_result.get('result')
                 if result is not None:
                     data['last_result'] = result
                 
-                # Проверяем response_data на abort/stop из execute_scenario
+                # Check response_data for abort/stop from execute_scenario
                 scenario_result = response_data.get('scenario_result')
                 if scenario_result == 'abort':
-                    # abort - прерываем всю цепочку выполнения текущего сценария
+                    # abort - interrupt entire execution chain of current scenario
                     cache = self.cache_manager.extract_cache(data)
                     return ('abort', cache)
                 elif scenario_result == 'stop':
-                    # stop - прерываем всю обработку события
+                    # stop - interrupt entire event processing
                     cache = self.cache_manager.extract_cache(data)
                     return ('stop', cache)
                 
-                # Обрабатываем переходы по результату шага
+                # Process transitions based on step result
                 transition_result = await self.transition_handler.process_transitions(
                     step_result.get('result'),
                     transition
@@ -104,7 +104,7 @@ class ScenarioExecutor:
                 transition_action = transition_result.get('action', 'continue')
                 transition_value = transition_result.get('value')
                 
-                # Обрабатываем переходы
+                # Process transitions
                 if transition_action == 'stop':
                     result, cache = await self.transition_handler.handle_stop_abort_break('stop', data)
                     return (result, cache)
@@ -127,11 +127,11 @@ class ScenarioExecutor:
                     )
                     
                     if result == 'continue':
-                        # Продолжаем выполнение следующего шага
+                        # Continue with next step
                         i += 1
                         continue
                     else:
-                        # stop, abort или success - возвращаем результат
+                        # stop, abort or success - return result
                         return (result, cache)
                     
                 elif transition_action == 'move_steps':
@@ -143,11 +143,11 @@ class ScenarioExecutor:
                     )
                     
                     if result == 'continue':
-                        # Продолжаем с новым индексом
+                        # Continue with new index
                         i = new_index
                         continue
                     else:
-                        # success - завершаем сценарий
+                        # success - finish scenario
                         return ('success', cache)
                     
                 elif transition_action == 'jump_to_step':
@@ -158,23 +158,23 @@ class ScenarioExecutor:
                     )
                     
                     if result == 'continue':
-                        # Продолжаем с новым индексом
+                        # Continue with new index
                         i = new_index
                         continue
                     else:
-                        # success - завершаем сценарий
+                        # success - finish scenario
                         return ('success', cache)
                 
-                # Продолжаем выполнение следующего шага (continue)
+                # Continue with next step (continue)
                 i += 1
             
-            # Возвращаем только _cache из финальных данных
+            # Return only _cache from final data
             cache = self.cache_manager.extract_cache(data)
             return ('success', cache)
                 
         except Exception as e:
-            self.logger.error(f"Ошибка выполнения сценария {scenario_id} для tenant {tenant_id}: {e}")
-            # Пытаемся сохранить частично накопленный кэш, если он есть
+            self.logger.error(f"Error executing scenario {scenario_id} for tenant {tenant_id}: {e}")
+            # Try to save partially accumulated cache if it exists
             try:
                 cache = self.cache_manager.extract_cache(data)
             except (NameError, UnboundLocalError):
@@ -182,23 +182,23 @@ class ScenarioExecutor:
             return ('error', cache)
     
     async def execute_scenario_by_name(self, tenant_id: int, scenario_name: str, data: Dict[str, Any], scenario_metadata: Dict[str, Any], execute_scenario_func: Callable) -> Tuple[str, Optional[Dict[str, Any]]]:
-        """Поиск и выполнение сценария по названию для конкретного tenant'а. Возвращает кортеж (result, cache)"""
+        """Find and execute scenario by name for specific tenant. Returns tuple (result, cache)"""
         try:
-            # Используем метаданные сценариев для изоляции обработки
+            # Use scenario metadata for isolated processing
             if scenario_metadata is None:
                 return ('error', None)
             
             scenario_name_index = scenario_metadata['scenario_name_index']
             
-            # Быстрый поиск O(1) через индекс
+            # Fast O(1) search via index
             if scenario_name not in scenario_name_index:
-                self.logger.warning(f"Сценарий '{scenario_name}' не найден для tenant {tenant_id}")
+                self.logger.warning(f"Scenario '{scenario_name}' not found for tenant {tenant_id}")
                 return ('error', None)
             
             target_scenario_id = scenario_name_index[scenario_name]
             
-            # Создаем копию data для передачи в сценарий (чтобы не изменять оригинал)
-            # Цепочка сценариев будет обновлена в execute_scenario
+            # Create copy of data for passing to scenario (to avoid modifying original)
+            # Scenario chain will be updated in execute_scenario
             data = data.copy()
             
             result, cache = await execute_scenario_func(
@@ -208,10 +208,10 @@ class ScenarioExecutor:
                 scenario_metadata=scenario_metadata
             )
             
-            # Возвращаем результат и только _cache
+            # Return result and only _cache
             return (result, cache)
             
         except Exception as e:
-            self.logger.error(f"Ошибка выполнения сценария '{scenario_name}' для tenant {tenant_id}: {e}")
+            self.logger.error(f"Error executing scenario '{scenario_name}' for tenant {tenant_id}: {e}")
             return ('error', None)
 

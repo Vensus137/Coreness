@@ -1,13 +1,13 @@
 """
-Тесты обработки структур PlaceholderProcessor
-Тесты 10-12: Вложенные плейсхолдеры, обработка словарей и списков
+Structure processing tests for PlaceholderProcessor
+Tests 10-12: Nested placeholders, dictionary and list processing
 """
 
 from conftest import assert_equal
 
 
 def test_nested_placeholders(processor):
-    """Тест 10: Вложенные плейсхолдеры"""
+    """Test 10: Nested placeholders"""
     values_dict = {
         'a': 10,
         'b': 5,
@@ -16,39 +16,39 @@ def test_nested_placeholders(processor):
         'format': 'currency',
     }
     
-    # Вложенный плейсхолдер в арифметике
+    # Nested placeholder in arithmetic
     result = processor.process_text_placeholders("{a|+{b}}", values_dict)
-    assert_equal(result, 15, "Вложенный плейсхолдер в арифметике")
+    assert_equal(result, 15, "Nested placeholder in arithmetic")
     
-    # Вложенный плейсхолдер в пути
+    # Nested placeholder in path
     result = processor.process_text_placeholders("{{field}}", values_dict)
-    # Это должно разрешиться в значение поля 'field', т.е. 'price'
-    # Но затем попытаться найти {price}, что вернет значение price
-    # Это сложный случай, проверим что не падает
-    assert result is not None, "Вложенный плейсхолдер в пути"
+    # This should resolve to value of field 'field', i.e. 'price'
+    # But then try to find {price}, which will return price value
+    # This is a complex case, check it doesn't crash
+    assert result is not None, "Nested placeholder in path"
     
-    # Вложенный плейсхолдер в fallback
+    # Nested placeholder in fallback
     result = processor.process_text_placeholders("{nonexistent|fallback:{field}}", values_dict)
-    assert_equal(result, "price", "Вложенный плейсхолдер в fallback")
+    assert_equal(result, "price", "Nested placeholder in fallback")
 
 
 def test_dict_processing(processor):
-    """Тест 11: Обработка словарей"""
+    """Test 11: Dictionary processing"""
     values_dict = {
         'name': 'John',
         'age': 30,
     }
     
-    # Простой словарь
+    # Simple dictionary
     data = {
         'text': 'Hello {name}',
         'number': '{age}',
     }
     result = processor.process_placeholders(data, values_dict)
-    assert_equal(result.get('text'), 'Hello John', "Обработка строки в словаре")
-    assert_equal(result.get('number'), 30, "Обработка числа в словаре")
+    assert_equal(result.get('text'), 'Hello John', "String processing in dictionary")
+    assert_equal(result.get('number'), 30, "Number processing in dictionary")
     
-    # Вложенный словарь
+    # Nested dictionary
     data = {
         'user': {
             'greeting': 'Hello {name}',
@@ -58,8 +58,8 @@ def test_dict_processing(processor):
         }
     }
     result = processor.process_placeholders(data, values_dict)
-    assert_equal(result['user']['greeting'], 'Hello John', "Вложенный словарь")
-    assert_equal(result['user']['info']['age'], 30, "Глубокая вложенность в словаре")
+    assert_equal(result['user']['greeting'], 'Hello John', "Nested dictionary")
+    assert_equal(result['user']['info']['age'], 30, "Deep nesting in dictionary")
     
     # process_placeholders_full
     data = {
@@ -67,42 +67,42 @@ def test_dict_processing(processor):
         'static': 'unchanged',
     }
     result = processor.process_placeholders_full(data, values_dict)
-    assert_equal(result.get('text'), 'Hello John', "process_placeholders_full обрабатывает плейсхолдеры")
-    assert_equal(result.get('static'), 'unchanged', "process_placeholders_full сохраняет статичные поля")
+    assert_equal(result.get('text'), 'Hello John', "process_placeholders_full processes placeholders")
+    assert_equal(result.get('static'), 'unchanged', "process_placeholders_full preserves static fields")
 
 
 def test_list_processing(processor):
-    """Тест 12: Обработка списков"""
+    """Test 12: List processing"""
     values_dict = {
         'name': 'John',
         'items': [1, 2, 3],
     }
     
-    # Список строк
+    # List of strings
     data = ['Hello {name}', 'World']
     result = processor.process_placeholders({'list': data}, values_dict)
-    assert_equal(result['list'][0], 'Hello John', "Обработка списка строк")
-    assert_equal(result['list'][1], 'World', "Статичный элемент списка")
+    assert_equal(result['list'][0], 'Hello John', "List of strings processing")
+    assert_equal(result['list'][1], 'World', "Static list element")
     
-    # Список словарей
+    # List of dictionaries
     data = [
         {'text': 'Hello {name}'},
         {'text': 'Static'}
     ]
     result = processor.process_placeholders({'items': data}, values_dict)
-    assert_equal(result['items'][0]['text'], 'Hello John', "Список словарей")
-    assert_equal(result['items'][1]['text'], 'Static', "Статичный элемент в списке словарей")
+    assert_equal(result['items'][0]['text'], 'Hello John', "List of dictionaries")
+    assert_equal(result['items'][1]['text'], 'Static', "Static element in list of dictionaries")
     
-    # Expand модификатор
+    # Expand modifier
     values_dict['keyboard'] = [[{'Button 1': 'action1'}, {'Button 2': 'action2'}], [{'Button 3': 'action3'}]]
     data = {'inline': ['{keyboard|expand}', {'Back': 'back'}]}
     result = processor.process_placeholders(data, values_dict)
     inline_result = result.get('inline', [])
     
-    # Проверяем что expand развернул массив
-    assert isinstance(inline_result, list), "Expand возвращает список"
+    # Check that expand expanded array
+    assert isinstance(inline_result, list), "Expand returns list"
     
-    # КРИТИЧЕСКИЙ ТЕСТ: Проверяем что первый элемент - список (не строка!)
+    # CRITICAL TEST: Check that first element is list (not string!)
     if len(inline_result) > 0:
-        assert isinstance(inline_result[0], list), "Expand первый элемент - список, а не строка"
+        assert isinstance(inline_result[0], list), "Expand first element is list, not string"
 

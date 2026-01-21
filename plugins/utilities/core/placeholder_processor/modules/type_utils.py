@@ -1,5 +1,5 @@
 """
-Утилиты для определения типов значений
+Utilities for determining value types
 """
 import json
 from typing import Any
@@ -7,59 +7,59 @@ from typing import Any
 
 def determine_result_type(value: Any) -> Any:
     """
-    Универсальный метод определения типа результата.
-    Возвращает значение в наиболее подходящем типе.
+    Universal method for determining result type.
+    Returns value in most appropriate type.
     """
     if value is None:
         return None
     
-    # Если это не строка, возвращаем как есть
+    # If it's not a string, return as is
     if not isinstance(value, str):
         return value
     
-    # ОПТИМИЗАЦИЯ: Вычисляем strip() один раз и кэшируем результат
+    # OPTIMIZATION: Compute strip() once and cache result
     value_stripped = value.strip()
     
-    # Если это пустая строка, возвращаем как есть
+    # If it's empty string, return as is
     if not value_stripped:
         return value
     
-    # Проверяем на JSON-массивы и объекты (должно начинаться с [ или {)
+    # Check for JSON arrays and objects (should start with [ or {)
     if value_stripped.startswith('[') and value_stripped.endswith(']'):
         try:
             parsed = json.loads(value_stripped)
-            # Если успешно распарсили массив или объект, возвращаем его
+            # If successfully parsed array or object, return it
             if isinstance(parsed, (list, dict)):
                 return parsed
         except (json.JSONDecodeError, ValueError):
-            # Если не удалось распарсить, продолжаем дальше
+            # If failed to parse, continue
             pass
     
-    # ОПТИМИЗАЦИЯ: Вычисляем lower() один раз и кэшируем результат
+    # OPTIMIZATION: Compute lower() once and cache result
     value_lower = value_stripped.lower()
     
-    # Проверяем на булевы значения
+    # Check for boolean values
     if value_lower == 'true':
         return True
     elif value_lower == 'false':
         return False
     
-    # Проверяем на числа (включая форматированные)
+    # Check for numbers (including formatted)
     try:
-        # Сначала проверяем, есть ли символы форматирования
+        # First check if there are formatting characters
         if '₽' in value or '%' in value:
-            # Для валют и процентов сохраняем как строки
+            # For currency and percent keep as strings
             return value
         
-        # Для обычных чисел проверяем на число
-        # ОЖИДАЕМО: Если строка содержит подчеркивание, это не число (подчеркивание используется в идентификаторах).
-        # Это осознанное решение, даже если Python поддерживает подчеркивания в числах (1_000).
+        # For regular numbers check if it's a number
+        # EXPECTED: If string contains underscore, it's not a number (underscore used in identifiers).
+        # This is a conscious decision, even though Python supports underscores in numbers (1_000).
         if '_' in value:
-            # Строка с подчеркиванием - это не число, возвращаем как строку
+            # String with underscore - not a number, return as string
             return value
         
-        # ОЖИДАЕМО: "123.0" преобразуется в float(123.0), а не int(123).
-        # Это ожидаемое поведение - сохраняем исходный формат числа.
+        # EXPECTED: "123.0" converts to float(123.0), not int(123).
+        # This is expected behavior - preserve original number format.
         if '.' in value:
             return float(value)
         else:
@@ -67,5 +67,5 @@ def determine_result_type(value: Any) -> Any:
     except ValueError:
         pass
     
-    # По умолчанию возвращаем строку
+    # By default return string
     return value

@@ -1,5 +1,5 @@
 """
-Модуль для работы с временными данными кэша сценария
+Module for working with temporary scenario cache data
 """
 
 from typing import Any, Dict
@@ -7,7 +7,7 @@ from typing import Any, Dict
 
 class CacheManager:
     """
-    Класс для работы с временными данными кэша сценария
+    Class for working with temporary scenario cache data
     """
     
     def __init__(self, logger):
@@ -15,39 +15,39 @@ class CacheManager:
     
     async def set_cache(self, data: dict) -> Dict[str, Any]:
         """
-        Установка временных данных в кэш сценария.
+        Set temporary data in scenario cache.
         
-        Данные берутся из ключа 'cache' в params, что позволяет явно указать,
-        какие именно данные нужно кэшировать, избегая попадания всего контекста сценария.
+        Data is taken from 'cache' key in params, which allows explicitly specifying
+        what data needs to be cached, avoiding inclusion of entire scenario context.
         
-        Все переданные параметры возвращаются в response_data в предопределенном словаре `_cache`,
-        что предотвращает случайную перезапись системных полей (bot_id, tenant_id и др.).
+        All passed parameters are returned in response_data in predefined `_cache` dictionary,
+        which prevents accidental overwrite of system fields (bot_id, tenant_id, etc.).
         
-        Данные автоматически очищаются после завершения выполнения сценария.
+        Data is automatically cleared after scenario execution completes.
         """
         try:
-            # Берем данные из ключа 'cache' в params
-            # Это позволяет явно указать, что именно нужно кэшировать
+            # Get data from 'cache' key in params
+            # This allows explicitly specifying what needs to be cached
             cache_data = data.get('cache', {})
             
-            # Если cache_data не словарь - ошибка
+            # If cache_data is not dict - error
             if not isinstance(cache_data, dict):
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр 'cache' должен быть объектом (словарем)"
+                        "message": "'cache' parameter must be an object (dict)"
                     }
                 }
             
-            # Возвращаем данные напрямую, они автоматически попадут в _cache[action_name] в scenario_engine
+            # Return data directly, it will automatically get into _cache[action_name] in scenario_engine
             return {
                 "result": "success",
                 "response_data": cache_data
             }
             
         except Exception as e:
-            self.logger.error(f"Ошибка установки кэша: {e}")
+            self.logger.error(f"Error setting cache: {e}")
             return {
                 "result": "error",
                 "error": {

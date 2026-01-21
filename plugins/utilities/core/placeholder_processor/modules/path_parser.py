@@ -1,17 +1,17 @@
 """
-Утилиты для парсинга путей и извлечения значений
+Utilities for parsing paths and extracting values
 """
 from typing import Any, List, Union
 
 
 def parse_path_with_arrays(path: str) -> List[Union[str, int]]:
     """
-    Парсит путь с поддержкой массивов и словарей:
+    Parses path with support for arrays and dictionaries:
     'attachment[0].file_id' -> ['attachment', 0, 'file_id']
     'attachment[-1].file_id' -> ['attachment', -1, 'file_id']
     'data[0][1].value' -> ['data', 0, 1, 'value']
     'users[0].permissions[0]' -> ['users', 0, 'permissions', 0]
-    'predictions[key].field' -> ['predictions', 'key', 'field']  # строковый ключ для словаря
+    'predictions[key].field' -> ['predictions', 'key', 'field']  # string key for dictionary
     """
     parts = []
     current = ""
@@ -29,25 +29,25 @@ def parse_path_with_arrays(path: str) -> List[Union[str, int]]:
             if current:
                 parts.append(current)
                 current = ""
-            # Ищем закрывающую скобку
+            # Find closing bracket
             i += 1
             index_str = ""
             while i < len(path) and path[i] != ']':
                 index_str += path[i]
                 i += 1
             
-            # Проверяем что нашли закрывающую скобку
+            # Check that we found closing bracket
             if i >= len(path) or path[i] != ']':
-                return []  # Неверный формат - нет закрывающей скобки
+                return []  # Invalid format - no closing bracket
             
-            # Пытаемся преобразовать в число (для массивов)
+            # Try to convert to number (for arrays)
             try:
                 parts.append(int(index_str))
             except ValueError:
-                # Если не число - это строковый ключ для словаря
+                # If not a number - it's a string key for dictionary
                 parts.append(index_str)
             
-            # После обработки ] переходим на следующий символ (уже на i+1)
+            # After processing ] move to next character (already at i+1)
             i += 1
         else:
             current += char
@@ -61,52 +61,52 @@ def parse_path_with_arrays(path: str) -> List[Union[str, int]]:
 
 def get_nested_value(obj: Any, path: str) -> Any:
     """
-    Получает значение по пути с поддержкой массивов:
-    - 'field.subfield' - обычная точечная нотация
-    - 'field[0].subfield' - доступ к элементу массива
-    - 'field[-1].subfield' - отрицательные индексы
-    - 'users[0].permissions[0]' - множественные индексы массивов
+    Gets value by path with support for arrays:
+    - 'field.subfield' - regular dot notation
+    - 'field[0].subfield' - array element access
+    - 'field[-1].subfield' - negative indices
+    - 'users[0].permissions[0]' - multiple array indices
     """
     try:
-        # Парсим путь с учетом массивов
+        # Parse path considering arrays
         parts = parse_path_with_arrays(path)
         
-        # Проверяем что путь распарсен успешно
-        # ОЖИДАЕМО: Пустой путь или неверный формат (например, незакрытая скобка) возвращает None
-        # Это нормальное поведение и не создает проблем в реальных сценариях
+        # Check that path was parsed successfully
+        # EXPECTED: Empty path or invalid format (e.g., unclosed bracket) returns None
+        # This is normal behavior and doesn't cause problems in real scenarios
         if not parts:
             return None
         
         for part in parts:
-            # Проверяем что obj не None перед обработкой
+            # Check that obj is not None before processing
             if obj is None:
                 return None
                 
             if isinstance(part, str):
-                # Обычный ключ
+                # Regular key
                 if isinstance(obj, dict):
-                    # Сначала пытаемся найти ключ как строку
+                    # First try to find key as string
                     found_value = obj.get(part)
-                    # Если не нашли, пытаемся найти как число (int или float)
-                    # ОПТИМИЗАЦИЯ: Проверяем, является ли part числом, до преобразования
+                    # If not found, try to find as number (int or float)
+                    # OPTIMIZATION: Check if part is a number before conversion
                     if found_value is None:
-                        # Проверяем, является ли строка числом (положительным или отрицательным)
+                        # Check if string is a number (positive or negative)
                         if part.isdigit() or (part.startswith('-') and part[1:].isdigit()):
-                            # Это целое число
+                            # It's an integer
                             try:
                                 num_key = int(part)
                                 found_value = obj.get(num_key)
                             except ValueError:
                                 pass
                         elif '.' in part:
-                            # Возможно float
+                            # Possibly float
                             try:
                                 float_key = float(part)
                                 found_value = obj.get(float_key)
                             except ValueError:
                                 pass
                     obj = found_value
-                    # Если все еще не нашли, возвращаем None
+                    # If still not found, return None
                     if obj is None:
                         return None
                 elif hasattr(obj, part):
@@ -114,31 +114,31 @@ def get_nested_value(obj: Any, path: str) -> Any:
                 else:
                     return None
             elif isinstance(part, int):
-                # Индекс массива (числовой)
+                # Array index (numeric)
                 if isinstance(obj, list):
-                    # Проверяем границы массива
+                    # Check array bounds
                     if part < 0:
-                        # Отрицательный индекс: -1 = последний элемент
+                        # Negative index: -1 = last element
                         if abs(part) <= len(obj):
                             obj = obj[part]
                         else:
                             return None
                     else:
-                        # Положительный индекс
+                        # Positive index
                         if part < len(obj):
                             obj = obj[part]
                         else:
                             return None
                 elif isinstance(obj, dict):
-                    # Если это словарь, пытаемся использовать как ключ
+                    # If it's a dictionary, try to use as key
                     obj = obj.get(part)
                     if obj is None:
                         return None
                 else:
                     return None
             else:
-                # Это может быть строка из квадратных скобок (для словарей)
-                # Но мы уже обработали строки выше, так что это не должно произойти
+                # This could be a string from square brackets (for dictionaries)
+                # But we already processed strings above, so this shouldn't happen
                 return None
         
         return obj
@@ -148,33 +148,33 @@ def get_nested_value(obj: Any, path: str) -> Any:
 
 def extract_literal_or_get_value(field_name: str, values_dict: dict, get_nested_func) -> Any:
     """
-    Извлекает литеральное значение из кавычек или получает значение из values_dict.
+    Extracts literal value from quotes or gets value from values_dict.
     
-    Поддерживает:
-    - Одинарные кавычки: 'hello world'
-    - Двойные кавычки: "hello world"
-    - Экранирование кавычек: 'it\\'s' или "say \\"hi\\""
+    Supports:
+    - Single quotes: 'hello world'
+    - Double quotes: "hello world"
+    - Quote escaping: 'it\\'s' or "say \\"hi\\""
     
-    Если field_name в кавычках, возвращает содержимое (без кавычек).
-    Иначе, получает значение из values_dict по пути field_name через get_nested_func.
+    If field_name is in quotes, returns content (without quotes).
+    Otherwise, gets value from values_dict by path field_name through get_nested_func.
     """
     field_name = field_name.strip()
     
-    # Проверяем одинарные кавычки
+    # Check single quotes
     if len(field_name) >= 2 and field_name[0] == "'" and field_name[-1] == "'":
-        # Извлекаем содержимое, убирая внешние кавычки
+        # Extract content, removing outer quotes
         literal_value = field_name[1:-1]
-        # Обрабатываем экранирование \' -> '
+        # Handle escaping \' -> '
         literal_value = literal_value.replace("\\'", "'")
         return literal_value
     
-    # Проверяем двойные кавычки
+    # Check double quotes
     if len(field_name) >= 2 and field_name[0] == '"' and field_name[-1] == '"':
-        # Извлекаем содержимое, убирая внешние кавычки
+        # Extract content, removing outer quotes
         literal_value = field_name[1:-1]
-        # Обрабатываем экранирование \" -> "
+        # Handle escaping \" -> "
         literal_value = literal_value.replace('\\"', '"')
         return literal_value
     
-    # Если это не литерал, получаем значение из values_dict
+    # If not a literal, get value from values_dict
     return get_nested_func(values_dict, field_name)

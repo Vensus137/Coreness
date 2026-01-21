@@ -1,5 +1,5 @@
 """
-Scenario Processor - сервис для обработки событий по сценариям
+Scenario Processor - service for processing events by scenarios
 """
 
 import asyncio
@@ -13,10 +13,10 @@ from .utils.scheduler import ScenarioScheduler
 
 class ScenarioProcessor:
     """
-    Сервис для обработки событий по сценариям
-    - Получает обработанные события от event_processor
-    - Определяет tenant_id и загружает сценарии
-    - Выполняет действия через ActionHub
+    Service for processing events by scenarios
+    - Receives processed events from event_processor
+    - Determines tenant_id and loads scenarios
+    - Executes actions through ActionHub
     """
     
     def __init__(self, **kwargs):
@@ -25,13 +25,13 @@ class ScenarioProcessor:
         self.action_hub = kwargs['action_hub']
         self.database_manager = kwargs['database_manager']
         self.datetime_formatter = kwargs['datetime_formatter']
-        # Создаем DataLoader для передачи в ScenarioEngine
+        # Create DataLoader to pass to ScenarioEngine
         self.data_loader = DataLoader(
             logger=self.logger,
             database_manager=self.database_manager
         )
         
-        # Создаем движок обработки сценариев
+        # Create scenario processing engine
         self.scenario_engine = ScenarioEngine(
             data_loader=self.data_loader,
             logger=self.logger,
@@ -42,13 +42,13 @@ class ScenarioProcessor:
             settings_manager=self.settings_manager
         )
         
-        # Создаем scheduler для работы с cron (используется для валидации и в менеджере)
+        # Create scheduler for working with cron (used for validation and in manager)
         self.scheduler = ScenarioScheduler(
             logger=self.logger,
             datetime_formatter=self.datetime_formatter
         )
         
-        # Создаем менеджер scheduled сценариев
+        # Create scheduled scenarios manager
         self.scheduled_manager = ScheduledScenarioManager(
             scenario_engine=self.scenario_engine,
             data_loader=self.data_loader,
@@ -60,47 +60,47 @@ class ScenarioProcessor:
             cache_manager=kwargs['cache_manager']
         )
         
-        # Регистрируем себя в ActionHub
+        # Register ourselves in ActionHub
         self.action_hub.register('scenario_processor', self)
         
-        # Состояние сервиса
+        # Service state
         self.is_running = False
         self._run_task: Optional[asyncio.Task] = None
     
     async def run(self):
-        """Основной цикл работы сервиса"""
+        """Main service loop"""
         try:
             self.is_running = True
             
-            # Запускаем менеджер scheduled сценариев
+            # Start scheduled scenarios manager
             await self.scheduled_manager.run()
             
         except asyncio.CancelledError:
-            self.logger.info("ScenarioProcessor остановлен")
+            self.logger.info("ScenarioProcessor stopped")
         except Exception as e:
-            self.logger.error(f"Ошибка в основном цикле ScenarioProcessor: {e}")
+            self.logger.error(f"Error in ScenarioProcessor main loop: {e}")
         finally:
             self.is_running = False
     
     def shutdown(self):
-        """Синхронный graceful shutdown сервиса"""
+        """Synchronous graceful service shutdown"""
         if not self.is_running:
             return
         
         self.is_running = False
         
-        # Останавливаем менеджер scheduled сценариев
+        # Stop scheduled scenarios manager
         self.scheduled_manager.shutdown()
     
-    # === Actions для ActionHub ===
+    # === Actions for ActionHub ===
     
     async def process_scenario_event(self, data: dict) -> Dict[str, Any]:
         """
-        Обработка события по сценариям
+        Process event by scenarios
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
-            # Обрабатываем событие через scenario_engine
+            # Validation is done centrally in ActionRegistry
+            # Process event through scenario_engine
             success = await self.scenario_engine.process_event(data)
             
             if success:
@@ -110,143 +110,143 @@ class ScenarioProcessor:
                     "result": "error",
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": "Не удалось обработать событие по сценариям"
+                        "message": "Failed to process event by scenarios"
                     }
                 }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка обработки события: {e}")
+            self.logger.error(f"Error processing event: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     
     async def sync_scenarios(self, data: dict) -> Dict[str, Any]:
         """
-        Синхронизация сценариев тенанта: удаление старых → сохранение новых → перезагрузка кэша
+        Sync tenant scenarios: delete old → save new → reload cache
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             tenant_id = data.get('tenant_id')
             scenarios = data.get('scenarios', [])
             
-            # 1. Удаляем старые сценарии
+            # 1. Delete old scenarios
             delete_success = await self.data_loader.delete_tenant_scenarios(tenant_id)
             if not delete_success:
                 return {
                     "result": "error",
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": "Не удалось удалить старые сценарии"
+                        "message": "Failed to delete old scenarios"
                     }
                 }
             
-            # 2. Сохраняем новые сценарии
+            # 2. Save new scenarios
             saved_scenarios = 0
             
             for scenario_data in scenarios:
-                    # Валидация cron выражения если указан schedule
+                    # Validate cron expression if schedule specified
                     schedule = scenario_data.get('schedule')
                     if schedule:
                         if not self.scheduler.is_valid_cron(schedule):
-                            self.logger.error(f"Невалидное cron выражение '{schedule}' для сценария {scenario_data.get('scenario_name')}")
+                            self.logger.error(f"Invalid cron expression '{schedule}' for scenario {scenario_data.get('scenario_name')}")
                             continue
                     
                     scenario_id = await self.data_loader.save_scenario(tenant_id, scenario_data)
                     if scenario_id is None:
-                        self.logger.error(f"Не удалось создать сценарий {scenario_data.get('scenario_name')}")
+                        self.logger.error(f"Failed to create scenario {scenario_data.get('scenario_name')}")
                         continue
                     
                     saved_scenarios += 1
                     
-                    # Создаем триггеры сценария
+                    # Create scenario triggers
                     trigger = scenario_data.get('trigger', [])
                     for trigger_data in trigger:
                         await self.data_loader.save_trigger(scenario_id, trigger_data)
                     
-                    # Создаем шаги сценария
+                    # Create scenario steps
                     step = scenario_data.get('step', [])
                     for step_data in step:
                         await self.data_loader.save_step(scenario_id, step_data)
             
-            # 3. Перезагружаем кэш обычных сценариев
+            # 3. Reload regular scenarios cache
             scenarios_reload_success = await self.scenario_engine.reload_tenant_scenarios(tenant_id)
             if not scenarios_reload_success:
-                self.logger.warning(f"Не удалось перезагрузить кэш обычных сценариев для tenant {tenant_id}")
+                self.logger.warning(f"Failed to reload regular scenarios cache for tenant {tenant_id}")
             
-            # 4. Перезагружаем scheduled метаданные
+            # 4. Reload scheduled metadata
             scheduled_reload_success = await self.scheduled_manager.reload_scheduled_metadata(tenant_id)
             if not scheduled_reload_success:
-                self.logger.warning(f"Не удалось перезагрузить scheduled метаданные для tenant {tenant_id}")
+                self.logger.warning(f"Failed to reload scheduled metadata for tenant {tenant_id}")
             
-            # Определяем результат в зависимости от успешности перезагрузок
+            # Determine result based on reload success
             if scenarios_reload_success and scheduled_reload_success:
-                # Обе перезагрузки успешны
+                # Both reloads successful
                 return {"result": "success"}
             elif scenarios_reload_success or scheduled_reload_success:
-                # Только одна перезагрузка успешна - частичный успех
+                # Only one reload successful - partial success
                 failed_parts = []
                 if not scenarios_reload_success:
-                    failed_parts.append("обычные сценарии")
+                    failed_parts.append("regular scenarios")
                 if not scheduled_reload_success:
-                    failed_parts.append("scheduled метаданные")
+                    failed_parts.append("scheduled metadata")
                 
                 return {
                     "result": "partial_success",
                     "error": {
                         "code": "PARTIAL_SUCCESS",
-                        "message": f"Частичный успех: не удалось перезагрузить {', '.join(failed_parts)}"
+                        "message": f"Partial success: failed to reload {', '.join(failed_parts)}"
                     }
                 }
             else:
-                # Обе перезагрузки не удались
+                # Both reloads failed
                 return {
                     "result": "error",
                     "error": {
                         "code": "INTERNAL_ERROR",
-                        "message": "Не удалось перезагрузить кэш сценариев"
+                        "message": "Failed to reload scenarios cache"
                     }
                 }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации сценариев: {e}")
+            self.logger.error(f"Error syncing scenarios: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def execute_scenario(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Выполнение сценария или массива сценариев по имени
+        Execute scenario or array of scenarios by name
         
-        Примечание: _scenario_metadata добавляется в data в ScenarioExecutor.execute_scenario
-        и передается через action_data в этот action для изоляции обработки события
+        Note: _scenario_metadata is added to data in ScenarioExecutor.execute_scenario
+        and passed through action_data to this action for event processing isolation
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             scenario_param = data.get('scenario')
             
-            # Получаем tenant_id (уже передан из контекста)
+            # Get tenant_id (already passed from context)
             tenant_id = data.get('tenant_id')
             
-            # Получаем метаданные сценариев из контекста (добавляются в ScenarioExecutor.execute_scenario)
-            # Используются для изоляции обработки: обновление структуры сценариев не влияет на уже запущенные сценарии
+            # Get scenario metadata from context (added in ScenarioExecutor.execute_scenario)
+            # Used for processing isolation: updating scenario structure doesn't affect already running scenarios
             scenario_metadata = data.get('_scenario_metadata')
             
-            # Получаем параметр return_cache (по умолчанию true)
+            # Get return_cache parameter (default true)
             return_cache = data.get('return_cache', True)
             if not isinstance(return_cache, bool):
-                return_cache = True  # По умолчанию включаем возврат кэша
+                return_cache = True  # By default enable cache return
             
             if isinstance(scenario_param, str):
-                # Один сценарий
+                # Single scenario
                 result, cache = await self.scenario_engine._execute_scenario_by_name(
                     tenant_id=tenant_id,
                     scenario_name=scenario_param,
@@ -258,15 +258,15 @@ class ScenarioProcessor:
                     'scenario_result': result
                 }
                 
-                # Если return_cache включен и есть кэш - возвращаем его в response_data
-                # Кэш будет добавлен в _cache[action_name] автоматически в scenario_engine
-                # Возвращаем кэш даже при ошибке, если он был частично накоплен
+                # If return_cache enabled and cache exists - return it in response_data
+                # Cache will be added to _cache[action_name] automatically in scenario_engine
+                # Return cache even on error if it was partially accumulated
                 if return_cache and cache:
-                    # Мержим кэш из выполненного сценария в response_data
-                    # cache - это весь _cache из выполненного сценария (словарь с ключами action_name)
-                    # Это позволит использовать данные из выполненного сценария через _cache[action_name]
+                    # Merge cache from executed scenario into response_data
+                    # cache is entire _cache from executed scenario (dict with action_name keys)
+                    # This allows using data from executed scenario through _cache[action_name]
                     response_data.update(cache)
-                    # Восстанавливаем scenario_result на случай, если он был перезаписан из cache
+                    # Restore scenario_result in case it was overwritten from cache
                     response_data['scenario_result'] = result
                 
                 return {
@@ -275,12 +275,12 @@ class ScenarioProcessor:
                 }
                 
             elif isinstance(scenario_param, list):
-                # Массив сценариев - выполняем последовательно
-                # ВАЖНО: Для массива сценариев возврат кэша отключен, т.к. сложно определить логику объединения
-                # и это может нарушить изоляцию сценариев
+                # Array of scenarios - execute sequentially
+                # IMPORTANT: For scenario array cache return is disabled, as it's hard to determine merge logic
+                # and this could break scenario isolation
                 last_result = 'success'
                 
-                # Получаем метаданные сценариев из контекста (добавляются в ScenarioExecutor.execute_scenario)
+                # Get scenario metadata from context (added in ScenarioExecutor.execute_scenario)
                 scenario_metadata = data.get('_scenario_metadata')
                 
                 for scenario_name in scenario_param:
@@ -291,11 +291,11 @@ class ScenarioProcessor:
                         scenario_metadata=scenario_metadata
                     )
                     
-                    # Если техническая ошибка - прерываем
+                    # If technical error - interrupt
                     if result == 'error':
                         return {'result': 'error'}
                     
-                    # Если abort или stop - прерываем всю цепочку и передаем результат
+                    # If abort or stop - interrupt entire chain and pass result
                     if result in ['abort', 'stop']:
                         return {
                             'result': 'success',
@@ -304,10 +304,10 @@ class ScenarioProcessor:
                             }
                         }
                     
-                    # Сохраняем результат (success, break)
+                    # Save result (success, break)
                     last_result = result
                 
-                # Для массива сценариев кэш не возвращается (изоляция сохраняется)
+                # For scenario array cache is not returned (isolation preserved)
                 return {
                     'result': 'success',
                     'response_data': {
@@ -320,31 +320,31 @@ class ScenarioProcessor:
                     'result': 'error',
                     'error': {
                         'code': 'VALIDATION_ERROR',
-                        'message': 'scenario должен быть строкой или массивом'
+                        'message': 'scenario must be string or array'
                     }
                 }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка выполнения сценария: {e}")
+            self.logger.error(f"Error executing scenario: {e}")
             return {
                 'result': 'error',
                 'error': {
                     'code': 'INTERNAL_ERROR',
-                    'message': f'Внутренняя ошибка: {str(e)}'
+                    'message': f'Internal error: {str(e)}'
                 }
             }
     
     async def wait_for_action(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Ожидание завершения асинхронного действия по action_id
-        Возвращает результат основного действия AS IS (как будто оно выполнилось напрямую)
+        Wait for async action completion by action_id
+        Returns main action result AS IS (as if it executed directly)
         """
         try:
-            # Валидация выполняется централизованно в ActionRegistry
+            # Validation is done centrally in ActionRegistry
             action_id = data.get('action_id')
-            timeout = data.get('timeout')  # Опциональный таймаут в секундах
+            timeout = data.get('timeout')  # Optional timeout in seconds
             
-            # Получаем контекст сценария из data
+            # Get scenario context from data
             async_action = data.get('_async_action', {})
             
             if action_id not in async_action:
@@ -352,28 +352,28 @@ class ScenarioProcessor:
                     'result': 'error',
                     'error': {
                         'code': 'NOT_FOUND',
-                        'message': f'Async действие с action_id={action_id} не найдено'
+                        'message': f'Async action with action_id={action_id} not found'
                     }
                 }
             
             future = async_action[action_id]
             
-            # Проверяем что это Future
+            # Check that it's a Future
             if not isinstance(future, asyncio.Future):
                 return {
                     'result': 'error',
                     'error': {
                         'code': 'INVALID_STATE',
-                        'message': f'Некорректный тип Future для action_id={action_id}'
+                        'message': f'Invalid Future type for action_id={action_id}'
                     }
                 }
             
-            # Если действие уже завершено - сразу возвращаем результат AS IS
+            # If action already completed - immediately return result AS IS
             if future.done():
                 try:
                     result = future.result()
-                    # Возвращаем результат основного действия AS IS (полностью копируем структуру)
-                    # Результат попадет в data через merge response_data в scenario_engine
+                    # Return main action result AS IS (fully copy structure)
+                    # Result will get into data through merge response_data in scenario_engine
                     return result
                 except Exception as e:
                     return {
@@ -384,28 +384,28 @@ class ScenarioProcessor:
                         }
                     }
             
-            # Ждем завершения с таймаутом или без
+            # Wait for completion with timeout or without
             try:
                 if timeout:
                     result = await asyncio.wait_for(future, timeout=float(timeout))
                 else:
                     result = await future
                 
-                # Возвращаем результат основного действия AS IS (полностью копируем структуру)
-                # Результат попадет в data через merge response_data в scenario_engine
+                # Return main action result AS IS (fully copy structure)
+                # Result will get into data through merge response_data in scenario_engine
                 return result
                 
             except asyncio.TimeoutError:
-                # Таймаут - это ошибка самого wait_for_action, возвращаем ошибку ожидания
+                # Timeout - this is wait_for_action error, return waiting error
                 return {
                     'result': 'timeout',
                     'error': {
                         'code': 'TIMEOUT',
-                        'message': f'Превышено время ожидания для action_id={action_id}'
+                        'message': f'Timeout exceeded for action_id={action_id}'
                     }
                 }
             except Exception as e:
-                # Ошибка при ожидании - возвращаем ошибку wait_for_action
+                # Error on wait - return wait_for_action error
                 return {
                     'result': 'error',
                     'error': {
@@ -415,11 +415,11 @@ class ScenarioProcessor:
                 }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка ожидания async действия: {e}")
+            self.logger.error(f"Error waiting for async action: {e}")
             return {
                 'result': 'error',
                 'error': {
                     'code': 'INTERNAL_ERROR',
-                    'message': f'Внутренняя ошибка: {str(e)}'
+                    'message': f'Internal error: {str(e)}'
                 }
             }

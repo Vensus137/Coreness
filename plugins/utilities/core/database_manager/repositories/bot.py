@@ -1,5 +1,5 @@
 """
-BotRepository - репозиторий для работы с ботами и командами
+BotRepository - repository for working with bots and commands
 """
 
 from typing import Any, Dict, List, Optional
@@ -11,11 +11,11 @@ from .base import BaseRepository
 
 
 class BotRepository(BaseRepository):
-    """Репозиторий для работы с ботами и командами"""
+    """Repository for working with bots and commands"""
     
     async def get_all_bots(self) -> Optional[List[Dict[str, Any]]]:
         """
-        Получить всех ботов
+        Get all bots
         """
         try:
             with self._get_session() as session:
@@ -25,12 +25,12 @@ class BotRepository(BaseRepository):
                 return await self._to_dict_list(result)
                 
         except Exception as e:
-            self.logger.error(f"Ошибка получения всех ботов: {e}")
+            self.logger.error(f"Error getting all bots: {e}")
             return None
     
     async def get_bot_by_id(self, bot_id: int) -> Optional[Dict[str, Any]]:
         """
-        Получить конфигурацию бота по ID
+        Get bot configuration by ID
         """
         try:
             with self._get_session() as session:
@@ -40,12 +40,12 @@ class BotRepository(BaseRepository):
                 return await self._to_dict(result)
                 
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка получения бота: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error getting bot: {e}")
             return None
     
     async def get_bot_by_telegram_id(self, telegram_bot_id: int) -> Optional[Dict[str, Any]]:
         """
-        Получить бота по telegram_bot_id
+        Get bot by telegram_bot_id
         """
         try:
             with self._get_session() as session:
@@ -55,12 +55,12 @@ class BotRepository(BaseRepository):
                 return await self._to_dict(result)
                 
         except Exception as e:
-            self.logger.error(f"[TelegramBot-{telegram_bot_id}] Ошибка получения бота: {e}")
+            self.logger.error(f"[TelegramBot-{telegram_bot_id}] Error getting bot: {e}")
             return None
     
     async def get_bot_by_tenant_id(self, tenant_id: int) -> Optional[Dict[str, Any]]:
         """
-        Получить бота по tenant_id
+        Get bot by tenant_id
         """
         try:
             with self._get_session() as session:
@@ -70,12 +70,12 @@ class BotRepository(BaseRepository):
                 return await self._to_dict(result)
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения бота для тенанта: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting bot for tenant: {e}")
             return None
     
     async def get_commands_by_bot(self, bot_id: int) -> Optional[List[Dict[str, Any]]]:
         """
-        Получить команды бота
+        Get bot commands
         """
         try:
             with self._get_session() as session:
@@ -85,12 +85,12 @@ class BotRepository(BaseRepository):
                 return await self._to_dict_list(result)
                 
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка получения команд бота: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error getting bot commands: {e}")
             return None
     
     async def delete_commands_by_bot(self, bot_id: int) -> Optional[bool]:
         """
-        Удалить все команды бота
+        Delete all bot commands
         """
         try:
             with self._get_session() as session:
@@ -101,19 +101,19 @@ class BotRepository(BaseRepository):
                 return True
                 
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка удаления команд бота: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error deleting bot commands: {e}")
             return None
     
     async def save_commands_by_bot(self, bot_id: int, command_list: List[Dict[str, Any]]) -> Optional[int]:
         """
-        Сохранить команды бота
+        Save bot commands
         """
         try:
             with self._get_session() as session:
                 saved_count = 0
                 
                 for cmd_data in command_list:
-                    # Подготавливаем данные для вставки через data_preparer
+                    # Prepare data for insertion via data_preparer
                     prepared_fields = await self.data_preparer.prepare_for_insert(
                         model=BotCommand,
                         fields={
@@ -128,7 +128,7 @@ class BotRepository(BaseRepository):
                         json_fields=[]
                     )
                     
-                    # Вставляем команду
+                    # Insert command
                     stmt = insert(BotCommand).values(**prepared_fields)
                     session.execute(stmt)
                     saved_count += 1
@@ -137,16 +137,16 @@ class BotRepository(BaseRepository):
                 return saved_count
                 
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка сохранения команд бота: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error saving bot commands: {e}")
             return None
     
     async def create_bot(self, bot_data: Dict[str, Any]) -> Optional[int]:
         """
-        Создать бота
+        Create bot
         """
         try:
             with self._get_session() as session:
-                # Подготавливаем данные для вставки через data_preparer
+                # Prepare data for insertion via data_preparer
                 prepared_fields = await self.data_preparer.prepare_for_insert(
                     model=Bot,
                     fields={
@@ -168,18 +168,18 @@ class BotRepository(BaseRepository):
                 return bot_id
                 
         except Exception as e:
-            self.logger.error(f"Ошибка создания бота: {e}")
+            self.logger.error(f"Error creating bot: {e}")
             return None
     
     async def update_bot(self, bot_id: int, bot_data: Dict[str, Any]) -> Optional[bool]:
         """
-        Обновить бота
+        Update bot
         """
         try:
             with self._get_session() as session:
                 from sqlalchemy import update
                 
-                # Подготавливаем данные для обновления через data_preparer
+                # Prepare data for update via data_preparer
                 prepared_fields = await self.data_preparer.prepare_for_update(
                     model=Bot,
                     fields=bot_data,
@@ -187,7 +187,7 @@ class BotRepository(BaseRepository):
                 )
                 
                 if not prepared_fields:
-                    self.logger.warning(f"[Bot-{bot_id}] Нет полей для обновления бота")
+                    self.logger.warning(f"[Bot-{bot_id}] No fields to update bot")
                     return False
                 
                 stmt = update(Bot).where(Bot.id == bot_id).values(**prepared_fields)
@@ -197,9 +197,9 @@ class BotRepository(BaseRepository):
                 if result.rowcount > 0:
                     return True
                 else:
-                    self.logger.warning(f"Бот {bot_id} не найден для обновления")
+                    self.logger.warning(f"Bot {bot_id} not found for update")
                     return False
                 
         except Exception as e:
-            self.logger.error(f"[Bot-{bot_id}] Ошибка обновления бота: {e}")
+            self.logger.error(f"[Bot-{bot_id}] Error updating bot: {e}")
             return None

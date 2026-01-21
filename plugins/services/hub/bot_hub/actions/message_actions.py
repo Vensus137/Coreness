@@ -1,37 +1,37 @@
 """
-Действия для работы с сообщениями через Bot Hub
+Actions for working with messages through Bot Hub
 """
 
 from typing import Any, Dict
 
 
 class MessageActions:
-    """Действия для работы с сообщениями"""
+    """Actions for working with messages"""
     
     def __init__(self, bot_info_manager, telegram_api, logger, settings=None):
         self.bot_info_manager = bot_info_manager
         self.telegram_api = telegram_api
         self.logger = logger
         self.settings = settings or {}
-        # Сохраняем значение по умолчанию из настроек при инициализации
+        # Save default value from settings on initialization
         self.default_buttons_per_row = self.settings.get('default_buttons_per_row', 2)
     
     async def send_message(self, data: dict) -> Dict[str, Any]:
-        """Отправка сообщения боту"""
+        """Send message to bot"""
         try:
             bot_id = data.get('bot_id')
             
-            # Получаем информацию о боте
+            # Get bot information
             bot_result = await self.bot_info_manager.get_bot_info(bot_id)
             if bot_result.get('result') != 'success':
-                error_msg = bot_result.get('error', 'Неизвестная ошибка')
+                error_msg = bot_result.get('error', 'Unknown error')
                 if isinstance(error_msg, dict):
-                    error_msg = error_msg.get('message', 'Неизвестная ошибка')
+                    error_msg = error_msg.get('message', 'Unknown error')
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Не удалось получить информацию о боте {bot_id}: {error_msg}"
+                        "message": f"Failed to get bot information for {bot_id}: {error_msg}"
                     }
                 }
             
@@ -41,11 +41,11 @@ class MessageActions:
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Токен бота {bot_id} не найден"
+                        "message": f"Bot token for {bot_id} not found"
                     }
                 }
             
-            # Отправляем сообщение через telegram_api (передаем исходные data)
+            # Send message through telegram_api (pass original data)
             result = await self.telegram_api.send_message(
                 bot_info['bot_token'], 
                 bot_id, 
@@ -55,31 +55,31 @@ class MessageActions:
             return result
             
         except Exception as e:
-            self.logger.error(f"Ошибка отправки сообщения: {e}")
+            self.logger.error(f"Error sending message: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def delete_message(self, data: dict) -> Dict[str, Any]:
-        """Удаление сообщения бота"""
+        """Delete bot message"""
         try:
             bot_id = data.get('bot_id')
             
-            # Получаем информацию о боте
+            # Get bot information
             bot_result = await self.bot_info_manager.get_bot_info(bot_id)
             if bot_result.get('result') != 'success':
-                error_msg = bot_result.get('error', 'Неизвестная ошибка')
+                error_msg = bot_result.get('error', 'Unknown error')
                 if isinstance(error_msg, dict):
-                    error_msg = error_msg.get('message', 'Неизвестная ошибка')
+                    error_msg = error_msg.get('message', 'Unknown error')
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Не удалось получить информацию о боте {bot_id}: {error_msg}"
+                        "message": f"Failed to get bot information for {bot_id}: {error_msg}"
                     }
                 }
             
@@ -89,11 +89,11 @@ class MessageActions:
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Токен бота {bot_id} не найден"
+                        "message": f"Bot token for {bot_id} not found"
                     }
                 }
             
-            # Удаляем сообщение через telegram_api (передаем исходные data)
+            # Delete message through telegram_api (pass original data)
             result = await self.telegram_api.delete_message(
                 bot_info['bot_token'], 
                 bot_id, 
@@ -103,28 +103,28 @@ class MessageActions:
             return result
             
         except Exception as e:
-            self.logger.error(f"Ошибка удаления сообщения: {e}")
+            self.logger.error(f"Error deleting message: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def build_keyboard(self, data: dict) -> Dict[str, Any]:
         """
-        Построение клавиатуры из массива ID с использованием шаблонов
+        Build keyboard from array of IDs using templates
         
-        Параметры:
-        - items: массив ID (обязательно)
-        - keyboard_type: тип клавиатуры - "inline" или "reply" (обязательно)
-        - text_template: шаблон текста кнопки с плейсхолдером $value$ (обязательно)
-        - callback_template: шаблон callback_data для inline клавиатуры с плейсхолдером $value$ (обязательно для inline)
-        - buttons_per_row: количество кнопок в строке (опционально, по умолчанию 1)
+        Parameters:
+        - items: array of IDs (required)
+        - keyboard_type: keyboard type - "inline" or "reply" (required)
+        - text_template: button text template with placeholder $value$ (required)
+        - callback_template: callback_data template for inline keyboard with placeholder $value$ (required for inline)
+        - buttons_per_row: number of buttons per row (optional, default 1)
         
-        Примечание: Используется синтаксис $value$ вместо {value} чтобы избежать конфликта
-        с системой плейсхолдеров, которая обрабатывает {value} как плейсхолдер.
+        Note: Uses $value$ syntax instead of {value} to avoid conflict
+        with placeholder system that processes {value} as placeholder.
         """
         try:
             items = data.get('items')
@@ -133,22 +133,22 @@ class MessageActions:
             callback_template = data.get('callback_template')
             buttons_per_row = data.get('buttons_per_row', self.default_buttons_per_row)
             
-            # Дополнительная бизнес-валидация: callback_template обязателен для inline
+            # Additional business validation: callback_template required for inline
             if keyboard_type == 'inline' and not callback_template:
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "callback_template обязателен для inline клавиатуры"
+                        "message": "callback_template required for inline keyboard"
                     }
                 }
             
-            # Строим клавиатуру
+            # Build keyboard
             keyboard = []
             current_row = []
             
             for item_id in items:
-                # Заменяем $value$ в шаблонах на текущий ID (используем $value$ чтобы избежать конфликта с плейсхолдерами)
+                # Replace $value$ in templates with current ID (use $value$ to avoid conflict with placeholders)
                 text = str(text_template).replace('$value$', str(item_id))
                 
                 if keyboard_type == 'inline':
@@ -159,12 +159,12 @@ class MessageActions:
                 
                 current_row.append(button)
                 
-                # Если строка заполнена, добавляем её в клавиатуру
+                # If row is full, add it to keyboard
                 if len(current_row) >= buttons_per_row:
                     keyboard.append(current_row)
                     current_row = []
             
-            # Добавляем оставшиеся кнопки
+            # Add remaining buttons
             if current_row:
                 keyboard.append(current_row)
             
@@ -179,31 +179,31 @@ class MessageActions:
             }
             
         except Exception as e:
-            self.logger.error(f"Ошибка построения клавиатуры: {e}")
+            self.logger.error(f"Error building keyboard: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def answer_callback_query(self, data: dict) -> Dict[str, Any]:
-        """Ответ на callback query (всплывающее уведомление или простое уведомление)"""
+        """Answer callback query (popup notification or simple notification)"""
         try:
             bot_id = data.get('bot_id')
             
-            # Получаем информацию о боте
+            # Get bot information
             bot_result = await self.bot_info_manager.get_bot_info(bot_id)
             if bot_result.get('result') != 'success':
-                error_msg = bot_result.get('error', 'Неизвестная ошибка')
+                error_msg = bot_result.get('error', 'Unknown error')
                 if isinstance(error_msg, dict):
-                    error_msg = error_msg.get('message', 'Неизвестная ошибка')
+                    error_msg = error_msg.get('message', 'Unknown error')
                 return {
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Не удалось получить информацию о боте {bot_id}: {error_msg}"
+                        "message": f"Failed to get bot information for {bot_id}: {error_msg}"
                     }
                 }
             
@@ -213,11 +213,11 @@ class MessageActions:
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Токен бота {bot_id} не найден"
+                        "message": f"Bot token for {bot_id} not found"
                     }
                 }
             
-            # Отвечаем на callback query через telegram_api (передаем исходные data)
+            # Answer callback query through telegram_api (pass original data)
             result = await self.telegram_api.answer_callback_query(
                 bot_info['bot_token'], 
                 bot_id, 
@@ -227,11 +227,11 @@ class MessageActions:
             return result
             
         except Exception as e:
-            self.logger.error(f"Ошибка ответа на callback query: {e}")
+            self.logger.error(f"Error answering callback query: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }

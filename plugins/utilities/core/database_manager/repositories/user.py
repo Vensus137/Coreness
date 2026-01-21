@@ -1,5 +1,5 @@
 """
-Репозиторий для работы с пользователями
+Repository for working with users
 """
 
 from typing import Any, Dict, List, Optional
@@ -12,12 +12,12 @@ from .base import BaseRepository
 
 class UserRepository(BaseRepository):
     """
-    Репозиторий для работы с пользователями
+    Repository for working with users
     """
     
     async def get_user_ids_by_tenant(self, tenant_id: int) -> Optional[List[int]]:
         """
-        Получить список всех user_id для указанного тенанта
+        Get list of all user_id for specified tenant
         """
         try:
             with self._get_session() as session:
@@ -27,12 +27,12 @@ class UserRepository(BaseRepository):
                 return list(result)
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] Ошибка получения списка пользователей: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error getting user list: {e}")
             return None
     
     async def get_user_by_id(self, user_id: int, tenant_id: int) -> Optional[Dict[str, Any]]:
         """
-        Получение данных пользователя по Telegram user_id и tenant_id
+        Get user data by Telegram user_id and tenant_id
         """
         try:
             with self._get_session() as session:
@@ -45,16 +45,16 @@ class UserRepository(BaseRepository):
                 return await self._to_dict(result)
                     
         except Exception as e:
-            self.logger.error(f"Ошибка получения данных пользователя: {e}")
+            self.logger.error(f"Error getting user data: {e}")
             return None
     
     async def create_user(self, user_data: Dict[str, Any]) -> Optional[bool]:
         """
-        Создать пользователя
+        Create user
         """
         try:
             with self._get_session() as session:
-                # Подготавливаем данные для вставки через data_preparer
+                # Prepare data for insertion via data_preparer
                 prepared_fields = await self.data_preparer.prepare_for_insert(
                     model=TenantUser,
                     fields={
@@ -77,17 +77,17 @@ class UserRepository(BaseRepository):
                 return True
                 
         except Exception as e:
-            self.logger.error(f"Ошибка создания пользователя: {e}")
+            self.logger.error(f"Error creating user: {e}")
             return None
     
     async def update_user(self, user_id: int, tenant_id: int, user_data: Dict[str, Any]) -> Optional[bool]:
         """
-        Обновить пользователя
+        Update user
         """
         try:
             with self._get_session() as session:
-                # Подготавливаем данные для обновления через data_preparer
-                # Передаем весь user_data - data_preparer сам отфильтрует существующие поля
+                # Prepare data for update via data_preparer
+                # Pass entire user_data - data_preparer will filter existing fields itself
                 prepared_fields = await self.data_preparer.prepare_for_update(
                     model=TenantUser,
                     fields=user_data,
@@ -95,7 +95,7 @@ class UserRepository(BaseRepository):
                 )
                 
                 if not prepared_fields:
-                    self.logger.warning(f"[Tenant-{tenant_id}] [User-{user_id}] Нет полей для обновления пользователя")
+                    self.logger.warning(f"[Tenant-{tenant_id}] [User-{user_id}] No fields to update user")
                     return False
                 
                 stmt = update(TenantUser).where(
@@ -108,10 +108,10 @@ class UserRepository(BaseRepository):
                 if result.rowcount > 0:
                     return True
                 else:
-                    self.logger.warning(f"[Tenant-{tenant_id}] [User-{user_id}] Пользователь не найден для обновления")
+                    self.logger.warning(f"[Tenant-{tenant_id}] [User-{user_id}] User not found for update")
                     return False
                 
         except Exception as e:
-            self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Ошибка обновления пользователя: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] [User-{user_id}] Error updating user: {e}")
             return None
 

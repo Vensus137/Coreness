@@ -1,57 +1,57 @@
 """
-Подмодуль для обработки кнопок
+Submodule for handling buttons
 """
 
 
 class ButtonMapper:
     """
-    Подмодуль для обработки кнопок Telegram
+    Submodule for handling Telegram buttons
     """
     
     def __init__(self, **kwargs):
         self.logger = kwargs['logger']
         
-        # Максимальная длина callback_data для Telegram
+        # Maximum length of callback_data for Telegram
         self.callback_data_limit = 60
     
     def _normalize_button_text(self, text: str) -> str:
-        """Нормализация текста кнопки в callback_data"""
+        """Normalize button text to callback_data"""
         try:
-            # Ленивые импорты библиотек
+            # Lazy imports of libraries
             import re
 
             import emoji
             from unidecode import unidecode
             
-            # Удаляем emoji
+            # Remove emoji
             text = emoji.replace_emoji(text, replace='')
             
-            # Приводим к нижнему регистру и убираем пробелы
+            # Convert to lowercase and strip spaces
             text = text.lower().strip()
             
-            # Транслитерация
+            # Transliteration
             text = unidecode(text)
             
-            # Убираем все кроме букв, цифр, пробелов, дефисов и подчеркиваний
+            # Remove everything except letters, numbers, spaces, hyphens and underscores
             text = re.sub(r'[^a-z0-9 _-]', '', text)
             
-            # Заменяем пробелы на подчеркивания
+            # Replace spaces with underscores
             text = re.sub(r'\s+', '_', text)
             
-            # Убираем множественные подчеркивания
+            # Remove multiple underscores
             text = re.sub(r'_+', '_', text).strip('_')
             
-            # Ограничиваем длину
+            # Limit length
             return text[:self.callback_data_limit]
             
         except Exception as e:
-            self.logger.error(f"Ошибка нормализации текста кнопки: {e}")
+            self.logger.error(f"Error normalizing button text: {e}")
             return "unknown_button"
     
     def build_reply_markup(self, inline=None, reply=None):
-        """Строит разметку клавиатуры для сообщения"""
+        """Builds keyboard markup for message"""
         try:
-            # Приоритет: inline > reply
+            # Priority: inline > reply
             if inline:
                 markup = {
                     "inline_keyboard": [
@@ -63,11 +63,11 @@ class ButtonMapper:
                 }
                 return markup
             
-            # Обработка reply клавиатуры
-            if reply is not None:  # Проверяем на None, а не на truthiness
-                if reply == []:  # Пустой список = убрать клавиатуру
+            # Handle reply keyboard
+            if reply is not None:  # Check for None, not truthiness
+                if reply == []:  # Empty list = remove keyboard
                     return {"remove_keyboard": True}
-                elif reply:  # Непустой список = показать клавиатуру
+                elif reply:  # Non-empty list = show keyboard
                     markup = {
                         "keyboard": [
                             [{"text": btn} for btn in row]
@@ -80,14 +80,14 @@ class ButtonMapper:
             return None
             
         except Exception as e:
-            self.logger.error(f"Ошибка создания разметки клавиатуры: {e}")
+            self.logger.error(f"Error creating keyboard markup: {e}")
             return None
     
     def _build_inline_button(self, btn):
-        """Строит InlineKeyboardButton с универсальной логикой"""
+        """Builds InlineKeyboardButton with universal logic"""
         try:
             if isinstance(btn, str):
-                # Простая строка -> callback_data с нормализованным текстом
+                # Simple string -> callback_data with normalized text
                 callback_data = self._normalize_button_text(btn)
                 return {
                     "text": btn,
@@ -98,29 +98,29 @@ class ButtonMapper:
                 value = btn[text]
                 
                 if isinstance(value, str):
-                    # Проверяем, является ли значение ссылкой
+                    # Check if value is a link
                     if value.startswith(("http://", "https://", "tg://")):
                         return {
                             "text": text,
                             "url": value
                         }
                     else:
-                        # Иначе используем как callback_data
+                        # Otherwise use as callback_data
                         return {
                             "text": text,
                             "callback_data": value
                         }
                 else:
-                    # Неизвестный тип значения -> резервный вариант
-                    self.logger.warning(f"[ButtonMapper] Неизвестный тип значения кнопки: {type(value)}, значение: {repr(value)}")
+                    # Unknown value type -> fallback
+                    self.logger.warning(f"[ButtonMapper] Unknown button value type: {type(value)}, value: {repr(value)}")
                     callback_data = self._normalize_button_text(text)
                     return {
                         "text": text,
                         "callback_data": callback_data
                     }
             else:
-                # Неизвестный тип -> резервный вариант
-                self.logger.warning(f"[ButtonMapper] Неизвестный тип кнопки: {type(btn)}, значение: {repr(btn)}")
+                # Unknown type -> fallback
+                self.logger.warning(f"[ButtonMapper] Unknown button type: {type(btn)}, value: {repr(btn)}")
                 callback_data = self._normalize_button_text(str(btn))
                 return {
                     "text": str(btn),
@@ -128,8 +128,8 @@ class ButtonMapper:
                 }
                 
         except Exception as e:
-            self.logger.error(f"Ошибка создания inline кнопки: {e}, кнопка: {repr(btn)}")
-            # Резервный вариант
+            self.logger.error(f"Error creating inline button: {e}, button: {repr(btn)}")
+            # Fallback
             return {
                 "text": str(btn),
                 "callback_data": "unknown_button"

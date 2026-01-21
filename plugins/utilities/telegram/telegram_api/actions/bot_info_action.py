@@ -1,12 +1,12 @@
 """
-Bot Info Action - действие для получения информации о боте через Telegram API
+Bot Info Action - action for getting bot information via Telegram API
 """
 
 from typing import Any, Dict
 
 
 class BotInfoAction:
-    """Действие для получения информации о боте"""
+    """Action for getting bot information"""
     
     def __init__(self, api_client, **kwargs):
         self.api_client = api_client
@@ -14,28 +14,28 @@ class BotInfoAction:
     
     def _format_token_for_logs(self, bot_token: str) -> str:
         """
-        Форматирование токена для логов: первые 15 символов
-        Формат токена: {bot_id}:{secret}, где bot_id можно извлечь из начала
+        Format token for logs: first 15 characters
+        Token format: {bot_id}:{secret}, where bot_id can be extracted from the beginning
         """
         if not bot_token:
             return "[Bot-Token: unknown]"
         
-        # Берем первые 15 символов (обычно это bot_id + часть секрета)
+        # Take first 15 characters (usually bot_id + part of secret)
         return f"[Bot-Token: {bot_token[:15]}...]"
     
     async def get_bot_info(self, bot_token: str) -> Dict[str, Any]:
         """
-        Получение информации о боте через Telegram API метод getMe
+        Get bot information via Telegram API getMe method
         """
         try:
-            # Выполняем запрос getMe к Telegram API
+            # Execute getMe request to Telegram API
             result = await self.api_client.make_request(
                 bot_token=bot_token,
                 method="getMe",
                 payload={}
             )
             
-            # Проверяем результат
+            # Check result
             if result.get('result') == 'success':
                 bot_data = result.get('response_data', {})
                 
@@ -52,19 +52,19 @@ class BotInfoAction:
                     }
                 }
             else:
-                error_description = result.get('error', 'Неизвестная ошибка')
+                error_description = result.get('error', 'Unknown error')
                 token_info = self._format_token_for_logs(bot_token)
-                self.logger.warning(f"{token_info} Ошибка получения информации о боте: {error_description}")
+                self.logger.warning(f"{token_info} Error getting bot information: {error_description}")
                 
                 return {
                     "result": "error",
-                    "error": f"Telegram API ошибка: {error_description}"
+                    "error": f"Telegram API error: {error_description}"
                 }
                 
         except Exception as e:
             token_info = self._format_token_for_logs(bot_token)
-            self.logger.error(f"{token_info} Ошибка получения информации о боте: {e}")
+            self.logger.error(f"{token_info} Error getting bot information: {e}")
             return {
                 "result": "error",
-                "error": f"Ошибка запроса: {str(e)}"
+                "error": f"Request error: {str(e)}"
             }

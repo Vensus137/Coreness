@@ -1,33 +1,33 @@
 """
-Модификаторы для работы с массивами
+Modifiers for working with arrays
 """
 from typing import Any, List
 
 
 class ArrayModifiers:
-    """Класс с модификаторами для работы с массивами"""
+    """Class with modifiers for working with arrays"""
     
     def __init__(self, logger):
         self.logger = logger
     
     def modifier_expand(self, value: Any, param: str) -> Any:
         """
-        Разворачивание массива массивов на один уровень: {field|expand}
-        Используется для разворачивания динамических клавиатур в массивах
+        Expanding array of arrays one level: {field|expand}
+        Used for expanding dynamic keyboards in arrays
         
-        Модификатор не изменяет значение, а только помечает его для разворачивания
-        при использовании в массиве. Разворачивание происходит в _process_list_optimized.
+        Modifier doesn't change value, only marks it for expansion
+        when used in array. Expansion happens in _process_list_optimized.
         
-        Примеры:
-        - {keyboard|expand} в inline: ["{keyboard|expand}", ...] развернет массив массивов на один уровень
-        - [[a, b], [c, d]] при использовании с expand в массиве станет [a, b, c, d]
+        Examples:
+        - {keyboard|expand} in inline: ["{keyboard|expand}", ...] will expand array of arrays one level
+        - [[a, b], [c, d]] when used with expand in array becomes [a, b, c, d]
         """
-        # Модификатор не изменяет значение, только возвращает его как есть
-        # Разворачивание происходит в _process_list_optimized при обнаружении модификатора expand
+        # Modifier doesn't change value, only returns it as is
+        # Expansion happens in _process_list_optimized when expand modifier is detected
         return value
     
     def modifier_keys(self, value: Any, param: str) -> List:
-        """Извлечение ключей из объекта (словаря): {field|keys}"""
+        """Extract keys from object (dictionary): {field|keys}"""
         if value is None:
             return None
         if isinstance(value, dict):

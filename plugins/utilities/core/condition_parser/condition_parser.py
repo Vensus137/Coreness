@@ -1,6 +1,6 @@
 """
-Универсальный парсер условий для сценариев
-Новая версия с поддержкой маркера $name для полей
+Universal condition parser for scenarios
+New version with support for $name marker for fields
 """
 
 from typing import Any, Dict, List, Union
@@ -11,18 +11,18 @@ from .core.tokenizer import ConditionTokenizer
 
 
 class ConditionParser:
-    """Универсальный парсер выражений условий с поддержкой маркера $name для полей"""
+    """Universal condition expression parser with support for $name marker for fields"""
     
     def __init__(self, **kwargs):
         self.logger = kwargs['logger']
         
-        # Инициализируем компоненты
+        # Initialize components
         self.tokenizer = ConditionTokenizer()
         self.compiler = ConditionCompiler(self.logger, self.tokenizer)
         self.extractor = ConditionExtractor()
     
     async def parse_condition_string(self, condition_string: str) -> Dict[str, Any]:
-        """Парсинг строки условий с извлечением всех условий с == для дерева поиска"""
+        """Parse condition string with extraction of all == conditions for search tree"""
         try:
             result = {
                 'search_path': {},
@@ -30,25 +30,25 @@ class ConditionParser:
                 'condition_hash': None
             }
             
-            # Извлекаем все условия с == (только для плоских полей с маркером $name)
+            # Extract all == conditions (only for flat fields with $name marker)
             equal_conditions = self.extractor.extract_equal_conditions(condition_string)
             
-            # Сортируем поля для консистентности
+            # Sort fields for consistency
             sorted_conditions = dict(sorted(equal_conditions.items()))
             
-            # Строим путь поиска
+            # Build search path
             result['search_path'] = sorted_conditions
             
-            # Компилируем все условия
+            # Compile all conditions
             result['compiled_function'] = self.compiler.compile(condition_string)
             
-            # Создаем хеш исходного условия для сравнения дубликатов
+            # Create hash of original condition for duplicate comparison
             result['condition_hash'] = hash(condition_string.strip())
             
             return result
             
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга условия '{condition_string}': {e}")
+            self.logger.error(f"Error parsing condition '{condition_string}': {e}")
             return {
                 'search_path': {},
                 'compiled_function': None,
@@ -56,7 +56,7 @@ class ConditionParser:
             }
     
     async def check_match(self, condition: Union[str, Dict[str, Any]], data: Dict[str, Any]) -> bool:
-        """Универсальная проверка соответствия данных условию"""
+        """Universal check for data matching condition"""
         try:
             if isinstance(condition, str):
                 parsed_condition = await self.parse_condition_string(condition)
@@ -64,37 +64,37 @@ class ConditionParser:
             elif isinstance(condition, dict):
                 return await self._check_parsed_condition(condition, data)
             else:
-                self.logger.error(f"Неподдерживаемый тип условия: {type(condition)}")
+                self.logger.error(f"Unsupported condition type: {type(condition)}")
                 return False
                 
         except Exception as e:
-            self.logger.error(f"Ошибка проверки условия: {e}")
+            self.logger.error(f"Error checking condition: {e}")
             return False
     
     async def _check_parsed_condition(self, parsed_condition: Dict[str, Any], data: Dict[str, Any]) -> bool:
-        """Внутренний метод проверки распарсенного условия"""
+        """Internal method for checking parsed condition"""
         try:
             compiled_function = parsed_condition.get('compiled_function')
             if compiled_function:
                 try:
                     return compiled_function(data)
                 except Exception as e:
-                    self.logger.error(f"Ошибка выполнения условия: {e}")
+                    self.logger.error(f"Error executing condition: {e}")
                     return False
             
             return True
             
         except Exception as e:
-            self.logger.error(f"Ошибка проверки распарсенного условия: {e}")
+            self.logger.error(f"Error checking parsed condition: {e}")
             return False
     
     async def add_to_tree(self, search_tree: Dict[str, Any], parsed_condition: Dict[str, Any], item_name: str, item_value: Any) -> bool:
-        """Добавляет элемент в дерево поиска с условиями в листах"""
+        """Adds element to search tree with conditions in leaves"""
         try:
             search_path = parsed_condition['search_path']
             compiled_function = parsed_condition['compiled_function']
             
-            # Если нет условий с ==, добавляем в корень
+            # If no == conditions, add to root
             if not search_path:
                 if 'conditions' not in search_tree:
                     search_tree['conditions'] = []
@@ -118,11 +118,11 @@ class ConditionParser:
                 else:
                     return False
             
-            # Строим дерево по search_path
+            # Build tree by search_path
             current_level = search_tree
             sorted_fields = sorted(search_path.items())
             
-            # Создаем промежуточные узлы
+            # Create intermediate nodes
             for field_name, field_value in sorted_fields:
                 if field_name not in current_level:
                     current_level[field_name] = {}
@@ -132,7 +132,7 @@ class ConditionParser:
                     current_level[field_value] = {}
                 current_level = current_level[field_value]
             
-            # В конечном узле создаем conditions если его нет
+            # In final node create conditions if it doesn't exist
             if 'conditions' not in current_level:
                 current_level['conditions'] = []
             
@@ -156,22 +156,22 @@ class ConditionParser:
                 return False
                 
         except Exception as e:
-            self.logger.error(f"Ошибка добавления элемента {item_name}={item_value} в дерево: {e}")
+            self.logger.error(f"Error adding element {item_name}={item_value} to tree: {e}")
             return False
     
     async def search_in_tree(self, search_tree: Dict[str, Any], data: Dict[str, Any]) -> List[Any]:
-        """Быстрый поиск значений в дереве по данным события - O(m) где m - глубина дерева"""
+        """Fast search for values in tree by event data - O(m) where m is tree depth"""
         try:
             found_values = []
             await self._search_tree_by_path(search_tree, data, found_values)
             return found_values
             
         except Exception as e:
-            self.logger.error(f"Ошибка поиска в дереве: {e}")
+            self.logger.error(f"Error searching in tree: {e}")
             return []
     
     async def _check_items(self, items: List[Dict[str, Any]], data: Dict[str, Any], found_values: List[Any]):
-        """Проверка элементов списка на соответствие условиям"""
+        """Check list items for condition matching"""
         try:
             for item in items:
                 if isinstance(item, dict):
@@ -184,18 +184,18 @@ class ConditionParser:
                                         if item_value not in found_values:
                                             found_values.append(item_value)
                         except Exception as e:
-                            self.logger.error(f"Ошибка проверки условия: {e}")
+                            self.logger.error(f"Error checking condition: {e}")
         except Exception as e:
-            self.logger.error(f"Ошибка проверки элементов: {e}")
+            self.logger.error(f"Error checking items: {e}")
     
     async def _search_tree_by_path(self, tree_node: Dict[str, Any], data: Dict[str, Any], found_values: List[Any]):
-        """Быстрый поиск по дереву - проверяем conditions в каждом узле при погружении"""
+        """Fast tree search - check conditions in each node while descending"""
         try:
-            # Сначала проверяем conditions в текущем узле
+            # First check conditions in current node
             if 'conditions' in tree_node:
                 await self._check_items(tree_node['conditions'], data, found_values)
             
-            # Затем идем дальше по всем подходящим путям
+            # Then go further along all matching paths
             for key, value in tree_node.items():
                 if key == 'conditions':
                     continue
@@ -211,22 +211,22 @@ class ConditionParser:
                         continue
                         
         except Exception as e:
-            self.logger.error(f"Ошибка поиска по пути в дереве: {e}")
+            self.logger.error(f"Error searching by path in tree: {e}")
     
     async def build_condition(self, configs: List[Dict[str, Any]]) -> str:
-        """Сборка условия из массива структур с простыми полями и кастомными условиями"""
+        """Build condition from array of structures with simple fields and custom conditions"""
         try:
             all_conditions = []
             
             for config in configs:
                 config_conditions = []
                 
-                # Обрабатываем простые поля (кроме 'condition')
+                # Process simple fields (except 'condition')
                 for field, value in config.items():
                     if field == 'condition':
                         continue
                     
-                    # Добавляем маркер $name для полей
+                    # Add $name marker for fields
                     if isinstance(value, str):
                         escaped_value = f"'{value}'"
                     else:
@@ -234,23 +234,23 @@ class ConditionParser:
                     
                     config_conditions.append(f"${field} == {escaped_value}")
                 
-                # Добавляем кастомное условие, если есть
+                # Add custom condition if exists
                 if 'condition' in config:
                     custom_condition = config['condition'].strip()
                     if custom_condition:
                         config_conditions.append(custom_condition)
                 
-                # Склеиваем условия конфигурации через AND
+                # Join configuration conditions with AND
                 if config_conditions:
                     config_condition = " and ".join(config_conditions)
                     all_conditions.append(f"({config_condition})")
             
-            # Склеиваем все конфигурации через OR (каждая конфигурация - альтернатива)
+            # Join all configurations with OR (each configuration is an alternative)
             if all_conditions:
                 return " or ".join(all_conditions)
             else:
                 return ""
                 
         except Exception as e:
-            self.logger.error(f"Ошибка сборки условия из конфигураций: {e}")
+            self.logger.error(f"Error building condition from configurations: {e}")
             return ""

@@ -1,5 +1,5 @@
 """
-Локальные фикстуры для тестов bot_hub
+Local fixtures for bot_hub tests
 """
 import sys
 from pathlib import Path
@@ -7,13 +7,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-# Импортируем фикстуры из tests/conftest
+# Import fixtures from tests/conftest
 from tests.conftest import logger, module_logger, settings_manager  # noqa: F401
 
-# Автоматически добавляем родительскую директорию плагина в sys.path
-# Это позволяет использовать импорты вида "from modules.webhook_manager import ..."
-# вместо "from plugins.services.hub.bot_hub.modules.webhook_manager import ..."
-# и делает тесты независимыми от структуры папок выше уровня плагина
+# Automatically add parent plugin directory to sys.path
+# This allows using imports like "from modules.webhook_manager import ..."
+# instead of "from plugins.services.hub.bot_hub.modules.webhook_manager import ..."
+# and makes tests independent of folder structure above plugin level
 _plugin_dir = Path(__file__).parent.parent
 if str(_plugin_dir) not in sys.path:
     sys.path.insert(0, str(_plugin_dir))
@@ -21,7 +21,7 @@ if str(_plugin_dir) not in sys.path:
 
 @pytest.fixture
 def mock_database_manager():
-    """Создает мок DatabaseManager"""
+    """Create mock DatabaseManager"""
     mock = MagicMock()
     mock.get_master_repository = MagicMock()
     return mock
@@ -29,7 +29,7 @@ def mock_database_manager():
 
 @pytest.fixture
 def mock_master_repository():
-    """Создает мок MasterRepository"""
+    """Create mock MasterRepository"""
     mock = MagicMock()
     mock.get_bot_by_id = AsyncMock(return_value=None)
     mock.get_bot_by_tenant_id = AsyncMock(return_value=None)
@@ -40,7 +40,7 @@ def mock_master_repository():
 
 @pytest.fixture
 def mock_telegram_api():
-    """Создает мок TelegramAPI"""
+    """Create mock TelegramAPI"""
     mock = MagicMock()
     mock.get_bot_info = AsyncMock(return_value={
         'result': 'success',
@@ -54,7 +54,7 @@ def mock_telegram_api():
 
 @pytest.fixture
 def mock_telegram_polling():
-    """Создает мок TelegramPolling"""
+    """Create mock TelegramPolling"""
     mock = MagicMock()
     mock.start_bot_polling = AsyncMock(return_value=True)
     mock.stop_bot_polling = AsyncMock(return_value=True)
@@ -63,7 +63,7 @@ def mock_telegram_polling():
 
 @pytest.fixture
 def mock_action_hub():
-    """Создает мок ActionHub"""
+    """Create mock ActionHub"""
     mock = MagicMock()
     mock.execute_action = AsyncMock(return_value={"result": "success"})
     return mock
@@ -71,8 +71,8 @@ def mock_action_hub():
 
 @pytest.fixture
 def mock_cache_manager():
-    """Создает мок CacheManager с сохранением состояния"""
-    cache_storage = {}  # Хранилище для кэша
+    """Create mock CacheManager with state preservation"""
+    cache_storage = {}  # Cache storage
     
     mock = MagicMock()
     
@@ -92,7 +92,7 @@ def mock_cache_manager():
         return True
     
     async def invalidate_pattern_side_effect(pattern):
-        # Простая реализация для тестов
+        # Simple implementation for tests
         keys_to_delete = [k for k in cache_storage.keys() if pattern.replace('*', '') in k]
         for key in keys_to_delete:
             del cache_storage[key]
@@ -109,9 +109,9 @@ def mock_cache_manager():
 
 @pytest.fixture
 def mock_settings_manager():
-    """Создает мок SettingsManager для тестов"""
+    """Create mock SettingsManager for tests"""
     mock = MagicMock()
-    # Настраиваем возврат настроек bot_hub
+    # Configure return of bot_hub settings
     mock.get_plugin_settings = MagicMock(return_value={
         'cache_ttl': 315360000,
         'error_cache_ttl': 300
@@ -121,7 +121,7 @@ def mock_settings_manager():
 
 @pytest.fixture
 def mock_webhook_manager():
-    """Создает мок WebhookManager для тестов"""
+    """Create mock WebhookManager for tests"""
     mock = MagicMock()
     mock.get_webhook_info = AsyncMock(return_value={
         'result': 'success',
@@ -135,10 +135,10 @@ def mock_webhook_manager():
 
 @pytest.fixture
 def bot_info_manager(logger, mock_database_manager, mock_action_hub, mock_telegram_api, mock_telegram_polling, mock_master_repository, mock_cache_manager, mock_settings_manager, mock_webhook_manager):
-    """Создает BotInfoManager для тестов"""
+    """Create BotInfoManager for tests"""
     from modules.bot_info_manager import BotInfoManager
     
-    # Настраиваем мок database_manager для возврата master_repository
+    # Configure mock database_manager to return master_repository
     mock_database_manager.get_master_repository.return_value = mock_master_repository
     
     return BotInfoManager(
@@ -155,10 +155,10 @@ def bot_info_manager(logger, mock_database_manager, mock_action_hub, mock_telegr
 
 @pytest.fixture
 def bot_hub_service(logger, mock_database_manager, mock_action_hub, mock_telegram_api, mock_telegram_polling, mock_master_repository, mock_settings_manager, mock_cache_manager):
-    """Создает BotHubService для тестов"""
+    """Create BotHubService for tests"""
     from bot_hub import BotHubService
     
-    # Настраиваем мок database_manager для возврата master_repository
+    # Configure mock database_manager to return master_repository
     mock_database_manager.get_master_repository.return_value = mock_master_repository
     
     return BotHubService(

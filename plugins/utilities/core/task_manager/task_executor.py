@@ -5,13 +5,13 @@ from .types import TaskItem
 
 
 class TaskExecutor:
-    """Выполнение задач с семафорами и контролем"""
+    """Task execution with semaphores and control"""
     
     def __init__(self, **kwargs):
         self.logger = kwargs['logger']
         self.queue_manager = kwargs['queue_manager']
         
-        # Статистика
+        # Statistics
         self.stats = {
             'total_completed': 0,
             'total_failed': 0,
@@ -20,56 +20,56 @@ class TaskExecutor:
         }
     
     async def execute_task_with_semaphore(self, task_item: TaskItem, queue_manager, queue_name: str):
-        """Выполняет задачу с контролем семафора"""
+        """Executes task with semaphore control"""
         semaphore = queue_manager.semaphores[queue_name]
         
-        # Если семафор занят - задача будет ждать
+        # If semaphore is busy - task will wait
         if semaphore._value <= 0:
-            self.logger.warning(f"Задача {task_item.id} ожидает освобождения семафора очереди {queue_name}")
+            self.logger.warning(f"Task {task_item.id} waiting for semaphore release in queue {queue_name}")
         
-        async with semaphore:  # Ограничиваем одновременные задачи
+        async with semaphore:  # Limit concurrent tasks
             try:
                 
-                # Выполняем задачу с таймаутом
+                # Execute task with timeout
                 try:
                     result = await asyncio.wait_for(
                         task_item.coro(), 
                         timeout=task_item.config.timeout
                     )
                     
-                    # Устанавливаем результат в Future
+                    # Set result in Future
                     if task_item.future and not task_item.future.done():
                         task_item.future.set_result(result)
                     
                     self.stats['total_completed'] += 1
                     
                 except Exception as e:
-                    # Устанавливаем ошибку в Future
+                    # Set error in Future
                     if task_item.future and not task_item.future.done():
                         task_item.future.set_exception(e)
                     raise
                 
             except asyncio.TimeoutError:
                 self.stats['total_timeout'] += 1
-                self.logger.warning(f"Задача {task_item.id} превысила таймаут {task_item.config.timeout}с")
+                self.logger.warning(f"Task {task_item.id} exceeded timeout {task_item.config.timeout}s")
                 
-                # Устанавливаем таймаут в Future
+                # Set timeout in Future
                 if task_item.future and not task_item.future.done():
-                    task_item.future.set_exception(asyncio.TimeoutError(f"Задача {task_item.id} превысила таймаут"))
+                    task_item.future.set_exception(asyncio.TimeoutError(f"Task {task_item.id} exceeded timeout"))
                 
             except Exception as e:
                 self.stats['total_failed'] += 1
-                self.logger.error(f"Ошибка выполнения задачи {task_item.id}: {e}")
+                self.logger.error(f"Error executing task {task_item.id}: {e}")
                 
-                # Повторная попытка
+                # Retry
                 if task_item.retry_count < task_item.config.retry_count:
                     task_item.retry_count += 1
                     self.stats['total_retries'] += 1
-                    self.logger.info(f"Повторная попытка {task_item.retry_count}/{task_item.config.retry_count} для задачи {task_item.id}")
+                    self.logger.info(f"Retry {task_item.retry_count}/{task_item.config.retry_count} for task {task_item.id}")
                     
                     await asyncio.sleep(task_item.config.retry_delay)
                     
-                    # Добавляем задачу обратно в очередь
+                    # Add task back to queue
                     await queue_manager.task_queues[queue_name].put(task_item)
             
             finally:
@@ -77,5 +77,5 @@ class TaskExecutor:
     
     
     def get_stats(self) -> Dict[str, Any]:
-        """Возвращает статистику выполнения задач"""
+        """Returns task execution statistics"""
         return self.stats.copy()

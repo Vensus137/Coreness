@@ -7,9 +7,9 @@ dependencies:
   - "settings_manager"
 
 settings:
-  # Очистка истекших элементов: ленивая (при обращении) + периодическая (раз в cleanup_interval)
-  # Каждый сервис сам управляет TTL при вызове set()
-  # Если TTL не указан - используется default_ttl (защита от утечки памяти)
+  # Expired item cleanup: lazy (on access) + periodic (once per cleanup_interval)
+  # Each service manages TTL when calling set()
+  # If TTL is not specified - default_ttl is used (memory leak protection)
   
   default_ttl:
     type: integer

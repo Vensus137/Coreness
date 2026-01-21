@@ -1,5 +1,5 @@
 """
-Модуль для задержек выполнения (sleep)
+Module for execution delays (sleep)
 """
 
 import asyncio
@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 class SleepManager:
     """
-    Класс для задержек выполнения
+    Class for execution delays
     """
     
     def __init__(self, logger):
@@ -16,7 +16,7 @@ class SleepManager:
     
     async def sleep(self, data: dict) -> Dict[str, Any]:
         """
-        Задержка выполнения на указанное количество секунд
+        Delay execution for specified number of seconds
         """
         try:
             if not data:
@@ -24,19 +24,19 @@ class SleepManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Нет данных для задержки"
+                        "message": "No data for delay"
                     }
                 }
             
             seconds = data.get('seconds')
             
-            # Валидация параметров
+            # Parameter validation
             if seconds is None:
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр seconds обязателен"
+                        "message": "seconds parameter is required"
                     }
                 }
             
@@ -45,7 +45,7 @@ class SleepManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр seconds должен быть числом"
+                        "message": "seconds parameter must be a number"
                     }
                 }
             
@@ -54,17 +54,17 @@ class SleepManager:
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Параметр seconds не может быть отрицательным"
+                        "message": "seconds parameter cannot be negative"
                     }
                 }
             
-            # Выполняем задержку
+            # Execute delay
             await asyncio.sleep(float(seconds))
             
             return {"result": "success"}
             
         except Exception as e:
-            self.logger.error(f"Ошибка выполнения задержки: {e}")
+            self.logger.error(f"Error executing delay: {e}")
             return {
                 "result": "error",
                 "error": {

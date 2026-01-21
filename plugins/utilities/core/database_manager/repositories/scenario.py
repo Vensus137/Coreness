@@ -1,6 +1,6 @@
 """
-Репозиторий для работы со сценариями
-Содержит методы для получения сценариев и их компонентов из БД
+Repository for working with scenarios
+Contains methods for getting scenarios and their components from DB
 """
 
 from datetime import datetime
@@ -14,7 +14,7 @@ from .base import BaseRepository
 
 class ScenarioRepository(BaseRepository):
     """
-    Репозиторий для работы со сценариями
+    Repository for working with scenarios
     """
     
     def __init__(self, session_factory, **kwargs):
@@ -22,7 +22,7 @@ class ScenarioRepository(BaseRepository):
     
     async def get_scenarios_by_tenant(self, tenant_id: int) -> Optional[List[Dict[str, Any]]]:
         """
-        Получить все сценарии для tenant'а
+        Get all scenarios for tenant
         """
         try:
             with self._get_session() as session:
@@ -32,12 +32,12 @@ class ScenarioRepository(BaseRepository):
                 return await self._to_dict_list(result)
                 
         except Exception as e:
-            self.logger.error(f"Ошибка получения сценариев для tenant {tenant_id}: {e}")
+            self.logger.error(f"Error getting scenarios for tenant {tenant_id}: {e}")
             return None
     
     async def get_triggers_by_scenario(self, scenario_id: int) -> Optional[List[Dict[str, Any]]]:
         """
-        Получить триггеры сценария
+        Get scenario triggers
         """
         try:
             with self._get_session() as session:
@@ -47,12 +47,12 @@ class ScenarioRepository(BaseRepository):
                 return await self._to_dict_list(result)
                 
         except Exception as e:
-            self.logger.error(f"Ошибка получения триггеров сценария {scenario_id}: {e}")
+            self.logger.error(f"Error getting triggers for scenario {scenario_id}: {e}")
             return None
     
     async def get_steps_by_scenario(self, scenario_id: int) -> Optional[List[Dict[str, Any]]]:
         """
-        Получить шаги сценария
+        Get scenario steps
         """
         try:
             with self._get_session() as session:
@@ -62,12 +62,12 @@ class ScenarioRepository(BaseRepository):
                 return await self._to_dict_list(result)
                 
         except Exception as e:
-            self.logger.error(f"Ошибка получения шагов сценария {scenario_id}: {e}")
+            self.logger.error(f"Error getting steps for scenario {scenario_id}: {e}")
             return None
     
     async def get_transitions_by_step(self, step_id: int) -> Optional[List[Dict[str, Any]]]:
         """
-        Получить переходы шага
+        Get step transitions
         """
         try:
             with self._get_session() as session:
@@ -77,18 +77,18 @@ class ScenarioRepository(BaseRepository):
                 return await self._to_dict_list(result)
                 
         except Exception as e:
-            self.logger.error(f"Ошибка получения переходов для шага {step_id}: {e}")
+            self.logger.error(f"Error getting transitions for step {step_id}: {e}")
             return None
     
-    # === Методы удаления ===
+    # === Deletion methods ===
     
     async def delete_steps_by_scenario(self, scenario_id: int) -> Optional[bool]:
         """
-        Удалить все шаги сценария (включая их переходы)
+        Delete all scenario steps (including their transitions)
         """
         try:
             with self._get_session() as session:
-                # Сначала удаляем переходы шагов
+                # First delete step transitions
                 stmt_transitions = delete(ScenarioStepTransition).where(
                     ScenarioStepTransition.step_id.in_(
                         select(ScenarioStep.id).where(ScenarioStep.scenario_id == scenario_id)
@@ -96,7 +96,7 @@ class ScenarioRepository(BaseRepository):
                 )
                 session.execute(stmt_transitions)
                 
-                # Затем удаляем сами шаги
+                # Then delete steps themselves
                 stmt_steps = delete(ScenarioStep).where(ScenarioStep.scenario_id == scenario_id)
                 session.execute(stmt_steps)
                 
@@ -104,12 +104,12 @@ class ScenarioRepository(BaseRepository):
                 return True
                 
         except Exception as e:
-            self.logger.error(f"Ошибка удаления шагов сценария {scenario_id}: {e}")
+            self.logger.error(f"Error deleting steps for scenario {scenario_id}: {e}")
             return None
     
     async def delete_triggers_by_scenario(self, scenario_id: int) -> Optional[bool]:
         """
-        Удалить все триггеры сценария
+        Delete all scenario triggers
         """
         try:
             with self._get_session() as session:
@@ -120,12 +120,12 @@ class ScenarioRepository(BaseRepository):
                 return True
                 
         except Exception as e:
-            self.logger.error(f"Ошибка удаления триггеров сценария {scenario_id}: {e}")
+            self.logger.error(f"Error deleting triggers for scenario {scenario_id}: {e}")
             return None
     
     async def delete_scenario(self, scenario_id: int) -> Optional[bool]:
         """
-        Удалить сценарий
+        Delete scenario
         """
         try:
             with self._get_session() as session:
@@ -136,26 +136,26 @@ class ScenarioRepository(BaseRepository):
                 return True
                 
         except Exception as e:
-            self.logger.error(f"Ошибка удаления сценария {scenario_id}: {e}")
+            self.logger.error(f"Error deleting scenario {scenario_id}: {e}")
             return None
     
-    # === Методы создания ===
+    # === Creation methods ===
     
     async def create_scenario(self, scenario_data: Dict[str, Any]) -> Optional[int]:
         """
-        Создать сценарий
+        Create scenario
         """
         try:
             with self._get_session() as session:
-                # Подготавливаем данные для вставки через data_preparer
+                # Prepare data for insertion via data_preparer
                 prepared_fields = await self.data_preparer.prepare_for_insert(
                     model=Scenario,
                     fields={
                         'tenant_id': scenario_data.get('tenant_id'),
                         'scenario_name': scenario_data.get('scenario_name'),
                         'description': scenario_data.get('description', ''),
-                        'schedule': scenario_data.get('schedule'),  # Cron выражение (может быть None)
-                        'last_scheduled_run': scenario_data.get('last_scheduled_run')  # Время последнего запуска (может быть None)
+                        'schedule': scenario_data.get('schedule'),  # Cron expression (can be None)
+                        'last_scheduled_run': scenario_data.get('last_scheduled_run')  # Last run time (can be None)
                     },
                     json_fields=[]
                 )
@@ -168,16 +168,16 @@ class ScenarioRepository(BaseRepository):
                 return scenario_id
                 
         except Exception as e:
-            self.logger.error(f"Ошибка создания сценария: {e}")
+            self.logger.error(f"Error creating scenario: {e}")
             return None
     
     async def create_trigger(self, trigger_data: Dict[str, Any]) -> Optional[int]:
         """
-        Создать триггер сценария
+        Create scenario trigger
         """
         try:
             with self._get_session() as session:
-                # Подготавливаем данные для вставки через data_preparer
+                # Prepare data for insertion via data_preparer
                 prepared_fields = await self.data_preparer.prepare_for_insert(
                     model=ScenarioTrigger,
                     fields={
@@ -195,16 +195,16 @@ class ScenarioRepository(BaseRepository):
                 return trigger_id
                 
         except Exception as e:
-            self.logger.error(f"Ошибка создания триггера: {e}")
+            self.logger.error(f"Error creating trigger: {e}")
             return None
     
     async def create_step(self, step_data: Dict[str, Any]) -> Optional[int]:
         """
-        Создать шаг сценария
+        Create scenario step
         """
         try:
             with self._get_session() as session:
-                # Подготавливаем данные для вставки через data_preparer
+                # Prepare data for insertion via data_preparer
                 prepared_fields = await self.data_preparer.prepare_for_insert(
                     model=ScenarioStep,
                     fields={
@@ -215,7 +215,7 @@ class ScenarioRepository(BaseRepository):
                         'is_async': step_data.get('is_async', False),
                         'action_id': step_data.get('action_id')
                     },
-                    json_fields=['params']  # params - это JSON поле
+                    json_fields=['params']  # params is JSON field
                 )
                 
                 stmt = insert(ScenarioStep).values(**prepared_fields)
@@ -226,16 +226,16 @@ class ScenarioRepository(BaseRepository):
                 return step_id
                 
         except Exception as e:
-            self.logger.error(f"Ошибка создания шага: {e}")
+            self.logger.error(f"Error creating step: {e}")
             return None
     
     async def create_transition(self, transition_data: Dict[str, Any]) -> Optional[int]:
         """
-        Создать переход шага
+        Create step transition
         """
         try:
             with self._get_session() as session:
-                # Подготавливаем данные для вставки через data_preparer
+                # Prepare data for insertion via data_preparer
                 prepared_fields = await self.data_preparer.prepare_for_insert(
                     model=ScenarioStepTransition,
                     fields={
@@ -244,7 +244,7 @@ class ScenarioRepository(BaseRepository):
                         'transition_action': transition_data.get('transition_action', 'continue'),
                         'transition_value': transition_data.get('transition_value')
                     },
-                    json_fields=[]  # transition_value - обычная строка, не JSON
+                    json_fields=[]  # transition_value is regular string, not JSON
                 )
                 
                 stmt = insert(ScenarioStepTransition).values(**prepared_fields)
@@ -255,14 +255,14 @@ class ScenarioRepository(BaseRepository):
                 return transition_id
                 
         except Exception as e:
-            self.logger.error(f"Ошибка создания перехода: {e}")
+            self.logger.error(f"Error creating transition: {e}")
             return None
     
-    # === Методы для scheduled сценариев ===
+    # === Methods for scheduled scenarios ===
     
     async def get_scheduled_scenarios(self, tenant_id: Optional[int] = None) -> Optional[List[Dict[str, Any]]]:
         """
-        Получить все scheduled сценарии (с schedule IS NOT NULL)
+        Get all scheduled scenarios (with schedule IS NOT NULL)
         """
         try:
             with self._get_session() as session:
@@ -270,7 +270,7 @@ class ScenarioRepository(BaseRepository):
                     Scenario.schedule.isnot(None)
                 )
                 
-                # Если указан tenant_id - добавляем фильтр
+                # If tenant_id specified - add filter
                 if tenant_id is not None:
                     stmt = stmt.where(Scenario.tenant_id == tenant_id)
                 
@@ -279,12 +279,12 @@ class ScenarioRepository(BaseRepository):
                 return await self._to_dict_list(result)
                 
         except Exception as e:
-            self.logger.error(f"Ошибка получения scheduled сценариев: {e}")
+            self.logger.error(f"Error getting scheduled scenarios: {e}")
             return None
     
     async def update_scenario_last_run(self, scenario_id: int, last_run: datetime) -> Optional[bool]:
         """
-        Обновить время последнего запуска scheduled сценария
+        Update last run time of scheduled scenario
         """
         try:
             with self._get_session() as session:
@@ -302,6 +302,6 @@ class ScenarioRepository(BaseRepository):
                 return True
                 
         except Exception as e:
-            self.logger.error(f"Ошибка обновления last_scheduled_run для сценария {scenario_id}: {e}")
+            self.logger.error(f"Error updating last_scheduled_run for scenario {scenario_id}: {e}")
             return None
     

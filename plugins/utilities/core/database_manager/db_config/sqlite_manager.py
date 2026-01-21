@@ -5,94 +5,94 @@ from sqlalchemy.orm import sessionmaker
 
 
 class SQLiteManager:
-    """Менеджер для управления SQLite базой данных."""
+    """Manager for managing SQLite database."""
     
     def __init__(self, **kwargs):
         self.logger = kwargs['logger']
         self.settings_manager = kwargs['settings_manager']
         
-        # Настройки SQLite
+        # SQLite settings
         self.database_url = None
         self.engine = None
         self.session_factory = None
         
-        # Инициализируем сразу
+        # Initialize immediately
         self._initialize()
     
     def _initialize(self):
-        """Инициализация SQLite."""
+        """SQLite initialization."""
         try:
-            # Получаем настройки
+            # Get settings
             settings = self.settings_manager.get_plugin_settings("database_manager")
             database_configs = settings.get('database', {})
             sqlite_config = database_configs.get('sqlite', {})
             
-            # Настраиваем параметры
+            # Configure parameters
             self.database_url = sqlite_config.get('database_url', 'sqlite:///data/core.db')
             
-            # Создаём директорию
+            # Create directory
             self.ensure_database_directory()
             
-            # Создаём engine
+            # Create engine
             self.engine, self.session_factory = self.create_engine()
             
-            self.logger.info("SQLite инициализирован")
+            self.logger.info("SQLite initialized")
             
         except Exception as e:
-            self.logger.error(f"Ошибка инициализации SQLite: {e}")
-            raise Exception(f"Не удалось инициализировать SQLite: {e}") from e
+            self.logger.error(f"SQLite initialization error: {e}")
+            raise Exception(f"Failed to initialize SQLite: {e}") from e
     
     def ensure_database_directory(self):
-        """Создаёт директорию для базы данных, если её нет."""
+        """Creates database directory if it doesn't exist."""
         try:
-            # Для SQLite - директория файла базы данных
-            db_path = self.database_url[10:]  # Убираем 'sqlite:///'
+            # For SQLite - database file directory
+            db_path = self.database_url[10:]  # Remove 'sqlite:///'
             db_dir = os.path.dirname(db_path)
             
-            # Создаём директорию, если она не существует
+            # Create directory if it doesn't exist
             if db_dir and not os.path.exists(db_dir):
                 os.makedirs(db_dir, exist_ok=True)
-                self.logger.info(f"Создана директория для базы данных: {db_dir}")
+                self.logger.info(f"Database directory created: {db_dir}")
                 
         except Exception as e:
-            self.logger.error(f"Ошибка при создании директории для базы данных: {e}")
-            # Не прерываем инициализацию - возможно, директория уже существует
+            self.logger.error(f"Error creating database directory: {e}")
+            # Don't interrupt initialization - directory may already exist
     
     def create_engine(self):
-        """Создаёт engine для SQLite с настройками пула."""
+        """Creates SQLite engine with pool settings."""
         try:
-            # Получаем настройки пула
+            # Get pool settings
             settings = self.settings_manager.get_plugin_settings("database_manager")
             database_configs = settings.get('database', {})
             sqlite_config = database_configs.get('sqlite', {})
             pool_config = sqlite_config.get('connection_pool', {})
             engine_config = sqlite_config.get('engine_settings', {})
             
-            # Параметры пула
-            # SQLite использует SingletonThreadPool, который не поддерживает max_overflow, pool_pre_ping, pool_recycle, pool_reset_on_return
+            # Pool parameters
+            # SQLite uses SingletonThreadPool, which doesn't support max_overflow, pool_pre_ping, pool_recycle, pool_reset_on_return
             pool_size = pool_config.get('pool_size', 5)
             connect_timeout = pool_config.get('connect_timeout', 1)
             
-            # Параметры engine
+            # Engine parameters
             echo = engine_config.get('echo', False)
             future = engine_config.get('future', True)
             isolation_level = engine_config.get('isolation_level', None)
             
-            # SQLite engine kwargs (только поддерживаемые параметры)
+            # SQLite engine kwargs (only supported parameters)
             engine_kwargs = {
                 'echo': echo,
                 'future': future,
                 'pool_size': pool_size,
                 'connect_args': {
                     'timeout': connect_timeout,
-                    # SQLite оптимизации из конфига
+                    # SQLite optimizations from config
                     'isolation_level': isolation_level,
                 }
             }
             
             self.engine = create_engine(self.database_url, **engine_kwargs)
             
-            # Добавляем SQLite оптимизации через event listener
+            # Add SQLite optimizations via event listener
             self._setup_sqlite_optimizations()
             
             self.session_factory = sessionmaker(
@@ -102,34 +102,34 @@ class SQLiteManager:
                 future=True
             )
             
-            self.logger.info(f"SQLite engine создан с пулом: size={pool_size}")
+            self.logger.info(f"SQLite engine created with pool: size={pool_size}")
             return self.engine, self.session_factory
             
         except Exception as e:
-            self.logger.error(f"Ошибка создания SQLite engine: {e}")
-            raise Exception(f"Не удалось создать SQLite engine: {e}") from e
+            self.logger.error(f"Error creating SQLite engine: {e}")
+            raise Exception(f"Failed to create SQLite engine: {e}") from e
     
     def get_database_url(self):
-        """Возвращает URL для подключения к SQLite."""
+        """Returns URL for connecting to SQLite."""
         return self.database_url
     
     def get_engine(self):
-        """Возвращает engine SQLite."""
+        """Returns SQLite engine."""
         return self.engine
     
     def get_session_factory(self):
-        """Возвращает фабрику сессий SQLite."""
+        """Returns SQLite session factory."""
         return self.session_factory
     
     def get_config(self) -> dict:
         """
-        Возвращает конфигурацию SQLite
+        Returns SQLite configuration
         """
-        # Извлекаем путь из URL (убираем префикс 'sqlite:///')
+        # Extract path from URL (remove 'sqlite:///' prefix)
         db_path = None
         if self.database_url:
             if self.database_url.startswith('sqlite:///'):
-                db_path = self.database_url[10:]  # Убираем 'sqlite:///'
+                db_path = self.database_url[10:]  # Remove 'sqlite:///'
             else:
                 db_path = self.database_url.replace('sqlite:///', '')
         
@@ -139,15 +139,15 @@ class SQLiteManager:
         }
     
     def _setup_sqlite_optimizations(self):
-        """Настраивает SQLite оптимизации через PRAGMA команды из конфига."""
+        """Configures SQLite optimizations via PRAGMA commands from config."""
         try:
-            # Получаем настройки PRAGMA из конфига
+            # Get PRAGMA settings from config
             settings = self.settings_manager.get_plugin_settings("database_manager")
             database_configs = settings.get('database', {})
             sqlite_config = database_configs.get('sqlite', {})
             pragma_settings = sqlite_config.get('pragma_settings', {})
             
-            # Дефолтные значения если не указаны в конфиге
+            # Default values if not specified in config
             default_pragma = {
                 'journal_mode': 'WAL',
                 'cache_size': 2000,
@@ -157,30 +157,30 @@ class SQLiteManager:
                 'foreign_keys': True
             }
             
-            # Объединяем с дефолтными настройками
+            # Merge with default settings
             pragma_config = {**default_pragma, **pragma_settings}
             
             @event.listens_for(self.engine, "connect")
             def set_sqlite_pragma(dbapi_connection, connection_record):
-                """Устанавливает PRAGMA настройки для каждого подключения."""
+                """Sets PRAGMA settings for each connection."""
                 cursor = dbapi_connection.cursor()
                 
-                # Применяем настройки из конфига
+                # Apply settings from config
                 for pragma_name, pragma_value in pragma_config.items():
                     if pragma_name == 'foreign_keys':
-                        # Для boolean значений
+                        # For boolean values
                         value = 'ON' if pragma_value else 'OFF'
                         cursor.execute(f"PRAGMA {pragma_name} = {value}")
                     else:
-                        # Для остальных значений
+                        # For other values
                         cursor.execute(f"PRAGMA {pragma_name} = {pragma_value}")
                 
                 cursor.close()
             
-            # Логируем примененные настройки
+            # Log applied settings
             applied_settings = ', '.join([f"{k}={v}" for k, v in pragma_config.items()])
-            self.logger.info(f"SQLite оптимизации настроены: {applied_settings}")
+            self.logger.info(f"SQLite optimizations configured: {applied_settings}")
             
         except Exception as e:
-            self.logger.warning(f"Не удалось настроить SQLite оптимизации: {e}")
+            self.logger.warning(f"Failed to configure SQLite optimizations: {e}")
     

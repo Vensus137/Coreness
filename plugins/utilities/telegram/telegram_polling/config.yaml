@@ -9,7 +9,7 @@ dependencies:
   - "datetime_formatter"
 
 settings:
-  # Пулинг настройки (стандартные для Telegram Bot API)
+  # Polling settings (standard for Telegram Bot API)
   polling_timeout:
     type: integer
     default: 20
@@ -30,16 +30,16 @@ settings:
     default: 0.1
     description: "Задержка перед запуском пулинга в секундах (для предотвращения конфликтов)"
   
-  # Фильтрация обновлений
-  # ВАЖНО: Эти настройки будут ЖЕСТКО установлены через setWebhook с пустым URL
-  # перед запуском пулинга. Это необходимо, т.к. Telegram кэширует allowed_updates
-  # из предыдущих вебхуков и может игнорировать параметры в getUpdates.
+  # Update filtering
+  # IMPORTANT: These settings will be HARD SET via setWebhook with empty URL
+  # before starting polling. This is necessary because Telegram caches allowed_updates
+  # from previous webhooks and may ignore parameters in getUpdates.
   allowed_updates:
     type: array
     default: ["message", "callback_query", "pre_checkout_query"]
     description: "Типы обновлений для получения от Telegram API. Будут установлены через setWebhook перед запуском пулинга"
   
-  # Retry настройки
+  # Retry settings
   retry_delay:
     type: integer
     default: 5
@@ -55,7 +55,7 @@ settings:
     default: 3
     description: "Максимальное количество повторных попыток"
   
-  # Настройки критических ошибок
+  # Critical error settings
   max_critical_errors:
     type: integer
     default: 3
@@ -66,13 +66,13 @@ settings:
     default: [401, 403, 404]
     description: "Коды ошибок Telegram API, считающиеся критическими (401=Unauthorized, 403=Forbidden, 404=Not Found - бот не найден или неверный токен)"
   
-  # HTTP клиент настройки
+  # HTTP client settings
   request_timeout:
     type: integer
     default: 35
     description: "Таймаут HTTP запросов в секундах"
   
-  # Таймауты остановки пулинга
+  # Polling stop timeouts
   stop_polling_timeout:
     type: float
     default: 2.0

@@ -8,7 +8,7 @@ dependencies:
   - "action_validator"
 
 settings:
-  # Группы для системы доступа
+  # Groups for access system
   groups:
     system:
       tenant_id: [1, 2]
@@ -16,7 +16,7 @@ settings:
     no_access:
       tenant_id: []
       
-  # Правила доступа к действиям
+  # Action access rules
   access_rules:
 
     system_access:
@@ -25,13 +25,13 @@ settings:
     no_access:
       allowed_groups: ["no_access"]
 
-    # Проверка подмены данных - защита от подмены полей
+    # Data tampering check - protection against field substitution
     data_integrity:
-      allowed_groups: ["system"]              # Кому доступны изменения полей
-      check_fields: ["bot_id", "tenant_id"]   # Поля для проверки на подмену
+      allowed_groups: ["system"]              # Who has access to field changes
+      check_fields: ["bot_id", "tenant_id"]   # Fields to check for tampering
 
 methods:
-  # Registry сервисов
+  # Service registry
   register:
     description: "Регистрация сервиса"
     input:
@@ -56,7 +56,7 @@ methods:
       optional: true
       description: "Полная конфигурация действия из маппинга или None если действие не найдено"
 
-  # Универсальные действия
+  # Universal actions
   execute_action:
     description: "Выполнение действия через соответствующий сервис"
     input:
@@ -140,7 +140,7 @@ methods:
         description: "Данные ответа (если есть)"
 
 actions:
-  # Специальные действия ActionHub
+  # Special ActionHub actions
   get_available_actions:
     description: "Получение всех доступных действий с их метаданными"
     input: {}

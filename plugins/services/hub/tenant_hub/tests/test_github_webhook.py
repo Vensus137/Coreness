@@ -1,5 +1,5 @@
 """
-Unit-тесты для GitHub webhook handler (tenant_hub)
+Unit tests for GitHub webhook handler (tenant_hub)
 """
 import hashlib
 import hmac
@@ -14,7 +14,7 @@ from handlers.github_webhook import GitHubWebhookHandler
 
 @pytest.fixture
 def mock_action_hub():
-    """Создает мок action_hub"""
+    """Create mock action_hub"""
     action_hub = Mock()
     action_hub.execute_action = AsyncMock(return_value={
         'result': 'success',
@@ -28,7 +28,7 @@ def mock_action_hub():
 
 @pytest.fixture
 def mock_logger():
-    """Создает мок логгера"""
+    """Create mock logger"""
     logger = Mock()
     logger.info = Mock()
     logger.warning = Mock()
@@ -38,13 +38,13 @@ def mock_logger():
 
 @pytest.fixture
 def webhook_secret():
-    """Секрет для тестов"""
+    """Secret for tests"""
     return "test_secret_12345"
 
 
 @pytest.fixture
 def handler(mock_action_hub, webhook_secret, mock_logger):
-    """Создает экземпляр обработчика"""
+    """Create handler instance"""
     return GitHubWebhookHandler(
         mock_action_hub,
         webhook_secret,
@@ -53,10 +53,10 @@ def handler(mock_action_hub, webhook_secret, mock_logger):
 
 
 def test_verify_signature_valid(handler, webhook_secret):
-    """Тест валидации правильной подписи"""
+    """Test validation of correct signature"""
     payload = b'{"test": "data"}'
     
-    # Вычисляем правильную подпись
+    # Calculate correct signature
     expected_hash = hmac.new(
         webhook_secret.encode('utf-8'),
         payload,
@@ -70,7 +70,7 @@ def test_verify_signature_valid(handler, webhook_secret):
 
 
 def test_verify_signature_invalid(handler, webhook_secret):
-    """Тест валидации неправильной подписи"""
+    """Test validation of incorrect signature"""
     payload = b'{"test": "data"}'
     signature = "sha256=wrong_hash"
     
@@ -80,7 +80,7 @@ def test_verify_signature_invalid(handler, webhook_secret):
 
 
 def test_verify_signature_no_secret(handler):
-    """Тест валидации когда секрет не установлен"""
+    """Test validation when secret is not set"""
     handler.webhook_secret = ""
     payload = b'{"test": "data"}'
     signature = "sha256=some_hash"
@@ -91,7 +91,7 @@ def test_verify_signature_no_secret(handler):
 
 
 def test_verify_signature_wrong_format(handler):
-    """Тест валидации подписи в неправильном формате"""
+    """Test validation of signature in wrong format"""
     payload = b'{"test": "data"}'
     signature = "wrong_format_hash"
     
@@ -102,7 +102,7 @@ def test_verify_signature_wrong_format(handler):
 
 @pytest.mark.asyncio
 async def test_handle_invalid_signature(handler):
-    """Тест обработки запроса с невалидной подписью"""
+    """Test handling request with invalid signature"""
     payload = b'{"test": "data"}'
     
     request = Mock(spec=web.Request)
@@ -117,10 +117,10 @@ async def test_handle_invalid_signature(handler):
 
 @pytest.mark.asyncio
 async def test_handle_invalid_json(handler, webhook_secret):
-    """Тест обработки запроса с невалидным JSON"""
+    """Test handling request with invalid JSON"""
     payload = b'invalid json'
     
-    # Вычисляем правильную подпись
+    # Calculate correct signature
     expected_hash = hmac.new(
         webhook_secret.encode('utf-8'),
         payload,
@@ -140,10 +140,10 @@ async def test_handle_invalid_json(handler, webhook_secret):
 
 @pytest.mark.asyncio
 async def test_handle_wrong_event_type(handler, webhook_secret):
-    """Тест обработки запроса с неподдерживаемым типом события"""
+    """Test handling request with unsupported event type"""
     payload = json.dumps({"test": "data"}).encode('utf-8')
     
-    # Вычисляем правильную подпись
+    # Calculate correct signature
     expected_hash = hmac.new(
         webhook_secret.encode('utf-8'),
         payload,
@@ -163,7 +163,7 @@ async def test_handle_wrong_event_type(handler, webhook_secret):
 
 @pytest.mark.asyncio
 async def test_handle_push_event_with_tenant_changes(handler, webhook_secret, mock_action_hub):
-    """Тест обработки push события с изменениями тенантов"""
+    """Test handling push event with tenant changes"""
     payload_data = {
         "commits": [
             {
@@ -175,7 +175,7 @@ async def test_handle_push_event_with_tenant_changes(handler, webhook_secret, mo
     }
     payload = json.dumps(payload_data).encode('utf-8')
     
-    # Вычисляем правильную подпись
+    # Calculate correct signature
     expected_hash = hmac.new(
         webhook_secret.encode('utf-8'),
         payload,
@@ -190,7 +190,7 @@ async def test_handle_push_event_with_tenant_changes(handler, webhook_secret, mo
     response = await handler.handle(request)
     
     assert response.status == 200
-    # Проверяем что action был вызван
+    # Check that action was called
     mock_action_hub.execute_action.assert_called_once()
     call_args = mock_action_hub.execute_action.call_args
     assert call_args[0][0] == 'sync_tenants_from_files'
@@ -199,7 +199,7 @@ async def test_handle_push_event_with_tenant_changes(handler, webhook_secret, mo
 
 @pytest.mark.asyncio
 async def test_handle_push_event_no_tenant_changes(handler, webhook_secret):
-    """Тест обработки push события без изменений тенантов"""
+    """Test handling push event without tenant changes"""
     payload_data = {
         "commits": [
             {
@@ -211,7 +211,7 @@ async def test_handle_push_event_no_tenant_changes(handler, webhook_secret):
     }
     payload = json.dumps(payload_data).encode('utf-8')
     
-    # Вычисляем правильную подпись
+    # Calculate correct signature
     expected_hash = hmac.new(
         webhook_secret.encode('utf-8'),
         payload,

@@ -1,9 +1,9 @@
 """
-Integration-тесты для GitHub вебхуков
-Тестируют полный флоу от получения вебхука до синхронизации тенантов
+Integration tests for GitHub webhooks
+Test full flow from receiving webhook to tenant synchronization
 
-Примечание: эти тесты требуют, чтобы HTTP сервер был запущен.
-Если порт занят или сервер отключен, тесты будут пропущены.
+Note: these tests require HTTP server to be running.
+If port is busy or server is disabled, tests will be skipped.
 """
 import asyncio
 import hmac
@@ -14,19 +14,19 @@ from unittest.mock import AsyncMock, Mock
 
 from aiohttp import web
 
-# Фиксированный секрет для тестов (должен совпадать с conftest.py)
+# Fixed secret for tests (must match conftest.py)
 TEST_WEBHOOK_SECRET = 'test_secret_12345'
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_webhook_full_flow(initialized_di_container):
-    """Тест полного флоу: вебхук → парсинг → синхронизация"""
-    # Получаем зависимости
+    """Test full flow: webhook → parsing → synchronization"""
+    # Get dependencies
     http_server = initialized_di_container.get_utility('http_server')
     action_hub = initialized_di_container.get_utility('action_hub')
     
-    # Мокаем action_hub.execute_action чтобы не делать реальную синхронизацию
+    # Mock action_hub.execute_action to avoid real synchronization
     original_execute_action = action_hub.execute_action
     action_hub.execute_action = AsyncMock(return_value={
         'result': 'success',
@@ -37,16 +37,16 @@ async def test_webhook_full_flow(initialized_di_container):
     })
     
     try:
-        # Эндпоинт уже зарегистрирован при инициализации tenant_hub
-        # Запускаем сервер (как это делает http_api_service)
+        # Endpoint is already registered during tenant_hub initialization
+        # Start server (as http_api_service does)
         if not http_server.is_running:
             success = await http_server.start()
             assert success is True
         
-        # Используем фиксированный секрет для тестов (установлен через conftest)
+        # Use fixed secret for tests (set through conftest)
         webhook_secret = TEST_WEBHOOK_SECRET
         
-        # Создаем тестовый payload
+        # Create test payload
         payload_data = {
             "commits": [
                 {
@@ -58,7 +58,7 @@ async def test_webhook_full_flow(initialized_di_container):
         }
         payload = json.dumps(payload_data).encode('utf-8')
         
-        # Вычисляем правильную подпись
+        # Calculate correct signature
         expected_hash = hmac.new(
             webhook_secret.encode('utf-8'),
             payload,
@@ -66,7 +66,7 @@ async def test_webhook_full_flow(initialized_di_container):
         ).hexdigest()
         signature = f"sha256={expected_hash}"
         
-        # Создаем мок запроса
+        # Create mock request
         request = Mock(spec=web.Request)
         request.read = AsyncMock(return_value=payload)
         request.headers = {
@@ -74,7 +74,7 @@ async def test_webhook_full_flow(initialized_di_container):
             'X-GitHub-Event': 'push'
         }
         
-        # Получаем обработчик из роутера
+        # Get handler from router
         handler = None
         for route in http_server.app.router.routes():
             if route.resource.canonical == '/webhooks/github':
@@ -83,12 +83,12 @@ async def test_webhook_full_flow(initialized_di_container):
         
         assert handler is not None
         
-        # Вызываем обработчик
+        # Call handler
         response = await handler(request)
         
-        # Проверяем результат
+        # Verify result
         assert response.status == 200
-        # Проверяем что execute_action был вызван с правильными параметрами
+        # Verify that execute_action was called with correct parameters
         action_hub.execute_action.assert_called_once()
         call_args = action_hub.execute_action.call_args
         assert call_args[0][0] == 'sync_tenants_from_files'
@@ -97,27 +97,27 @@ async def test_webhook_full_flow(initialized_di_container):
         assert 'tenant/tenant_102/scenarios/scenario1.yaml' in call_args[0][1]['files']
         
     finally:
-        # Восстанавливаем оригинальный метод
+        # Restore original method
         action_hub.execute_action = original_execute_action
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_webhook_invalid_signature(initialized_di_container):
-    """Тест обработки вебхука с невалидной подписью"""
+    """Test webhook handling with invalid signature"""
     http_server = initialized_di_container.get_utility('http_server')
     
-    # Эндпоинт уже зарегистрирован при инициализации tenant_hub
-    # Запускаем сервер (как это делает http_api_service)
+    # Endpoint is already registered during tenant_hub initialization
+    # Start server (as http_api_service does)
     if not http_server.is_running:
         success = await http_server.start()
         assert success is True
     
-    # Создаем тестовый payload с неправильной подписью
+    # Create test payload with wrong signature
     payload_data = {"commits": []}
     payload = json.dumps(payload_data).encode('utf-8')
     
-    # Создаем мок запроса
+    # Create mock request
     request = Mock(spec=web.Request)
     request.read = AsyncMock(return_value=payload)
     request.headers = {
@@ -125,7 +125,7 @@ async def test_webhook_invalid_signature(initialized_di_container):
         'X-GitHub-Event': 'push'
     }
     
-    # Получаем обработчик
+    # Get handler
     handler = None
     for route in http_server.app.router.routes():
         if route.resource.canonical == '/webhooks/github':
@@ -134,30 +134,30 @@ async def test_webhook_invalid_signature(initialized_di_container):
     
     assert handler is not None
     
-    # Вызываем обработчик
+    # Call handler
     response = await handler(request)
     
-    # Проверяем что вернулась ошибка 401
+    # Verify that 401 error was returned
     assert response.status == 401
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_webhook_no_tenant_changes(initialized_di_container):
-    """Тест обработки вебхука без изменений тенантов"""
+    """Test webhook handling without tenant changes"""
     http_server = initialized_di_container.get_utility('http_server')
     action_hub = initialized_di_container.get_utility('action_hub')
     
-    # Эндпоинт уже зарегистрирован при инициализации tenant_hub
-    # Запускаем сервер (как это делает http_api_service)
+    # Endpoint is already registered during tenant_hub initialization
+    # Start server (as http_api_service does)
     if not http_server.is_running:
         success = await http_server.start()
         assert success is True
     
-    # Используем фиксированный секрет для тестов (установлен через conftest)
+    # Use fixed secret for tests (set through conftest)
     webhook_secret = TEST_WEBHOOK_SECRET
     
-    # Создаем payload без изменений тенантов
+    # Create payload without tenant changes
     payload_data = {
         "commits": [
             {
@@ -169,7 +169,7 @@ async def test_webhook_no_tenant_changes(initialized_di_container):
     }
     payload = json.dumps(payload_data).encode('utf-8')
     
-    # Вычисляем правильную подпись
+    # Calculate correct signature
     expected_hash = hmac.new(
         webhook_secret.encode('utf-8'),
         payload,
@@ -177,7 +177,7 @@ async def test_webhook_no_tenant_changes(initialized_di_container):
     ).hexdigest()
     signature = f"sha256={expected_hash}"
     
-    # Создаем мок запроса
+    # Create mock request
     request = Mock(spec=web.Request)
     request.read = AsyncMock(return_value=payload)
     request.headers = {
@@ -185,7 +185,7 @@ async def test_webhook_no_tenant_changes(initialized_di_container):
         'X-GitHub-Event': 'push'
     }
     
-    # Получаем обработчик
+    # Get handler
     handler = None
     for route in http_server.app.router.routes():
         if route.resource.canonical == '/webhooks/github':
@@ -194,11 +194,11 @@ async def test_webhook_no_tenant_changes(initialized_di_container):
     
     assert handler is not None
     
-    # Вызываем обработчик
+    # Call handler
     response = await handler(request)
     
-    # Проверяем что вернулся успех (но без синхронизации)
+    # Verify that success was returned (but without synchronization)
     assert response.status == 200
-    # Проверяем что action НЕ был вызван (нет изменений тенантов)
-    # Это проверяется через отсутствие вызова sync_tenants_from_files
+    # Verify that action was NOT called (no tenant changes)
+    # This is verified by absence of sync_tenants_from_files call
 

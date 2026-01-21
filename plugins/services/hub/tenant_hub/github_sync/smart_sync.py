@@ -1,9 +1,9 @@
 """
-Smart GitHub Sync - умная синхронизация с GitHub репозиторием
-- Определяет изменения через GitHub Compare API
-- Использует базовые операции из base.py для клонирования и копирования
-- Трехуровневая защита от системных тенантов
-- Инкрементальная синхронизация только измененных тенантов
+Smart GitHub Sync - smart synchronization with GitHub repository
+- Determines changes through GitHub Compare API
+- Uses basic operations from base.py for cloning and copying
+- Three-level protection against system tenants
+- Incremental synchronization of only changed tenants
 """
 
 from typing import Any, Dict, List, Optional
@@ -15,36 +15,36 @@ from .base import GitHubSyncBase
 
 class SmartGitHubSync(GitHubSyncBase):
     """
-    Умная синхронизация публичных тенантов из GitHub репозитория
-    Использует GitHub API для определения изменений и базовые операции для обновления
+    Smart synchronization of public tenants from GitHub repository
+    Uses GitHub API to determine changes and basic operations for updating
     """
     
     def __init__(self, logger, settings_manager):
-        # Инициализируем базовый класс
+        # Initialize base class
         super().__init__(logger, settings_manager)
         
-        # Последний обработанный SHA (хранится в памяти, обновляется после синхронизации)
+        # Last processed SHA (stored in memory, updated after synchronization)
         self.last_processed_sha: Optional[str] = None
         
-        # ETag для оптимизации запросов (304 Not Modified)
+        # ETag for request optimization (304 Not Modified)
         self.last_etag: Optional[str] = None
         
-        # Извлекаем owner и repo из URL
+        # Extract owner and repo from URL
         self.repo_owner, self.repo_name = self._parse_github_url()
     
-    # === Публичные методы ===
+    # === Public methods ===
     
     def update_processed_sha(self, sha: str) -> None:
-        """Обновляет последний обработанный SHA"""
+        """Updates last processed SHA"""
         self.last_processed_sha = sha
     
     async def get_changed_tenants(self) -> Dict[str, Any]:
         """
-        Определяет какие тенанты изменились через GitHub Compare API
-        С ЗАЩИТОЙ: автоматически фильтрует системные тенанты
+        Determines which tenants changed through GitHub Compare API
+        WITH PROTECTION: automatically filters system tenants
         """
         try:
-            # Проверяем конфигурацию GitHub
+            # Check GitHub configuration
             validation_error = self._validate_github_config()
             if validation_error:
                 return {
@@ -55,14 +55,14 @@ class SmartGitHubSync(GitHubSyncBase):
                     }
                 }
             
-            # Получаем текущий HEAD коммит через API (с оптимизацией ETag)
+            # Get current HEAD commit through API (with ETag optimization)
             current_sha = await self.get_latest_commit_sha()
             
-            # Если current_sha None и есть last_processed_sha - это 304 Not Modified (нет изменений)
+            # If current_sha is None and last_processed_sha exists - this is 304 Not Modified (no changes)
             if not current_sha:
-                # Проверяем, есть ли сохраненный SHA (значит это не ошибка, а 304)
+                # Check if saved SHA exists (means this is not an error, but 304)
                 if self.last_processed_sha:
-                    # Нет изменений (304 Not Modified)
+                    # No changes (304 Not Modified)
                     return {
                         "result": "success",
                         "response_data": {
@@ -73,19 +73,19 @@ class SmartGitHubSync(GitHubSyncBase):
                         }
                     }
                 else:
-                    # Это ошибка - не удалось получить коммит и нет сохраненного
+                    # This is an error - failed to get commit and no saved SHA
                     return {
                         "result": "error",
                         "error": {
                             "code": "API_ERROR",
-                            "message": "Не удалось получить текущий коммит"
+                            "message": "Failed to get current commit"
                         }
                     }
             
-            # Используем SHA из памяти (или None если это первый запуск)
+            # Use SHA from memory (or None if this is first run)
             last_sha = self.last_processed_sha
             
-            # Если SHA совпадают - изменений нет
+            # If SHA match - no changes
             if last_sha and last_sha == current_sha:
                 return {
                     "result": "success",
@@ -97,27 +97,27 @@ class SmartGitHubSync(GitHubSyncBase):
                     }
                 }
             
-            # Если это первый запуск (нет сохраненного SHA)
+            # If this is first run (no saved SHA)
             if not last_sha:
-                self.logger.info("Первая синхронизация - все публичные тенанты будут обновлены")
-                # Возвращаем пустой словарь + флаг sync_all для явного указания полной синхронизации
+                self.logger.info("First synchronization - all public tenants will be updated")
+                # Return empty dictionary + sync_all flag for explicit full synchronization indication
                 return {
                     "result": "success",
                     "response_data": {
-                        "changed_tenants": {},  # Пустой словарь, т.к. список неизвестен до клонирования
-                        "sync_all": True,  # Явный флаг - нужно обновить все публичные тенанты
+                        "changed_tenants": {},  # Empty dictionary, as list is unknown until cloning
+                        "sync_all": True,  # Explicit flag - need to update all public tenants
                         "has_changes": True,
                         "current_sha": current_sha
                     }
                 }
             
-            # Используем Compare API для получения ВСЕХ измененных файлов
+            # Use Compare API to get ALL changed files
             compare_result = await self._compare_commits(last_sha, current_sha)
             
             if compare_result.get("result") != "success":
                 return compare_result
             
-            # Извлекаем tenant_id и блоки изменений из путей файлов с ЗАЩИТОЙ
+            # Extract tenant_id and change blocks from file paths WITH PROTECTION
             changed_tenants_data = self._extract_tenant_changes_with_protection(
                 compare_result.get('files', [])
             )
@@ -128,27 +128,27 @@ class SmartGitHubSync(GitHubSyncBase):
                 "result": "success",
                 "response_data": {
                     "changed_tenants": changed_tenants_data,  # {tenant_id: {"bot": bool, "scenarios": bool}}
-                    "sync_all": False,  # Явно указываем что это не полная синхронизация
+                    "sync_all": False,  # Explicitly indicate this is not full synchronization
                     "has_changes": len(changed_tenants) > 0,
                     "current_sha": current_sha
                 }
             }
             
         except Exception as e:
-            self.logger.error(f"Ошибка определения измененных тенантов: {e}")
+            self.logger.error(f"Error determining changed tenants: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     async def sync_changed_tenants(self, changed_tenant_ids: Optional[List[int]] = None, current_sha: str = None, sync_all: bool = False) -> Dict[str, Any]:
         """
-        Синхронизирует измененные тенанты напрямую в config/tenant/
-        Использует базовые операции из GitHubSyncBase
-        С ЗАЩИТОЙ: двойная проверка на системные тенанты
+        Synchronizes changed tenants directly to config/tenant/
+        Uses basic operations from GitHubSyncBase
+        WITH PROTECTION: double check for system tenants
         """
         try:
             if not current_sha:
@@ -156,16 +156,16 @@ class SmartGitHubSync(GitHubSyncBase):
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "current_sha обязателен"
+                        "message": "current_sha is required"
                     }
                 }
             
-            # ЗАЩИТА УРОВЕНЬ 2: Фильтруем системные тенанты
+            # PROTECTION LEVEL 2: Filter system tenants
             if sync_all:
-                # Синхронизируем все публичные тенанты
+                # Synchronize all public tenants
                 public_tenants = None
             elif changed_tenant_ids:
-                # Фильтруем только публичные из переданного списка
+                # Filter only public from provided list
                 public_tenants = [
                     tenant_id for tenant_id in changed_tenant_ids
                     if tenant_id > self.max_system_tenant_id
@@ -174,12 +174,12 @@ class SmartGitHubSync(GitHubSyncBase):
                 if len(public_tenants) < len(changed_tenant_ids):
                     blocked_count = len(changed_tenant_ids) - len(public_tenants)
                     self.logger.warning(
-                        f"[SECURITY] Заблокировано {blocked_count} системных тенантов от синхронизации"
+                        f"[SECURITY] Blocked {blocked_count} system tenants from synchronization"
                     )
                 
                 if not public_tenants:
-                    self.logger.info("Нет публичных тенантов для синхронизации")
-                    # Обновляем SHA в памяти даже если нечего обновлять
+                    self.logger.info("No public tenants to synchronize")
+                    # Update SHA in memory even if nothing to update
                     self.update_processed_sha(current_sha)
                     return {
                         "result": "success",
@@ -188,22 +188,22 @@ class SmartGitHubSync(GitHubSyncBase):
                         }
                     }
             else:
-                # Не переданы ни тенанты, ни флаг sync_all
+                # Neither tenants nor sync_all flag provided
                 return {
                     "result": "error",
                     "error": {
                         "code": "VALIDATION_ERROR",
-                        "message": "Не указаны тенанты для синхронизации или sync_all=False"
+                        "message": "Tenants not specified for synchronization or sync_all=False"
                     }
                 }
             
-            # Используем базовый метод для клонирования и копирования
+            # Use base method for cloning and copying
             if sync_all:
                 updated_count = await self.clone_and_copy_tenants(sync_all=True)
             else:
                 updated_count = await self.clone_and_copy_tenants(tenant_ids=public_tenants)
             
-            # Обновляем SHA в памяти после успешной синхронизации
+            # Update SHA in memory after successful synchronization
             self.update_processed_sha(current_sha)
             
             return {
@@ -214,21 +214,21 @@ class SmartGitHubSync(GitHubSyncBase):
             }
             
         except Exception as e:
-            self.logger.error(f"Ошибка синхронизации измененных тенантов: {e}")
+            self.logger.error(f"Error synchronizing changed tenants: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
-    # === Внутренние методы ===
+    # === Internal methods ===
     
     def _parse_github_url(self) -> tuple:
-        """Извлекает owner и repo из GitHub URL"""
+        """Extracts owner and repo from GitHub URL"""
         try:
-            # Формат: https://github.com/owner/repo или https://github.com/owner/repo.git
+            # Format: https://github.com/owner/repo or https://github.com/owner/repo.git
             url = self.github_url.replace('.git', '').rstrip('/')
             parts = url.split('/')
             if len(parts) >= 2:
@@ -237,81 +237,81 @@ class SmartGitHubSync(GitHubSyncBase):
                 return owner, repo
             return None, None
         except Exception as e:
-            self.logger.error(f"Ошибка парсинга GitHub URL: {e}")
+            self.logger.error(f"Error parsing GitHub URL: {e}")
             return None, None
     
     def _validate_github_config(self) -> Optional[str]:
         """
-        Проверяет корректность конфигурации GitHub (расширенная проверка для API)
+        Validates GitHub configuration (extended check for API)
         """
-        # Используем базовую проверку
+        # Use base check
         base_error = super()._validate_github_config()
         if base_error:
             return base_error
         
-        # Дополнительная проверка для API
+        # Additional check for API
         if not self.repo_owner or not self.repo_name:
-            return "Не удалось извлечь owner и repo из GitHub URL"
+            return "Failed to extract owner and repo from GitHub URL"
         
         return None
     
     async def get_latest_commit_sha(self) -> Optional[str]:
         """
-        Получает SHA последнего коммита через GitHub Events API с оптимизацией ETag.
-        Использует ETag для минимизации трафика: если изменений нет, получает 304 Not Modified.
+        Gets SHA of latest commit through GitHub Events API with ETag optimization.
+        Uses ETag to minimize traffic: if no changes, gets 304 Not Modified.
         """
         try:
-            # Используем Events API - более эффективен для отслеживания изменений
+            # Use Events API - more efficient for tracking changes
             url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/events"
             headers = {
                 "Authorization": f"token {self.github_token}",
                 "Accept": "application/vnd.github.v3+json"
             }
             
-            # Добавляем ETag для проверки без загрузки данных
+            # Add ETag to check without downloading data
             if self.last_etag:
                 headers['If-None-Match'] = self.last_etag
             
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, headers=headers, params={"per_page": 5}) as response:
-                    # Если нет изменений - возвращаем None (не нужно обрабатывать)
+                    # If no changes - return None (no need to process)
                     if response.status == 304:
-                        # Нет изменений, возвращаем текущий SHA (если есть) для сравнения
+                        # No changes, return current SHA (if exists) for comparison
                         return self.last_processed_sha
                     
                     if response.status == 200:
-                        # Сохраняем ETag для следующего запроса
+                        # Save ETag for next request
                         etag = response.headers.get('ETag')
                         if etag:
                             self.last_etag = etag
                         
                         events = await response.json()
                         
-                        # Ищем последний PushEvent (push в репозиторий)
+                        # Find last PushEvent (push to repository)
                         for event in events:
                             if event.get('type') == 'PushEvent':
                                 payload = event.get('payload', {})
                                 commits = payload.get('commits', [])
                                 if commits:
-                                    # Возвращаем SHA последнего коммита из push
+                                    # Return SHA of last commit from push
                                     return commits[-1].get('sha')
                         
-                        # Если нет PushEvent в последних событиях, используем Commits API как fallback
+                        # If no PushEvent in recent events, use Commits API as fallback
                         return await self._get_sha_via_commits_api()
                     
                     elif response.status == 404:
-                        self.logger.error(f"Репозиторий не найден: {self.repo_owner}/{self.repo_name}")
+                        self.logger.error(f"Repository not found: {self.repo_owner}/{self.repo_name}")
                     else:
-                        self.logger.error(f"Ошибка получения событий: HTTP {response.status}")
+                        self.logger.error(f"Error getting events: HTTP {response.status}")
             
             return None
             
         except Exception as e:
-            self.logger.error(f"Ошибка получения последнего коммита: {e}")
+            self.logger.error(f"Error getting latest commit: {e}")
             return None
     
     async def _get_sha_via_commits_api(self) -> Optional[str]:
-        """Fallback метод: получает SHA через Commits API (если Events API не вернул PushEvent)"""
+        """Fallback method: gets SHA through Commits API (if Events API didn't return PushEvent)"""
         try:
             url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/commits"
             headers = {
@@ -329,13 +329,13 @@ class SmartGitHubSync(GitHubSyncBase):
             return None
             
         except Exception as e:
-            self.logger.error(f"Ошибка получения коммита через Commits API: {e}")
+            self.logger.error(f"Error getting commit via Commits API: {e}")
             return None
     
     async def _compare_commits(self, base_sha: str, head_sha: str) -> Dict[str, Any]:
         """
-        Сравнивает два коммита через GitHub Compare API
-        Возвращает список всех измененных файлов между коммитами
+        Compares two commits through GitHub Compare API
+        Returns list of all changed files between commits
         """
         try:
             url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/compare/{base_sha}...{head_sha}"
@@ -356,54 +356,54 @@ class SmartGitHubSync(GitHubSyncBase):
                         }
                     else:
                         error_text = await response.text()
-                        self.logger.error(f"Ошибка Compare API: HTTP {response.status}, {error_text}")
+                        self.logger.error(f"Compare API error: HTTP {response.status}, {error_text}")
                         return {
                             "result": "error",
                             "error": {
                                 "code": "API_ERROR",
-                                "message": f"Ошибка Compare API: HTTP {response.status}"
+                                "message": f"Compare API error: HTTP {response.status}"
                             }
                         }
             
         except Exception as e:
-            self.logger.error(f"Ошибка сравнения коммитов: {e}")
+            self.logger.error(f"Error comparing commits: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "INTERNAL_ERROR",
-                    "message": f"Внутренняя ошибка: {str(e)}"
+                    "message": f"Internal error: {str(e)}"
                 }
             }
     
     def _extract_tenant_changes_with_protection(self, files: List[Dict[str, Any]]) -> Dict[int, Dict[str, bool]]:
         """
-        Извлекает tenant_id и информацию об измененных блоках из путей файлов с ЗАЩИТОЙ от системных тенантов
+        Extracts tenant_id and information about changed blocks from file paths WITH PROTECTION against system tenants
         
-        ЗАЩИТА УРОВЕНЬ 1: Фильтруем системные тенанты на этапе извлечения
+        PROTECTION LEVEL 1: Filter system tenants at extraction stage
         """
         changed_tenants: Dict[int, Dict[str, bool]] = {}
         
         for file_info in files:
             file_path = file_info.get('filename', '')
             
-            # Извлекаем tenant_id из пути
+            # Extract tenant_id from path
             tenant_id = self._extract_tenant_id_from_path(file_path)
             
             if tenant_id is None:
-                continue  # Не является файлом тенанта
+                continue  # Not a tenant file
             
-            # ЗАЩИТА: Фильтруем системные тенанты
+            # PROTECTION: Filter system tenants
             if tenant_id <= self.max_system_tenant_id:
                 self.logger.warning(
-                    f"[SECURITY] Обнаружен системный тенант {tenant_id} в GitHub репозитории - игнорируем"
+                    f"[SECURITY] Detected system tenant {tenant_id} in GitHub repository - ignoring"
                 )
-                continue  # НЕ добавляем в список
+                continue  # DON'T add to list
             
-            # Определяем какие блоки изменились
+            # Determine which blocks changed
             if tenant_id not in changed_tenants:
                 changed_tenants[tenant_id] = {"bot": False, "scenarios": False, "storage": False}
             
-            # Определяем тип изменения по пути
+            # Determine change type by path
             block_type = self._determine_block_type(file_path)
             if block_type == "bot":
                 changed_tenants[tenant_id]["bot"] = True
@@ -416,9 +416,9 @@ class SmartGitHubSync(GitHubSyncBase):
     
     def _determine_block_type(self, file_path: str) -> Optional[str]:
         """
-        Определяет тип блока по пути файла
+        Determines block type by file path
         """
-        # Путь имеет формат: tenant/tenant_XXX/...
+        # Path format: tenant/tenant_XXX/...
         if not file_path.startswith('tenant/tenant_'):
             return None
         
@@ -426,10 +426,10 @@ class SmartGitHubSync(GitHubSyncBase):
         if len(parts) < 3:
             return None
         
-        # Строгая проверка:
-        # - bot: только точное изменение файла tg_bot.yaml в корне тенанта
-        # - scenarios: любые изменения внутри папки scenarios
-        # - storage: любые изменения внутри папки storage
+        # Strict check:
+        # - bot: only exact change of tg_bot.yaml file in tenant root
+        # - scenarios: any changes inside scenarios folder
+        # - storage: any changes inside storage folder
         if parts[2] == "tg_bot.yaml":
             return "bot"
         
@@ -443,14 +443,14 @@ class SmartGitHubSync(GitHubSyncBase):
     
     def _extract_tenant_id_from_path(self, file_path: str) -> Optional[int]:
         """
-        Извлекает tenant_id из пути файла
+        Extracts tenant_id from file path
         """
         try:
-            # Путь имеет формат: tenant/tenant_XXX/...
+            # Path format: tenant/tenant_XXX/...
             if not file_path.startswith('tenant/tenant_'):
                 return None
             
-            # Извлекаем часть tenant_XXX
+            # Extract tenant_XXX part
             parts = file_path.split('/')
             if len(parts) < 2:
                 return None
@@ -459,7 +459,7 @@ class SmartGitHubSync(GitHubSyncBase):
             if not tenant_folder.startswith('tenant_'):
                 return None
             
-            # Извлекаем ID
+            # Extract ID
             tenant_id_str = tenant_folder.replace('tenant_', '')
             tenant_id = int(tenant_id_str)
             return tenant_id

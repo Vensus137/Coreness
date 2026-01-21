@@ -1,5 +1,5 @@
 """
-Утилиты для парсинга дат и временных интервалов
+Utilities for parsing dates and time intervals
 """
 import re
 from datetime import datetime
@@ -8,55 +8,44 @@ from typing import Dict, Optional, Tuple
 
 def parse_datetime_value(value) -> Tuple[Optional[datetime], bool]:
     """
-    Конвертирует любой формат даты в datetime
-    
-    Поддерживаемые форматы:
-    - Unix timestamp: 1735128000
-    - PostgreSQL: 2024-12-25, 2024-12-25 15:30:45
-    - Стандартные: 25.12.2024, 25.12.2024 15:30, 25.12.2024 15:30:45
-    - ISO: 2024-12-25T15:30:45
-    - datetime объекты Python
-    
-    Возвращает: (datetime_obj, has_time)
-    - datetime_obj: объект datetime или None если не удалось распарсить
-    - has_time: True если была информация о времени (не только дата)
+    Converts any date format to datetime
     """
     if value is None:
         return None, False
     
-    # Уже datetime объект
+    # Already datetime object
     if isinstance(value, datetime):
-        # Проверяем, есть ли время (не 00:00:00)
+        # Check if time is present (not 00:00:00)
         has_time = value.hour != 0 or value.minute != 0 or value.second != 0
         return value, has_time
     
-    # Конвертируем в строку
+    # Convert to string
     value_str = str(value).strip()
     
     if not value_str:
         return None, False
     
-    # Unix timestamp (только цифры)
+    # Unix timestamp (digits only)
     if value_str.isdigit():
         try:
             return datetime.fromtimestamp(int(value_str)), True
         except (ValueError, OSError):
             pass
     
-    # Пробуем разные форматы
-    # Формат: (pattern, has_time)
+    # Try different formats
+    # Format: (pattern, has_time)
     formats = [
-        # PostgreSQL форматы
+        # PostgreSQL formats
         ('%Y-%m-%d %H:%M:%S', True),
         ('%Y-%m-%d %H:%M', True),
         ('%Y-%m-%d', False),
         
-        # Наши форматы (dd.mm.yyyy)
+        # Our formats (dd.mm.yyyy)
         ('%d.%m.%Y %H:%M:%S', True),
         ('%d.%m.%Y %H:%M', True),
         ('%d.%m.%Y', False),
         
-        # ISO форматы
+        # ISO formats
         ('%Y-%m-%dT%H:%M:%S', True),
         ('%Y-%m-%dT%H:%M', True),
     ]
@@ -68,33 +57,16 @@ def parse_datetime_value(value) -> Tuple[Optional[datetime], bool]:
         except ValueError:
             continue
     
-    # Не удалось распарсить
+    # Failed to parse
     return None, False
 
 
 def parse_interval_string(interval: str) -> Dict[str, int]:
     """
-    Парсит интервал в PostgreSQL стиле
-    
-    Поддерживаемые единицы (case-insensitive, единственное/множественное число):
-    - year, years, y
-    - month, months, mon
-    - week, weeks, w
-    - day, days, d
-    - hour, hours, h
-    - minute, minutes, min, m
-    - second, seconds, sec, s
-    
-    Примеры:
-    - "1 day" → {"years": 0, "months": 0, ..., "days": 1, ...}
-    - "2 hours 30 minutes" → {"hours": 2, "minutes": 30}
-    - "1 year 2 months" → {"years": 1, "months": 2}
-    - "1 YEAR 3 Days" → {"years": 1, "days": 3} (case-insensitive)
-    
-    Возвращает словарь с ключами: years, months, weeks, days, hours, minutes, seconds
+    Parses interval in PostgreSQL style
     """
-    # Паттерн: число + пробелы + единица времени
-    # (?i) в начале делает паттерн case-insensitive
+    # Pattern: number + spaces + time unit
+    # (?i) at start makes pattern case-insensitive
     pattern = r'(\d+)\s+(year|years|y|month|months|mon|week|weeks|w|day|days|d|hour|hours|h|minute|minutes|min|m|second|seconds|sec|s)\b'
     
     result = {
@@ -107,7 +79,7 @@ def parse_interval_string(interval: str) -> Dict[str, int]:
         'seconds': 0
     }
     
-    # Ищем все совпадения (case-insensitive)
+    # Find all matches (case-insensitive)
     matches = re.findall(pattern, interval, re.IGNORECASE)
     
     if not matches:
@@ -117,7 +89,7 @@ def parse_interval_string(interval: str) -> Dict[str, int]:
         value = int(value)
         unit_lower = unit.lower()
         
-        # Маппинг единиц времени на ключи словаря
+        # Map time units to dictionary keys
         if unit_lower in ['year', 'years', 'y']:
             result['years'] += value
         elif unit_lower in ['month', 'months', 'mon']:

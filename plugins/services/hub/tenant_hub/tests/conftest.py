@@ -1,5 +1,5 @@
 """
-Локальные фикстуры для тестов tenant_hub
+Local fixtures for tenant_hub tests
 """
 import sys
 from pathlib import Path
@@ -7,13 +7,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-# Импортируем фикстуры из tests/conftest
+# Import fixtures from tests/conftest
 from tests.conftest import logger, module_logger, settings_manager  # noqa: F401
 
-# Автоматически добавляем родительскую директорию плагина в sys.path
-# Это позволяет использовать импорты вида "from handlers.github_webhook import ..."
-# вместо "from plugins.services.hub.tenant_hub.handlers.github_webhook import ..."
-# и делает тесты независимыми от структуры папок выше уровня плагина
+# Automatically add parent plugin directory to sys.path
+# This allows using imports like "from handlers.github_webhook import ..."
+# instead of "from plugins.services.hub.tenant_hub.handlers.github_webhook import ..."
+# and makes tests independent of folder structure above plugin level
 _plugin_dir = Path(__file__).parent.parent
 if str(_plugin_dir) not in sys.path:
     sys.path.insert(0, str(_plugin_dir))
@@ -21,7 +21,7 @@ if str(_plugin_dir) not in sys.path:
 
 @pytest.fixture
 def mock_database_manager():
-    """Создает мок DatabaseManager"""
+    """Create mock DatabaseManager"""
     mock = MagicMock()
     mock.get_master_repository = MagicMock()
     return mock
@@ -29,7 +29,7 @@ def mock_database_manager():
 
 @pytest.fixture
 def mock_master_repository():
-    """Создает мок MasterRepository"""
+    """Create mock MasterRepository"""
     mock = MagicMock()
     mock.get_bot_by_tenant_id = AsyncMock(return_value=None)
     mock.get_commands_by_bot = AsyncMock(return_value=[])
@@ -38,7 +38,7 @@ def mock_master_repository():
 
 @pytest.fixture
 def mock_datetime_formatter():
-    """Создает мок DateTimeFormatter"""
+    """Create mock DateTimeFormatter"""
     mock = MagicMock()
     mock.now_local_tz = AsyncMock(return_value=None)
     mock.to_string = AsyncMock(return_value='2024-01-01T00:00:00+00:00')
@@ -47,8 +47,8 @@ def mock_datetime_formatter():
 
 @pytest.fixture
 def mock_cache_manager():
-    """Создает мок CacheManager с сохранением состояния"""
-    cache_storage = {}  # Хранилище для кэша
+    """Create mock CacheManager with state preservation"""
+    cache_storage = {}  # Cache storage
     
     mock = MagicMock()
     
@@ -68,7 +68,7 @@ def mock_cache_manager():
         return True
     
     async def invalidate_pattern_side_effect(pattern):
-        # Простая реализация для тестов
+        # Simple implementation for tests
         keys_to_delete = [k for k in cache_storage.keys() if pattern.replace('*', '') in k]
         for key in keys_to_delete:
             del cache_storage[key]
@@ -85,9 +85,9 @@ def mock_cache_manager():
 
 @pytest.fixture
 def mock_settings_manager():
-    """Создает мок SettingsManager для тестов"""
+    """Create mock SettingsManager for tests"""
     mock = MagicMock()
-    # Настраиваем возврат настроек tenant_hub
+    # Configure return of tenant_hub settings
     mock.get_plugin_settings = MagicMock(return_value={
         'cache_ttl': 315360000
     })
@@ -96,19 +96,19 @@ def mock_settings_manager():
 
 @pytest.fixture
 def tenant_cache(logger, mock_database_manager, mock_datetime_formatter, mock_master_repository, mock_cache_manager, mock_settings_manager):
-    """Создает TenantCache для тестов"""
+    """Create TenantCache for tests"""
     import sys
     from pathlib import Path
     import importlib.util
     
-    # Прямой импорт TenantCache без относительных импортов
+    # Direct import of TenantCache without relative imports
     tenant_cache_path = Path(__file__).parent.parent / "utils" / "tenant_cache.py"
     spec = importlib.util.spec_from_file_location("tenant_cache_module", tenant_cache_path)
     tenant_cache_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(tenant_cache_module)
     TenantCache = tenant_cache_module.TenantCache
     
-    # Настраиваем мок database_manager для возврата master_repository
+    # Configure mock database_manager to return master_repository
     mock_database_manager.get_master_repository.return_value = mock_master_repository
     
     return TenantCache(

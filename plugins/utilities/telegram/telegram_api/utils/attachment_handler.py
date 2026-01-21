@@ -1,16 +1,16 @@
 """
-Подмодуль для обработки вложений
+Submodule for handling attachments
 """
 
 from typing import Dict, List, Optional
 
-# Максимальное количество файлов в media group
+# Maximum number of files in media group
 MAX_MEDIA_GROUP = 10
 
 
 class AttachmentHandler:
     """
-    Подмодуль для обработки вложений Telegram
+    Submodule for handling Telegram attachments
     """
     
     def __init__(self, api_client, **kwargs):
@@ -18,7 +18,7 @@ class AttachmentHandler:
         self.api_client = api_client
     
     def _create_media_item(self, media_type: str, file_id: str, caption: str = None, parse_mode: str = 'HTML') -> dict:
-        """Создает корректный media объект для sendMediaGroup"""
+        """Creates correct media object for sendMediaGroup"""
         media_item = {"type": media_type, "media": file_id}
         if caption:
             media_item["caption"] = caption
@@ -27,8 +27,8 @@ class AttachmentHandler:
     
     def _group_attachments(self, attachments: List[Dict[str, str]]) -> Dict[str, List[Dict[str, str]]]:
         """
-        Группирует вложения: media (фото+видео), animation (только анимации), document (только документы).
-        Анимации, аудио, голосовые сообщения, стикеры и видео заметки отправляются отдельно.
+        Groups attachments: media (photo+video), animation (animations only), document (documents only).
+        Animations, audio, voice messages, stickers and video notes are sent separately.
         """
         groups = {'media': [], 'animation': [], 'document': [], 'audio': [], 'voice': [], 'sticker': [], 'video_note': []}
         for att in attachments:
@@ -50,12 +50,12 @@ class AttachmentHandler:
     
     async def send_attachments(self, bot_token: str, bot_id: int, chat_id: int, text: str, attachments: List[Dict[str, str]], 
                               reply_markup, parse_mode: str, reply_to_message_id: Optional[int] = None) -> Optional[int]:
-        """Отправляет вложения с правильной группировкой"""
+        """Sends attachments with correct grouping"""
         
         if not attachments:
             return None
         
-        # Группируем вложения
+        # Group attachments
         groups = self._group_attachments(attachments)
         text_sent = False
         any_sent = False
@@ -67,7 +67,7 @@ class AttachmentHandler:
             if not files:
                 continue
             
-            # Одиночное вложение (только для типов, которые могут быть в группах)
+            # Single attachment (only for types that can be in groups)
             if len(files) == 1 and group_type in ('media', 'document'):
                 att = files[0]
                 file_id = att['file_id']
@@ -75,14 +75,14 @@ class AttachmentHandler:
                 try:
                     caption = text if not text_sent else None
                     
-                    # Подготавливаем параметры для отправки
+                    # Prepare parameters for sending
                     payload = {
                         'chat_id': chat_id,
                         'reply_markup': reply_markup,
                         'parse_mode': parse_mode
                     }
                     
-                    # Добавляем reply_to_message_id если нужно
+                    # Add reply_to_message_id if needed
                     if reply_to_message_id:
                         payload['reply_to_message_id'] = reply_to_message_id
                     
@@ -100,7 +100,7 @@ class AttachmentHandler:
                             result = await self.api_client.make_request_with_limit(bot_token, "sendDocument", payload, bot_id)
                     except Exception as e:
                         if 'message to reply not found' in str(e).lower() and reply_to_message_id:
-                            self.logger.warning(f"Ответ на сообщение не удался для chat_id={chat_id}, message_id={reply_to_message_id}: {e}. Отправляю вложение без reply_to_message_id.")
+                            self.logger.warning(f"Reply to message failed for chat_id={chat_id}, message_id={reply_to_message_id}: {e}. Sending attachment without reply_to_message_id.")
                             payload.pop('reply_to_message_id', None)
                             if att['type'] == 'photo':
                                 payload.update(photo=file_id, caption=caption)
@@ -120,30 +120,30 @@ class AttachmentHandler:
                         any_sent = True
                         first_group = False
                     else:
-                        # Если отправка не удалась, логируем предупреждение (fallback на текст будет позже)
+                        # If sending failed, log warning (fallback to text will be later)
                         if result:
-                            self.logger.warning(f"[Bot-{bot_id}] Не удалось отправить вложение {file_id}: {result.get('error', 'Неизвестная ошибка')}")
+                            self.logger.warning(f"[Bot-{bot_id}] Failed to send attachment {file_id}: {result.get('error', 'Unknown error')}")
                         else:
-                            self.logger.warning(f"[Bot-{bot_id}] Не удалось отправить вложение {file_id}: результат пуст")
+                            self.logger.warning(f"[Bot-{bot_id}] Failed to send attachment {file_id}: result is empty")
                 except Exception as e:
-                    self.logger.warning(f"Ошибка при отправке вложения {file_id}: {e}")
-                continue  # не обрабатываем как группу
+                    self.logger.warning(f"Error sending attachment {file_id}: {e}")
+                continue  # don't process as group
             
-            # Анимации, аудио, голосовые сообщения, стикеры и видео заметки всегда отправляются по отдельности
+            # Animations, audio, voice messages, stickers and video notes are always sent separately
             if group_type in ('animation', 'audio', 'voice', 'sticker', 'video_note'):
                 for att in files:
                     try:
                         file_id = att['file_id']
                         caption = text if not text_sent else None
                         
-                        # Подготавливаем параметры для отправки
+                        # Prepare parameters for sending
                         payload = {
                             'chat_id': chat_id,
                             'reply_markup': reply_markup,
                             'parse_mode': parse_mode
                         }
                         
-                        # Добавляем reply_to_message_id если нужно
+                        # Add reply_to_message_id if needed
                         if reply_to_message_id:
                             payload['reply_to_message_id'] = reply_to_message_id
                         
@@ -165,7 +165,7 @@ class AttachmentHandler:
                                 result = await self.api_client.make_request_with_limit(bot_token, "sendVideoNote", payload, bot_id)
                         except Exception as e:
                             if 'message to reply not found' in str(e).lower() and reply_to_message_id:
-                                self.logger.warning(f"Ответ на сообщение не удался для chat_id={chat_id}, message_id={reply_to_message_id}: {e}. Отправляю вложение без reply_to_message_id.")
+                                self.logger.warning(f"Reply to message failed for chat_id={chat_id}, message_id={reply_to_message_id}: {e}. Sending attachment without reply_to_message_id.")
                                 payload.pop('reply_to_message_id', None)
                                 if group_type == 'animation':
                                     payload.update(animation=file_id, caption=caption)
@@ -191,12 +191,12 @@ class AttachmentHandler:
                             any_sent = True
                             first_group = False
                         else:
-                            self.logger.warning(f"[Bot-{bot_id}] Не удалось отправить вложение {file_id}: {result.get('error', 'Неизвестная ошибка') if result else 'Результат пуст'}")
+                            self.logger.warning(f"[Bot-{bot_id}] Failed to send attachment {file_id}: {result.get('error', 'Unknown error') if result else 'Result is empty'}")
                     except Exception as e:
-                        self.logger.warning(f"Ошибка при отправке вложения {file_id}: {e}")
-                continue  # не обрабатываем как группу
+                        self.logger.warning(f"Error sending attachment {file_id}: {e}")
+                continue  # don't process as group
 
-            # Несколько вложений (media groups)
+            # Multiple attachments (media groups)
             for i in range(0, len(files), MAX_MEDIA_GROUP):
                 batch = files[i:i+MAX_MEDIA_GROUP]
                 media = []
@@ -212,13 +212,13 @@ class AttachmentHandler:
                         elif group_type == 'document':
                             media.append(self._create_media_item("document", file_id, caption, parse_mode))
                     except Exception as e:
-                        self.logger.warning(f"Ошибка при подготовке media {file_id}: {e}")
+                        self.logger.warning(f"Error preparing media {file_id}: {e}")
                 if media:
                     try:
-                        # Подготавливаем параметры для отправки media group
+                        # Prepare parameters for sending media group
                         payload = {'chat_id': chat_id, 'media': media}
                         
-                        # Добавляем reply_to_message_id если нужно
+                        # Add reply_to_message_id if needed
                         if reply_to_message_id:
                             payload['reply_to_message_id'] = reply_to_message_id
                         
@@ -226,7 +226,7 @@ class AttachmentHandler:
                             result = await self.api_client.make_request_with_limit(bot_token, "sendMediaGroup", payload, bot_id)
                         except Exception as e:
                             if 'message to reply not found' in str(e).lower() and reply_to_message_id:
-                                self.logger.warning(f"Ответ на сообщение не удался для chat_id={chat_id}, message_id={reply_to_message_id}: {e}. Отправляю группу медиа без reply_to_message_id.")
+                                self.logger.warning(f"Reply to message failed for chat_id={chat_id}, message_id={reply_to_message_id}: {e}. Sending media group without reply_to_message_id.")
                                 payload.pop('reply_to_message_id', None)
                                 result = await self.api_client.make_request_with_limit(bot_token, "sendMediaGroup", payload, bot_id)
                             else:
@@ -236,18 +236,18 @@ class AttachmentHandler:
                             any_sent = True
                             first_group = False
                             
-                            # Для групп медиа используем последний файл как приближение last_message_id
-                            # Telegram API не возвращает массив сообщений, поэтому это лучшее приближение
+                            # For media groups use last file as approximation for last_message_id
+                            # Telegram API doesn't return array of messages, so this is the best approximation
                             if media:
-                                last_message_id = None  # Группы медиа не дают точного message_id
+                                last_message_id = None  # Media groups don't give exact message_id
                         else:
-                            self.logger.warning(f"[Bot-{bot_id}] Не удалось отправить группу медиа: {result.get('error', 'Неизвестная ошибка') if result else 'Результат пуст'}")
+                            self.logger.warning(f"[Bot-{bot_id}] Failed to send media group: {result.get('error', 'Unknown error') if result else 'Result is empty'}")
                     except Exception as e:
-                        self.logger.warning(f"Ошибка при отправке группы медиа: {e}")
+                        self.logger.warning(f"Error sending media group: {e}")
         
-        # Если ни одно вложение не отправлено, а текст есть — отправить текстовое сообщение
+        # If no attachment was sent, but text exists — send text message
         if not any_sent and text:
-            self.logger.warning(f"[Bot-{bot_id}] Не удалось отправить вложения в чат {chat_id}, отправляю текстовое сообщение")
+            self.logger.warning(f"[Bot-{bot_id}] Failed to send attachments to chat {chat_id}, sending text message")
             payload = {
                 'chat_id': chat_id,
                 'text': text,
@@ -261,12 +261,12 @@ class AttachmentHandler:
             if result and result.get('result') == 'success':
                 last_message_id = result.get('response_data', {}).get('message_id')
             else:
-                # Если и текст не удалось отправить - это ошибка
-                self.logger.error(f"[Bot-{bot_id}] Не удалось отправить вложения и текстовое сообщение в чат {chat_id}: {result.get('error', 'Неизвестная ошибка') if result else 'Результат пуст'}")
+                # If text also failed to send - this is an error
+                self.logger.error(f"[Bot-{bot_id}] Failed to send attachments and text message to chat {chat_id}: {result.get('error', 'Unknown error') if result else 'Result is empty'}")
                 return None
         elif not any_sent and not text:
-            # Нет ни вложений, ни текста - это ошибка
-            self.logger.error(f"[Bot-{bot_id}] Не отправлено ни вложений, ни текста в чат {chat_id}")
+            # No attachments and no text - this is an error
+            self.logger.error(f"[Bot-{bot_id}] No attachments or text sent to chat {chat_id}")
             return None
         
         return last_message_id

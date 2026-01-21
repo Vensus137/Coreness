@@ -1,5 +1,5 @@
 """
-Загрузчик конфигурации из БД для scenario_processor
+Configuration loader from DB for scenario_processor
 """
 
 from typing import Any, Dict, List, Optional
@@ -7,8 +7,8 @@ from typing import Any, Dict, List, Optional
 
 class DataLoader:
     """
-    Универсальный загрузчик данных сценариев из БД для scenario_processor
-    Работает с любыми tenant'ами, принимая tenant_id в каждый метод
+    Universal scenario data loader from DB for scenario_processor
+    Works with any tenants, accepting tenant_id in each method
     """
     
     def __init__(self, logger, database_manager):
@@ -17,7 +17,7 @@ class DataLoader:
     
     async def load_scenarios_by_tenant(self, tenant_id: int) -> List[Dict[str, Any]]:
         """
-        Загрузка всех сценариев для tenant'а
+        Load all scenarios for tenant
         """
         try:
             master_repo = self.database_manager.get_master_repository()
@@ -26,12 +26,12 @@ class DataLoader:
             return scenarios
             
         except Exception as e:
-            self.logger.error(f"Ошибка загрузки сценариев для tenant {tenant_id}: {e}")
+            self.logger.error(f"Error loading scenarios for tenant {tenant_id}: {e}")
             return []
     
     async def load_triggers_by_scenario(self, scenario_id: int) -> List[Dict[str, Any]]:
         """
-        Загрузка триггеров сценария
+        Load scenario triggers
         """
         try:
             master_repo = self.database_manager.get_master_repository()
@@ -40,12 +40,12 @@ class DataLoader:
             return triggers
             
         except Exception as e:
-            self.logger.error(f"Ошибка загрузки триггеров для сценария {scenario_id}: {e}")
+            self.logger.error(f"Error loading triggers for scenario {scenario_id}: {e}")
             return []
     
     async def load_steps_by_scenario(self, scenario_id: int) -> List[Dict[str, Any]]:
         """
-        Загрузка шагов сценария
+        Load scenario steps
         """
         try:
             master_repo = self.database_manager.get_master_repository()
@@ -54,12 +54,12 @@ class DataLoader:
             return steps
             
         except Exception as e:
-            self.logger.error(f"Ошибка загрузки шагов для сценария {scenario_id}: {e}")
+            self.logger.error(f"Error loading steps for scenario {scenario_id}: {e}")
             return []
     
     async def load_transitions_by_step(self, step_id: int) -> List[Dict[str, Any]]:
         """
-        Загрузка переходов шага
+        Load step transitions
         """
         try:
             master_repo = self.database_manager.get_master_repository()
@@ -68,66 +68,66 @@ class DataLoader:
             return transitions
             
         except Exception as e:
-            self.logger.error(f"Ошибка загрузки переходов для шага {step_id}: {e}")
+            self.logger.error(f"Error loading transitions for step {step_id}: {e}")
             return []
     
-    # === Методы удаления ===
+    # === Deletion methods ===
     
     async def delete_tenant_scenarios(self, tenant_id: int) -> bool:
         """
-        Удаление всех сценариев tenant'а из БД
+        Delete all tenant scenarios from DB
         """
         try:
             master_repo = self.database_manager.get_master_repository()
             
-            # Получаем все сценарии tenant'а
+            # Get all tenant scenarios
             scenarios = await master_repo.get_scenarios_by_tenant(tenant_id)
             
             for scenario in scenarios:
                 scenario_id = scenario['id']
                 
-                # Удаляем шаги сценария (и их переходы)
+                # Delete scenario steps (and their transitions)
                 await master_repo.delete_steps_by_scenario(scenario_id)
                 
-                # Удаляем триггеры сценария (и их условия)
+                # Delete scenario triggers (and their conditions)
                 await master_repo.delete_triggers_by_scenario(scenario_id)
                 
-                # Удаляем сам сценарий
+                # Delete scenario itself
                 await master_repo.delete_scenario(scenario_id)
             
             return True
             
         except Exception as e:
-            self.logger.error(f"Ошибка удаления сценариев для tenant {tenant_id}: {e}")
+            self.logger.error(f"Error deleting scenarios for tenant {tenant_id}: {e}")
             return False
     
-    # === Методы сохранения ===
+    # === Save methods ===
     
     async def save_scenario(self, tenant_id: int, scenario_data: Dict[str, Any]) -> Optional[int]:
         """
-        Сохранение сценария в БД
+        Save scenario to DB
         """
         try:
             master_repo = self.database_manager.get_master_repository()
             
-            # Создаем сценарий
+            # Create scenario
             scenario_id = await master_repo.create_scenario({
                 'tenant_id': tenant_id,
                 'scenario_name': scenario_data['scenario_name'],
                 'description': scenario_data.get('description', ''),
-                'schedule': scenario_data.get('schedule'),  # Cron выражение (может быть None)
+                'schedule': scenario_data.get('schedule'),  # Cron expression (may be None)
                 'is_active': True
             })
             
             return scenario_id
             
         except Exception as e:
-            self.logger.error(f"Ошибка сохранения сценария для tenant {tenant_id}: {e}")
+            self.logger.error(f"Error saving scenario for tenant {tenant_id}: {e}")
             return None
     
     async def load_scheduled_scenarios(self, tenant_id: Optional[int] = None) -> List[Dict[str, Any]]:
         """
-        Загрузка всех scheduled сценариев из БД
+        Load all scheduled scenarios from DB
         """
         try:
             master_repo = self.database_manager.get_master_repository()
@@ -135,17 +135,17 @@ class DataLoader:
             return scenarios
             
         except Exception as e:
-            self.logger.error(f"Ошибка загрузки scheduled сценариев: {e}")
+            self.logger.error(f"Error loading scheduled scenarios: {e}")
             return []
     
     async def save_trigger(self, scenario_id: int, trigger_data: Dict[str, Any]) -> Optional[int]:
         """
-        Сохранение триггера сценария в БД
+        Save scenario trigger to DB
         """
         try:
             master_repo = self.database_manager.get_master_repository()
             
-            # Создаем триггер с условием
+            # Create trigger with condition
             trigger_id = await master_repo.create_trigger({
                 'scenario_id': scenario_id,
                 'condition_expression': trigger_data['condition_expression']
@@ -154,17 +154,17 @@ class DataLoader:
             return trigger_id
             
         except Exception as e:
-            self.logger.error(f"Ошибка сохранения триггера для сценария {scenario_id}: {e}")
+            self.logger.error(f"Error saving trigger for scenario {scenario_id}: {e}")
             return None
     
     async def save_step(self, scenario_id: int, step_data: Dict[str, Any]) -> Optional[int]:
         """
-        Сохранение шага сценария в БД
+        Save scenario step to DB
         """
         try:
             master_repo = self.database_manager.get_master_repository()
             
-            # Создаем шаг
+            # Create step
             step_id = await master_repo.create_step({
                 'scenario_id': scenario_id,
                 'step_order': step_data['step_order'],
@@ -175,7 +175,7 @@ class DataLoader:
                 'is_active': True
             })
             
-            # Создаем переходы шага
+            # Create step transitions
             transition = step_data.get('transition', [])
             for transition_data in transition:
                 await master_repo.create_transition({
@@ -188,5 +188,5 @@ class DataLoader:
             return step_id
             
         except Exception as e:
-            self.logger.error(f"Ошибка сохранения шага для сценария {scenario_id}: {e}")
+            self.logger.error(f"Error saving step for scenario {scenario_id}: {e}")
             return None

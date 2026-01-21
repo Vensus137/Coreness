@@ -1,28 +1,28 @@
 """
-Тесты базовой валидации
+Basic validation tests
 """
 
 
 class TestSimpleValidation:
-    """Тесты простой валидации"""
+    """Simple validation tests"""
 
     def test_success_with_required_and_optional_field(self, validator):
-        """Проверка успешной валидации с обязательным и опциональным полем"""
+        """Check successful validation with required and optional field"""
         result = validator.validate_action_input('test_service', 'simple_action', {'name': 'Test', 'age': 25})
         assert result.get('result') == 'success'
 
     def test_success_without_optional_field(self, validator):
-        """Проверка успешной валидации без опционального поля"""
+        """Check successful validation without optional field"""
         result = validator.validate_action_input('test_service', 'simple_action', {'name': 'Test'})
         assert result.get('result') == 'success'
 
     def test_error_missing_required_field(self, validator):
-        """Проверка ошибки валидации: отсутствует обязательное поле"""
+        """Check validation error: missing required field"""
         result = validator.validate_action_input('test_service', 'simple_action', {})
         assert result.get('result') == 'error'
 
     def test_error_invalid_optional_field_type(self, validator):
-        """Проверка ошибки валидации: неверный тип опционального поля"""
+        """Check validation error: invalid optional field type"""
         result = validator.validate_action_input('test_service', 'simple_action', {'name': 'Test', 'age': 'invalid'})
         assert result.get('result') == 'error'
 

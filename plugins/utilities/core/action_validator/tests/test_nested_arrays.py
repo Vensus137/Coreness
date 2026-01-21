@@ -1,25 +1,25 @@
 """
-Тесты валидации вложенных объектов в массивах
+Tests for validation of nested objects in arrays
 """
 
 
 class TestNestedArrays:
-    """Тесты вложенных массивов"""
+    """Tests for nested arrays"""
 
     def test_success_nested_array_with_objects(self, validator):
-        """Проверка успешной валидации: массив с вложенными объектами"""
+        """Check successful validation: array with nested objects"""
         result = validator.validate_action_input('test_service', 'action_with_nested_array', 
                                                 {'items': [{'id': 1, 'name': 'Item 1'}, {'id': 2}]})
         assert result.get('result') == 'success'
 
     def test_error_missing_required_field_in_nested_object(self, validator):
-        """Проверка ошибки валидации: отсутствует обязательное поле id во вложенном объекте"""
+        """Check validation error: missing required field id in nested object"""
         result = validator.validate_action_input('test_service', 'action_with_nested_array', 
                                                 {'items': [{'id': 1}, {'name': 'Item 2'}]})
         assert result.get('result') == 'error'
 
     def test_error_invalid_type_in_nested_object(self, validator):
-        """Проверка ошибки валидации: неверный тип во вложенном объекте"""
+        """Check validation error: invalid type in nested object"""
         result = validator.validate_action_input('test_service', 'action_with_nested_array', 
                                                 {'items': [{'id': 'invalid'}]})
         assert result.get('result') == 'error'

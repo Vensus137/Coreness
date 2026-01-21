@@ -1,6 +1,6 @@
 """
-CacheManager - единая утилита для глобального кэширования данных
-In-memory кэш для всех сервисов с поддержкой TTL и инвалидации
+CacheManager - unified utility for global data caching
+In-memory cache for all services with TTL and invalidation support
 """
 
 import asyncio
@@ -11,63 +11,63 @@ from typing import Any, Dict, Optional
 
 class CacheManager:
     """
-    Единая утилита для глобального кэширования данных
-    - In-memory кэш (Python dicts)
-    - Поддержка TTL
-    - Инвалидация по паттернам
+    Unified utility for global data caching
+    - In-memory cache (Python dicts)
+    - TTL support
+    - Pattern-based invalidation
     """
     
     def __init__(self, **kwargs):
         self.logger = kwargs['logger']
         self.settings_manager = kwargs['settings_manager']
         
-        # Получаем настройки
+        # Get settings
         settings = self.settings_manager.get_plugin_settings("cache_manager")
         
-        # Основной кэш (плоский словарь, ключи вида "group:key")
+        # Main cache (flat dictionary, keys like "group:key")
         self._cache: Dict[str, Any] = {}
         
-        # Время истечения для элементов с TTL (как в Redis - храним expired_at)
+        # Expiration time for TTL items (like Redis - store expired_at)
         self._cache_expires_at: Dict[str, datetime] = {}
         
-        # Дефолтный TTL для защиты от утечки памяти (если не указан явно при set())
-        self._default_ttl = settings.get('default_ttl', 3600)  # 1 час по умолчанию
+        # Default TTL to prevent memory leaks (if not explicitly specified in set())
+        self._default_ttl = settings.get('default_ttl', 3600)  # 1 hour by default
         
-        # Настройки периодической очистки (алгоритм как в Redis)
-        self._cleanup_interval = settings.get('cleanup_interval', 60)  # 1 минута по умолчанию
-        self._cleanup_sample_size = settings.get('cleanup_sample_size', 50)  # Размер выборки
-        self._cleanup_expired_threshold = settings.get('cleanup_expired_threshold', 0.25)  # Порог 25%
+        # Periodic cleanup settings (algorithm like Redis)
+        self._cleanup_interval = settings.get('cleanup_interval', 60)  # 1 minute by default
+        self._cleanup_sample_size = settings.get('cleanup_sample_size', 50)  # Sample size
+        self._cleanup_expired_threshold = settings.get('cleanup_expired_threshold', 0.25)  # 25% threshold
         
-        # Фоновая задача для периодической очистки
+        # Background task for periodic cleanup
         self._cleanup_task: Optional[asyncio.Task] = None
         self._is_running = False
         
-        # Запускаем фоновую задачу при инициализации
+        # Start background task on initialization
         self._start_background_cleanup()
 
-    # === Фоновые задачи ===
+    # === Background tasks ===
 
     def _start_background_cleanup(self):
         """
-        Запуск фоновой задачи при инициализации (синхронный метод)
+        Start background task on initialization (synchronous method)
         """
         if self._is_running:
             return
         
         try:
-            # Пытаемся создать задачу (как в task_manager)
-            # asyncio.ensure_future() работает если loop уже запущен или будет запущен
+            # Try to create task (like in task_manager)
+            # asyncio.ensure_future() works if loop is already running or will be started
             self._is_running = True
             self._cleanup_task = asyncio.ensure_future(self._cleanup_loop())
-            self.logger.info(f"Запланирована фоновая задача очистки кэша (интервал: {self._cleanup_interval} сек)")
+            self.logger.info(f"Background cache cleanup task scheduled (interval: {self._cleanup_interval} sec)")
         except RuntimeError as e:
-            # Event loop не доступен - это проблема, задача не запустится
+            # Event loop not available - this is a problem, task won't start
             self._is_running = False
-            self.logger.error(f"Не удалось запустить фоновую задачу очистки кэша при инициализации: {e}. Периодическая очистка не будет работать!")
+            self.logger.error(f"Failed to start background cache cleanup task on initialization: {e}. Periodic cleanup will not work!")
     
     async def _cleanup_loop(self):
         """
-        Фоновый цикл периодической очистки кэша
+        Background loop for periodic cache cleanup
         """
         try:
             while self._is_running:
@@ -75,13 +75,13 @@ class CacheManager:
                 if self._is_running:
                     await self._clean_expired_cache()
         except asyncio.CancelledError:
-            self.logger.info("Фоновая задача очистки кэша остановлена")
+            self.logger.info("Background cache cleanup task stopped")
         except Exception as e:
-            self.logger.error(f"Ошибка в фоновой задаче очистки кэша: {e}")
+            self.logger.error(f"Error in background cache cleanup task: {e}")
     
     def stop_background_cleanup(self):
         """
-        Остановка фоновой задачи очистки кэша (синхронный метод для shutdown)
+        Stop background cache cleanup task (synchronous method for shutdown)
         """
         if not self._is_running:
             return
@@ -89,29 +89,29 @@ class CacheManager:
         self._is_running = False
         if self._cleanup_task and not self._cleanup_task.done():
             self._cleanup_task.cancel()
-            # Не ждем завершения задачи здесь, т.к. это синхронный метод
-            # Задача завершится при остановке event loop
-        self.logger.info("Фоновая задача очистки кэша остановлена")
+            # Don't wait for task completion here, as this is a synchronous method
+            # Task will complete when event loop stops
+        self.logger.info("Background cache cleanup task stopped")
 
-    # === Методы для работы с кэшем ===
+    # === Cache methods ===
     
     def _is_cache_valid(self, key: str) -> bool:
         """
-        Проверка валидности элемента кэша (ленивая очистка, как в Redis)
-        Если элемент истек - удаляется сразу
+        Check cache item validity (lazy cleanup, like Redis)
+        If item expired - removed immediately
         """
-        # Проверяем наличие значения в кэше
+        # Check if value exists in cache
         if key not in self._cache:
             return False
         
-        # Если нет времени истечения - кэш вечный
+        # If no expiration time - cache is eternal
         if key not in self._cache_expires_at:
             return True
         
-        # Простое сравнение времени (как в Redis - храним expired_at)
+        # Simple time comparison (like Redis - store expired_at)
         current_time = datetime.now()
         if current_time >= self._cache_expires_at[key]:
-            # Удаляем истекший элемент
+            # Remove expired item
             self._cache.pop(key, None)
             self._cache_expires_at.pop(key, None)
             return False
@@ -120,47 +120,47 @@ class CacheManager:
     
     async def _clean_expired_cache(self):
         """
-        Периодическая очистка истекших элементов кэша (алгоритм как в Redis)
-        1. Берем случайную выборку из всех элементов с TTL
-        2. Если >25% истекли - делаем полную очистку
-        3. Если <25% - только выборка
+        Periodic cleanup of expired cache items (algorithm like Redis)
+        1. Take random sample from all items with TTL
+        2. If >25% expired - do full cleanup
+        3. If <25% - only sample
         """
         
         current_time = datetime.now()
         
-        # Получаем все ключи с TTL
+        # Get all keys with TTL
         keys_with_ttl = list(self._cache_expires_at.keys())
         
         if not keys_with_ttl:
             return
         
-        # Берем случайную выборку (как в Redis)
+        # Take random sample (like Redis)
         sample_size = min(self._cleanup_sample_size, len(keys_with_ttl))
         sample_keys = random.sample(keys_with_ttl, sample_size)
         
-        # Проверяем выборку
+        # Check sample
         expired_in_sample = 0
         for key in sample_keys:
             if current_time >= self._cache_expires_at[key]:
                 expired_in_sample += 1
         
-        # Вычисляем процент истекших в выборке
+        # Calculate percentage of expired in sample
         expired_ratio = expired_in_sample / sample_size if sample_size > 0 else 0
         
-        # Если >25% истекли - делаем полную очистку
+        # If >25% expired - do full cleanup
         if expired_ratio >= self._cleanup_expired_threshold:
-            # Полная очистка - перебираем все элементы
+            # Full cleanup - iterate all items
             expired_keys = []
             for key in keys_with_ttl:
                 if current_time >= self._cache_expires_at[key]:
                     expired_keys.append(key)
             
-            # Удаляем истекшие
+            # Remove expired
             for key in expired_keys:
                 self._cache.pop(key, None)
                 self._cache_expires_at.pop(key, None)
         else:
-            # <25% истекли - удаляем только те, что нашли в выборке
+            # <25% expired - remove only those found in sample
             expired_keys = [key for key in sample_keys 
                            if current_time >= self._cache_expires_at[key]]
             
@@ -168,54 +168,54 @@ class CacheManager:
                 self._cache.pop(key, None)
                 self._cache_expires_at.pop(key, None)
     
-    # === Базовые методы ===
+    # === Basic methods ===
     
     async def get(self, key: str) -> Optional[Any]:
         """
-        Получение значения из кэша по ключу
-        Ленивая очистка: проверка конкретного элемента при обращении (как в Redis)
+        Get value from cache by key
+        Lazy cleanup: check specific item on access (like Redis)
         """
         try:
-            # Ленивая очистка: проверяем валидность конкретного элемента
+            # Lazy cleanup: check validity of specific item
             if not self._is_cache_valid(key):
                 return None
             
             return self._cache.get(key)
             
         except Exception as e:
-            self.logger.error(f"Ошибка получения значения из кэша для ключа '{key}': {e}")
+            self.logger.error(f"Error getting value from cache for key '{key}': {e}")
             return None
     
     async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """
-        Установка значения в кэш
-        Если TTL не указан - используется default_ttl (защита от утечки памяти)
+        Set value in cache
+        If TTL not specified - uses default_ttl (memory leak protection)
         """
         try:
-            # Устанавливаем значение
+            # Set value
             self._cache[key] = value
             
-            # Определяем TTL (храним expired_at как в Redis)
-            # Если TTL не указан - используем дефолтный
+            # Determine TTL (store expired_at like Redis)
+            # If TTL not specified - use default
             final_ttl = ttl if ttl is not None else self._default_ttl
             
-            # Устанавливаем время истечения (всегда есть TTL)
+            # Set expiration time (always has TTL)
             self._cache_expires_at[key] = datetime.now() + timedelta(seconds=final_ttl)
             
             return True
             
         except Exception as e:
-            self.logger.error(f"Ошибка установки значения в кэш для ключа '{key}': {e}")
+            self.logger.error(f"Error setting value in cache for key '{key}': {e}")
             return False
     
     async def delete(self, key: str) -> bool:
         """
-        Удаление значения из кэша
+        Delete value from cache
         """
         try:
-            # Проверяем валидность перед удалением (ленивая очистка)
+            # Check validity before deletion (lazy cleanup)
             if not self._is_cache_valid(key):
-                # Ключ истек или не существует
+                # Key expired or doesn't exist
                 return False
             
             deleted = False
@@ -229,40 +229,40 @@ class CacheManager:
             return deleted
             
         except Exception as e:
-            self.logger.error(f"Ошибка удаления значения из кэша для ключа '{key}': {e}")
+            self.logger.error(f"Error deleting value from cache for key '{key}': {e}")
             return False
     
     async def exists(self, key: str) -> bool:
         """
-        Проверка существования ключа в кэше
+        Check if key exists in cache
         """
         return self._is_cache_valid(key)
     
     async def invalidate_pattern(self, pattern: str) -> int:
         """
-        Инвалидация ключей по паттерну
-        Поддерживает простые паттерны: 'bot:*', 'tenant:123:*', '*:meta'
+        Invalidate keys by pattern
+        Supports simple patterns: 'bot:*', 'tenant:123:*', '*:meta'
         """
         try:
             deleted_count = 0
             keys_to_delete = []
             
-            # Простая реализация паттернов
+            # Simple pattern implementation
             if pattern.endswith(':*'):
-                prefix = pattern[:-2]  # Убираем ':*'
+                prefix = pattern[:-2]  # Remove ':*'
                 keys_to_delete = [key for key in self._cache.keys() if key.startswith(prefix + ':')]
             elif pattern.startswith('*:'):
-                suffix = pattern[2:]  # Убираем '*:'
+                suffix = pattern[2:]  # Remove '*:'
                 keys_to_delete = [key for key in self._cache.keys() if key.endswith(':' + suffix)]
             elif '*' in pattern:
-                # Более сложный паттерн (можно расширить позже)
+                # More complex pattern (can be extended later)
                 prefix, suffix = pattern.split('*', 1)
                 keys_to_delete = [
                     key for key in self._cache.keys()
                     if key.startswith(prefix) and key.endswith(suffix)
                 ]
             else:
-                # Точное совпадение
+                # Exact match
                 keys_to_delete = [pattern] if pattern in self._cache else []
             
             for key in keys_to_delete:
@@ -270,34 +270,34 @@ class CacheManager:
                     deleted_count += 1
             
             if deleted_count > 0:
-                self.logger.info(f"Инвалидировано {deleted_count} ключей по паттерну '{pattern}'")
+                self.logger.info(f"Invalidated {deleted_count} keys by pattern '{pattern}'")
             
             return deleted_count
             
         except Exception as e:
-            self.logger.error(f"Ошибка инвалидации по паттерну '{pattern}': {e}")
+            self.logger.error(f"Error invalidating by pattern '{pattern}': {e}")
             return 0
     
     async def clear(self) -> bool:
         """
-        Очистка всего кэша
+        Clear entire cache
         """
         try:
             count = len(self._cache)
             self._cache.clear()
             self._cache_expires_at.clear()
-            self.logger.info(f"Очищен весь кэш ({count} элементов)")
+            self.logger.info(f"Cleared entire cache ({count} items)")
             return True
             
         except Exception as e:
-            self.logger.error(f"Ошибка очистки кэша: {e}")
+            self.logger.error(f"Error clearing cache: {e}")
             return False
     
-    # === Вспомогательные методы ===
+    # === Helper methods ===
     
     def shutdown(self):
         """
-        Остановка фоновой задачи очистки кэша (для graceful shutdown)
+        Stop background cache cleanup task (for graceful shutdown)
         """
         self.stop_background_cleanup()
     
