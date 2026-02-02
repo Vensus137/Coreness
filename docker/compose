@@ -4,6 +4,10 @@
 # All compose files and overrides live in ~/.coreness; accessible from any directory
 # Repo docker/ is only a template for updates, not used directly on server
 # Usage: dc [command] [container] or ./docker/compose [command] [container]
+#
+# Reinstall dc without full core_manager: copy this file to server, then:
+#   sudo bash ./compose install   # install to /usr/local/bin (recommended)
+#   bash ./compose install        # install to ~/.local/bin (ensure PATH has it)
 
 # Colors for output
 RED='\033[0;31m'
@@ -13,12 +17,8 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Determine script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Global variables for environment and project
+# Global variables (env set per-command from container name; all paths use system folder only)
 DC_ENVIRONMENT=""
-DC_PROJECT_ROOT=""
 
 # Path to configuration file (SYSTEM folder)
 DC_CONFIG_FILE="${HOME}/.coreness/.dc_config"
@@ -48,20 +48,6 @@ get_config_value() {
     
     # Ignore comments and empty lines, search for KEY=VALUE
     grep -v '^#' "$DC_CONFIG_FILE" | grep -v '^[[:space:]]*$' | grep "^${key}=" | cut -d'=' -f2- | head -1
-}
-
-# Get environment path from config
-get_env_path_from_config() {
-    local env_alias="$1"
-    local path_key="${env_alias}_path"
-    local path=$(get_config_value "$path_key")
-    
-    if [ -n "$path" ]; then
-        echo "$path"
-        return 0
-    fi
-    
-    return 1
 }
 
 # Save value to config
@@ -109,76 +95,6 @@ remove_config_value() {
     fi
 }
 
-# Find project root going up the directory tree
-find_project_root() {
-    local start_dir="${1:-$(pwd)}"
-    local current_dir="$start_dir"
-    
-    while [ "$current_dir" != "/" ]; do
-        if [ -d "$current_dir/docker" ] && [ -f "$current_dir/docker/docker-compose.yml" ]; then
-            echo "$current_dir"
-            return 0
-        fi
-        current_dir="$(dirname "$current_dir")"
-    done
-    
-    return 1
-}
-
-# Auto-detect environment by compose files
-detect_environment() {
-    local project_root="$1"
-    
-    if [ -f "$project_root/docker/docker-compose.test.yml" ]; then
-        echo "test"
-        return 0
-    fi
-    
-    if [ -f "$project_root/docker/docker-compose.prod.yml" ]; then
-        echo "prod"
-        return 0
-    fi
-    
-    # If only base file - consider dev
-    if [ -f "$project_root/docker/docker-compose.yml" ]; then
-        echo "dev"
-        return 0
-    fi
-    
-    return 1
-}
-
-# Determine project and environment
-determine_project_and_env() {
-    local first_arg="$1"
-    
-    # Check if first argument is environment alias (test/prod)
-    if [ "$first_arg" = "test" ] || [ "$first_arg" = "prod" ]; then
-        DC_ENVIRONMENT="$first_arg"
-        # project_root no longer needed for global configuration
-        # But keep for backward compatibility and other functions
-        local env_path=$(get_env_path_from_config "$first_arg")
-        if [ -n "$env_path" ] && [ -d "$env_path" ]; then
-            DC_PROJECT_ROOT="$env_path"
-        else
-            # Try to find project in current directory
-            DC_PROJECT_ROOT=$(find_project_root)
-        fi
-        return 0
-    fi
-    
-    # Auto-detection: search for project in current directory and above
-    local found_root=$(find_project_root)
-    
-    if [ -n "$found_root" ]; then
-        DC_PROJECT_ROOT="$found_root"
-        DC_ENVIRONMENT=$(detect_environment "$found_root")
-        return 0
-    fi
-    
-    return 1
-}
-
 # Determine docker-compose command
 get_compose_cmd() {
     # If environment variable is set (for tests), use it
@@ -205,51 +121,32 @@ _get_compose_cmd_cached() {
     echo "$COMPOSE_CMD"
 }
 
-# Check service existence in compose files
+# Check service existence in compose files (merged base + test + prod from system folder)
 # Returns: 0 if service exists, 1 if it doesn't
 check_service_exists() {
-    local project_root="${1:-$DC_PROJECT_ROOT}"
-    local service_name="${2:-}"
-    local env="${3:-$DC_ENVIRONMENT}"
+    local service_name="${1:-}"
+    local env="${2:-$DC_ENVIRONMENT}"
     
     if [ -z "$service_name" ] || [ -z "$env" ]; then
         return 1
     fi
     
-    # Use global compose files
     local base_config="${DC_GLOBAL_CONFIG_DIR}/docker-compose.yml"
-    local env_config="${DC_GLOBAL_CONFIG_DIR}/docker-compose.${env}.yml"
-    
-    # Check in base file
-    if [ -f "$base_config" ] && grep -q "^[[:space:]]*${service_name}:" "$base_config" 2>/dev/null; then
-        return 0
+    if [ ! -f "$base_config" ]; then
+        return 1
     fi
     
-    # Check in environment file
-    if [ "$env" != "dev" ] && [ -f "$env_config" ] && grep -q "^[[:space:]]*${service_name}:" "$env_config" 2>/dev/null; then
-        return 0
-    fi
-    
-    # Fallback: check via docker compose config
-    if [ -f "$base_config" ]; then
-        local compose_cmd_base="$(_get_compose_cmd_cached) -f $base_config"
-        if [ "$env" != "dev" ] && [ -f "$env_config" ]; then
-            compose_cmd_base="$compose_cmd_base -f $env_config"
-        fi
-        local available_services=$($compose_cmd_base config --services 2>/dev/null | tr '\n' ' ')
-        if echo "$available_services" | grep -q "\b${service_name}\b"; then
-            return 0
-        fi
-    fi
-    
-    return 1
+    local compose_cmd_base="$(_get_compose_cmd_cached) -f $base_config"
+    [ -f "${DC_GLOBAL_CONFIG_DIR}/docker-compose.test.yml" ] && compose_cmd_base="$compose_cmd_base -f ${DC_GLOBAL_CONFIG_DIR}/docker-compose.test.yml"
+    [ -f "${DC_GLOBAL_CONFIG_DIR}/docker-compose.prod.yml" ] && compose_cmd_base="$compose_cmd_base -f ${DC_GLOBAL_CONFIG_DIR}/docker-compose.prod.yml"
+    local available_services=$($compose_cmd_base config --services 2>/dev/null | tr '\n' ' ')
+    echo "$available_services" | grep -q "\b${service_name}\b"
 }
 
-# Generate override file from config
+# Generate override file from config (system folder only)
 generate_override_file() {
     local env="$1"
-    local project_root="${2:-$DC_PROJECT_ROOT}"
-    local service_name="${3:-}"  # Optional service name
+    local service_name="${2:-}"  # Optional; if empty, derived from env (app or app-test)
     
     # Use global folder for override file
     local override_file="${DC_GLOBAL_CONFIG_DIR}/docker-compose.override-${env}.yml"
@@ -342,56 +239,30 @@ EOF
     fi
 }
 
-# Get docker-compose command with files for environment
+# Get docker-compose command: always base + test + prod (so all 4 services visible, no orphan warnings)
+# Uses system folder only; no project_root. Generates overrides for both test and prod.
 get_compose_cmd_with_files() {
-    local env="${1:-$DC_ENVIRONMENT}"
-    local project_root="${2:-$DC_PROJECT_ROOT}"
-    
-    if [ -z "$env" ]; then
-        echo -e "${RED}❌ Environment not defined${NC}" >&2
-        exit 1
-    fi
-    
-    # Generate override file from config before use
-    if [ "$env" != "dev" ]; then
-        # Iterate through all services from list and generate override for each
-        for service_type in "${DC_SERVICES[@]}"; do
-            local service_name=$(get_service_name "$service_type" "$env")
-            generate_override_file "$env" "$project_root" "$service_name"
-        done
-    fi
-    
-    # Use global compose files
     local base_config="${DC_GLOBAL_CONFIG_DIR}/docker-compose.yml"
-    local env_config="${DC_GLOBAL_CONFIG_DIR}/docker-compose.${env}.yml"
-    local override_config="${DC_GLOBAL_CONFIG_DIR}/docker-compose.override-${env}.yml"
     
-    # Check file existence
     if [ ! -f "$base_config" ]; then
         echo -e "${RED}❌ Base compose file not found: $base_config${NC}" >&2
         echo -e "${YELLOW}💡 Run server update to create configuration${NC}" >&2
         exit 1
     fi
     
-    if [ "$env" != "dev" ] && [ ! -f "$env_config" ]; then
-        echo -e "${RED}❌ Environment compose file not found: $env_config${NC}" >&2
-        echo -e "${YELLOW}💡 Run server update to create configuration${NC}" >&2
-        exit 1
-    fi
+    # Generate override files for both test and prod (so resource limits apply to all)
+    for env in test prod; do
+        for service_type in "${DC_SERVICES[@]}"; do
+            local service_name=$(get_service_name "$service_type" "$env")
+            generate_override_file "$env" "$service_name"
+        done
+    done
     
-    # Form docker compose command with files
-    # project-name not needed - use explicit service list in commands
     local cmd="$(_get_compose_cmd_cached) -f $base_config"
-    
-    # Add environment file if specified
-    if [ "$env" != "dev" ] && [ -f "$env_config" ]; then
-        cmd="$cmd -f $env_config"
-    fi
-    
-    # Add override if exists
-    if [ -f "$override_config" ]; then
-        cmd="$cmd -f $override_config"
-    fi
+    [ -f "${DC_GLOBAL_CONFIG_DIR}/docker-compose.test.yml" ] && cmd="$cmd -f ${DC_GLOBAL_CONFIG_DIR}/docker-compose.test.yml"
+    [ -f "${DC_GLOBAL_CONFIG_DIR}/docker-compose.prod.yml" ] && cmd="$cmd -f ${DC_GLOBAL_CONFIG_DIR}/docker-compose.prod.yml"
+    [ -f "${DC_GLOBAL_CONFIG_DIR}/docker-compose.override-test.yml" ] && cmd="$cmd -f ${DC_GLOBAL_CONFIG_DIR}/docker-compose.override-test.yml"
+    [ -f "${DC_GLOBAL_CONFIG_DIR}/docker-compose.override-prod.yml" ] && cmd="$cmd -f ${DC_GLOBAL_CONFIG_DIR}/docker-compose.override-prod.yml"
     
     echo "$cmd"
 }
@@ -433,7 +304,6 @@ get_container_name() {
     local service="$1"
     local env="${2:-${DC_ENVIRONMENT:-dev}}"
     
-    # Service must be specified explicitly (fallback removed for universality)
     if [ -z "$service" ]; then
         echo ""  # Return empty string if not specified
         return 1
@@ -666,10 +536,10 @@ manage_resources() {
             fi
             
             # Generate override file in global config dir (~/.coreness)
-            if ! generate_override_file "$env" "" "$container"; then
+            if ! generate_override_file "$env" "$container"; then
                 echo -e "${YELLOW}⚠️ Failed to update override file${NC}"
             fi
-            if ! check_service_exists "" "$container" "$env"; then
+            if ! check_service_exists "$container" "$env"; then
                 echo -e "${YELLOW}⚠️ Container '$container' not found in compose files, but resources saved to config${NC}"
             fi
             
@@ -713,7 +583,7 @@ manage_resources() {
             remove_config_value "${container}.memory_reserve"
             
             # Update override file in global config dir (~/.coreness)
-            if ! generate_override_file "$env" "" "$container"; then
+            if ! generate_override_file "$env" "$container"; then
                 echo -e "${YELLOW}⚠️ Failed to update override file${NC}"
             fi
             
@@ -981,8 +851,8 @@ main() {
             echo -e "${YELLOW}🔄 Restarting container: $container${NC}"
             local env=$(detect_env_from_container "$container")
             local compose_cmd
-            compose_cmd=$(get_compose_cmd_with_files "$env" "" 2>/dev/null) || true
-            if [ -n "$compose_cmd" ] && [ -f "${DC_GLOBAL_CONFIG_DIR}/docker-compose.yml" ] && [ -f "${DC_GLOBAL_CONFIG_DIR}/docker-compose.${env}.yml" ]; then
+            compose_cmd=$(get_compose_cmd_with_files 2>/dev/null) || true
+            if [ -n "$compose_cmd" ] && [ -f "${DC_GLOBAL_CONFIG_DIR}/docker-compose.yml" ]; then
                 (cd "$DC_GLOBAL_CONFIG_DIR" && eval "$compose_cmd stop $container" 2>/dev/null; eval "$compose_cmd rm -f $container" 2>/dev/null; sleep 2; eval "$compose_cmd up -d --no-deps $container") || docker restart "$container"
             else
                 docker restart "$container"
