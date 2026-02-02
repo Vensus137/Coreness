@@ -1,7 +1,0 @@
-services:
-  app-test:
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: '400m'

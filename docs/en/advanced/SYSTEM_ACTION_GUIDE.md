@@ -41,6 +41,7 @@ Complete description of all available actions with their parameters and results.
 
 **Description:** Центральный хаб действий для маршрутизации к сервисам
 
+<a id="get_available_actions"></a>
 ### get_available_actions
 
 **Description:** Получение всех доступных действий с их метаданными
@@ -77,6 +78,7 @@ Complete description of all available actions with their parameters and results.
 
 **Description:** Центральный сервис для управления всеми ботами
 
+<a id="get_bot_info"></a>
 ### get_bot_info
 
 **Description:** Получение информации о боте из базы данных (с кэшированием)
@@ -121,6 +123,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="get_bot_status"></a>
 ### get_bot_status
 
 **Description:** Получение статуса пулинга и активности бота
@@ -157,6 +160,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="get_telegram_bot_info"></a>
 ### get_telegram_bot_info
 
 **Description:** Получение информации о боте через Telegram API
@@ -198,6 +202,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="set_bot_token"></a>
 ### set_bot_token
 
 **Description:** Установка токена бота. Бот должен быть создан через синхронизацию конфигурации (sync_bot_config). Токен будет проверен автоматически при запуске пулинга
@@ -226,6 +231,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="start_bot"></a>
 ### start_bot
 
 **Description:** Запуск бота
@@ -252,6 +258,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="stop_all_bots"></a>
 ### stop_all_bots
 
 **Description:** Остановка всех ботов
@@ -276,6 +283,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="stop_bot"></a>
 ### stop_bot
 
 **Description:** Остановка бота
@@ -302,6 +310,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="sync_bot"></a>
 ### sync_bot
 
 **Description:** Синхронизация бота: конфигурация + команды (обертка над sync_bot_config + sync_bot_commands)
@@ -344,6 +353,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="sync_bot_commands"></a>
 ### sync_bot_commands
 
 **Description:** Синхронизация команд бота: сохранение в БД → применение в Telegram
@@ -372,6 +382,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="sync_bot_config"></a>
 ### sync_bot_config
 
 **Description:** Синхронизация конфигурации бота: создание/обновление бота + запуск пулинга. Если bot_token не передан, используется токен из БД (приоритет конфига)
@@ -416,6 +427,7 @@ Complete description of all available actions with their parameters and results.
 
 **Description:** Сервис для обработки событий от пулинга
 
+<a id="process_event"></a>
 ### process_event
 
 **Description:** Обработка события от пулинга
@@ -446,6 +458,7 @@ Complete description of all available actions with their parameters and results.
 
 **Description:** Сервис для обработки событий по сценариям
 
+<a id="process_scenario_event"></a>
 ### process_scenario_event
 
 **Description:** Обработка события по сценариям
@@ -474,6 +487,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="sync_scenarios"></a>
 ### sync_scenarios
 
 **Description:** Синхронизация сценариев тенанта: удаление старых → сохранение новых → перезагрузка кэша
@@ -506,6 +520,7 @@ Complete description of all available actions with their parameters and results.
 
 **Description:** Сервис для управления конфигурациями тенантов - координатор загрузки данных
 
+<a id="get_tenant_status"></a>
 ### get_tenant_status
 
 **Description:** Получение статуса тенанта
@@ -547,6 +562,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="get_tenants_list"></a>
 ### get_tenants_list
 
 **Description:** Получение списка всех ID тенантов с разделением на публичные и системные
@@ -583,6 +599,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="sync_all_tenants"></a>
 ### sync_all_tenants
 
 **Description:** Синхронизация всех тенантов (сначала pull из GitHub, потом синхронизация всех)
@@ -607,6 +624,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="sync_tenant"></a>
 ### sync_tenant
 
 **Description:** Синхронизация конфигурации тенанта с базой данных (сначала обновляет из GitHub, затем синхронизирует)
@@ -633,6 +651,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="sync_tenant_bot"></a>
 ### sync_tenant_bot
 
 **Description:** Синхронизация бота тенанта: pull из GitHub + парсинг + синхронизация
@@ -659,6 +678,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="sync_tenant_config"></a>
 ### sync_tenant_config
 
 **Description:** Синхронизация конфига тенанта: pull из GitHub + парсинг + синхронизация
@@ -685,6 +705,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="sync_tenant_data"></a>
 ### sync_tenant_data
 
 **Description:** Синхронизация данных тенанта: создание/обновление тенанта
@@ -711,6 +732,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="sync_tenant_scenarios"></a>
 ### sync_tenant_scenarios
 
 **Description:** Синхронизация сценариев тенанта: pull из GitHub + парсинг + синхронизация
@@ -737,6 +759,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="sync_tenant_storage"></a>
 ### sync_tenant_storage
 
 **Description:** Синхронизация storage тенанта: pull из GitHub + парсинг + синхронизация
@@ -763,6 +786,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="sync_tenants_from_files"></a>
 ### sync_tenants_from_files
 
 **Description:** Синхронизация тенантов из списка измененных файлов (универсальный метод для вебхуков и пуллинга)
@@ -796,6 +820,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="update_tenant_config"></a>
 ### update_tenant_config
 
 **Description:** Обновление конфига тенанта (обновляет БД, инвалидирует кэш). Обновляет только переданные поля, остальные не трогает

@@ -10,16 +10,8 @@ services:
       - ENVIRONMENT=prod
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
-    # For prod: code in image (without volume for entire project), only data/configs
-    # Volumes completely override base volumes from docker-compose.yml
-    volumes:
-      - ./supervisord.conf:/etc/supervisor/conf.d/supervisord.conf:ro
-      # Data (database and other data) - must be accessible and writable
-      - ../data:/workspace/data:rw
-      # Configuration (can be changed via system actions, e.g. for system tenants)
-      - ../config:/workspace/config:rw
-      # Logs (for convenient viewing and debugging)
-      - ../logs:/workspace/logs:rw
+    # Prod: code and data from host (same as base) - volume mount so extensions/code changes are visible after restart.
+    # Inherits from base: volumes (..:/workspace + supervisord.conf) and command (supervisord) - not overridden here.
     # Port forwarding for webhooks (GitHub and Telegram) - prod environment
     ports:
       - "443:443"  # HTTPS server for webhooks (prod) - standard HTTPS port, allowed by Telegram
