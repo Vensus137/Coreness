@@ -1,0 +1,100 @@
+# Core Manager Configuration
+# Minimal configuration for base functionality
+
+# === I18N SETTINGS ===
+i18n:
+  available_languages:
+    - en
+    - ru
+  default_language: en
+
+# === ENVIRONMENT SETTINGS ===
+environments:
+  available:
+    - test
+    - prod
+  default: prod
+
+# === DEPLOYMENT SETTINGS ===
+deployment:
+  available_modes:
+    - docker
+    - native
+  default: docker
+
+# === VERSION FILE ===
+version_file:
+  path: "config/.version"  # Relative to project root
+  fields:
+    - version      # str
+    - language     # str (optional)
+    - environment  # str (optional)
+    - deployment_mode  # str (optional)
+
+# === SELF-UPDATE SETTINGS ===
+self_update:
+  dependencies:
+    - requests
+  repository:
+    url: "https://github.com/Vensus137/Coreness"
+    branch: "main"
+  token_env: "GITHUB_TOKEN"   # Optional
+  utility_path: "tools/core_manager"  # Path to utility in repository
+
+# === SYSTEM UPDATE SETTINGS ===
+# Platform update from GitHub (configurable repository)
+system_update:
+  dependencies:
+    - requests
+    - gitpython
+  repository:
+    url: "https://github.com/Vensus137/Coreness"
+    branch: "main"
+  token_env: "GITHUB_TOKEN"   # Optional
+  settings:
+    backup_dir: ".core_update_backup"
+  files:
+    include:
+      - "app/"
+      - "tools/"
+      - "plugins/"
+      - "main.py"
+      - "requirements.txt"
+      - "docker/"
+      - "LICENSE"
+      - "config/tenant/"
+    exclude:
+      - "config/settings.yaml"
+      - "config/.version"
+      - "resources/"
+      - "logs/"
+      - "data/"
+      - "**/tests/"
+
+# === DOCKER COMPOSE (optional, for docker deployment) ===
+# Used to restart containers and install dc command after system update. Postgres is handled by database module.
+docker_compose:
+  global_config_dir: "~/.coreness"
+  config_files:
+    test: "docker-compose.test.yml"
+    prod: "docker-compose.prod.yml"
+  # Services to skip on system update restart (postgres - no rebuild; DB module ensures running)
+  skip_restart_services:
+    test: ["postgres-test"]
+    prod: ["postgres"]
+  dc_config_path: "~/.coreness/.dc_config"
+  dc_install:
+    root_path: "/usr/local/bin"
+    user_path: "~/.local/bin"
+  dc_script_path: "docker/compose"
+
+# === DATABASE SETTINGS ===
+database:
+  dependencies:
+    - sqlalchemy
+  # Paths relative to project root
+  settings_path: "config/settings.yaml"
+  backup_dir: "data/backups"
+  db_config_path: "plugins/utilities/core/database_manager/config.yaml"
+  models_path: "plugins/utilities/core/database_manager/models"
+  view_operations_path: "plugins/utilities/core/database_manager/modules/view_operations"

@@ -4,6 +4,21 @@ All notable changes to this project documented in this file.
 
 ---
 
+## [1.1.0] - 2026-02-02
+
+### Added
+- In the actions guide (ACTION_GUIDE): extension actions (from plugins in the extensions folder) are marked with ⭐ in the table of contents and section headers, with a short note about extensions
+- Documentation now describes extension actions (from the extensions folder)
+
+### Changed
+- General documentation improvements
+- Deployment guide (DEPLOYMENT.md) fully updated for the Core Manager utility
+
+### Technical Improvements
+- Deployment utility fully reworked: replaced with Core Manager (`tools/core_manager`). Full bilingual support (EN/RU), optimized structure and logic, improved UI/UX, self-update refined. Deployment guide updated to match the new utility.
+
+---
+
 ## [1.0.3] - 2026-01-21
 
 ### Added

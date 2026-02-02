@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Simple wrapper for managing docker-compose
-# Works with current docker-compose.yml + docker-compose.override.yml (if exists)
-# Usage: ./docker/compose [command] [service]
+# Wrapper for managing docker-compose via system folder ~/.coreness
+# All compose files and overrides live in ~/.coreness; accessible from any directory
+# Repo docker/ is only a template for updates, not used directly on server
+# Usage: dc [command] [container] or ./docker/compose [command] [container]
 
 # Colors for output
 RED='\033[0;31m'
@@ -19,11 +20,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DC_ENVIRONMENT=""
 DC_PROJECT_ROOT=""
 
-# Path to configuration file
-DC_CONFIG_FILE="${HOME}/.dc_config"
+# Path to configuration file (SYSTEM folder)
+DC_CONFIG_FILE="${HOME}/.coreness/.dc_config"
 
-# Global folder for Docker Compose configuration
-DC_GLOBAL_CONFIG_DIR="${HOME}/.docker-compose"
+# Global folder for Docker Compose configuration (SYSTEM folder)
+DC_GLOBAL_CONFIG_DIR="${HOME}/.coreness"
 
 # List of base services (without environment consideration)
 DC_SERVICES=("app" "postgres")
@@ -605,9 +606,8 @@ manage_resources() {
                 exit 1
             fi
             
-            # Determine environment by container name
+            # Determine environment by container name (compose uses global config ~/.coreness only)
             local env=$(detect_env_from_container "$container")
-            local project_root=$(find_project_root 2>/dev/null || echo "")
             
             local cpus=""
             local memory=""
@@ -665,18 +665,12 @@ manage_resources() {
                 set_config_value "${container}.memory_reserve" "$memory_reserve"
             fi
             
-            # Check service existence in compose files
-            if [ -n "$project_root" ] && [ -d "$project_root" ]; then
-                if ! check_service_exists "$project_root" "$container" "$env"; then
-                    echo -e "${YELLOW}⚠️ Container '$container' not found in compose files, but resources saved to config${NC}"
-                fi
-                
-                # Generate override file
-                if ! generate_override_file "$env" "$project_root" "$container"; then
-                    echo -e "${YELLOW}⚠️ Failed to create override file (project may not be found)${NC}"
-                fi
-            else
-                echo -e "${YELLOW}⚠️ Project not found, resources saved only to config${NC}"
+            # Generate override file in global config dir (~/.coreness)
+            if ! generate_override_file "$env" "" "$container"; then
+                echo -e "${YELLOW}⚠️ Failed to update override file${NC}"
+            fi
+            if ! check_service_exists "" "$container" "$env"; then
+                echo -e "${YELLOW}⚠️ Container '$container' not found in compose files, but resources saved to config${NC}"
             fi
             
             echo -e "${GREEN}✅ Resources saved to config${NC}"
@@ -709,9 +703,8 @@ manage_resources() {
                 exit 1
             fi
             
-            # Determine environment by container name
+            # Determine environment by container name (compose uses global config ~/.coreness only)
             local env=$(detect_env_from_container "$container")
-            local project_root=$(find_project_root 2>/dev/null || echo "")
             
             # Remove all resource settings from config
             remove_config_value "${container}.cpus"
@@ -719,11 +712,9 @@ manage_resources() {
             remove_config_value "${container}.cpus_reserve"
             remove_config_value "${container}.memory_reserve"
             
-            # Update override file (will remove section for this container, as no resources)
-            if [ -n "$project_root" ] && [ -d "$project_root" ]; then
-                if ! generate_override_file "$env" "$project_root" "$container"; then
-                    echo -e "${YELLOW}⚠️ Failed to update override file${NC}"
-                fi
+            # Update override file in global config dir (~/.coreness)
+            if ! generate_override_file "$env" "" "$container"; then
+                echo -e "${YELLOW}⚠️ Failed to update override file${NC}"
             fi
             
             echo -e "${GREEN}✅ Resource settings for container '$container' reset${NC}"
@@ -988,7 +979,14 @@ main() {
             fi
             
             echo -e "${YELLOW}🔄 Restarting container: $container${NC}"
-            docker restart "$container"
+            local env=$(detect_env_from_container "$container")
+            local compose_cmd
+            compose_cmd=$(get_compose_cmd_with_files "$env" "" 2>/dev/null) || true
+            if [ -n "$compose_cmd" ] && [ -f "${DC_GLOBAL_CONFIG_DIR}/docker-compose.yml" ] && [ -f "${DC_GLOBAL_CONFIG_DIR}/docker-compose.${env}.yml" ]; then
+                (cd "$DC_GLOBAL_CONFIG_DIR" && eval "$compose_cmd stop $container" 2>/dev/null; eval "$compose_cmd rm -f $container" 2>/dev/null; sleep 2; eval "$compose_cmd up -d --no-deps $container") || docker restart "$container"
+            else
+                docker restart "$container"
+            fi
             ;;
         ps)
             local container="$1"

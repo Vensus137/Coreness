@@ -9,14 +9,7 @@ services:
       - ENVIRONMENT=test
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
-    # For test: code via volume (for development), data and configs also via volumes
-    volumes:
-      - ..:/workspace  # Entire project (for development)
-      - ./supervisord.conf:/etc/supervisor/conf.d/supervisord.conf:ro
-      # Data and configs mounted via common volume above, but can be overridden separately
-      # - ../data:/workspace/data:rw
-      # - ../config:/workspace/config:rw
-      # - ../logs:/workspace/logs:rw
+    # Inherits from base: volumes (..:/workspace + supervisord.conf) and command (supervisord).
     # Port forwarding for webhooks (GitHub and Telegram) - test environment
     ports:
       - "8443:8443"  # HTTPS server for webhooks (test) - port 8443 allowed by Telegram

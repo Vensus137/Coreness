@@ -6,13 +6,14 @@ Complete description of all available actions with their parameters and results.
 
 ## 📋 Table of Contents
 
-- [ai_service](#ai_service) (6 actions)
+- [ai_rag_service](#ai_rag_service) (4 actions)
+  - [⭐ delete_embedding](#delete_embedding)
+  - [⭐ get_recent_chunks](#get_recent_chunks)
+  - [⭐ save_embedding](#save_embedding)
+  - [⭐ search_embedding](#search_embedding)
+- [ai_service](#ai_service) (2 actions)
   - [completion](#completion)
-  - [delete_embedding](#delete_embedding)
   - [embedding](#embedding)
-  - [get_recent_chunks](#get_recent_chunks)
-  - [save_embedding](#save_embedding)
-  - [search_embedding](#search_embedding)
 - [bot_hub](#bot_hub) (4 actions)
   - [answer_callback_query](#answer_callback_query)
   - [build_keyboard](#build_keyboard)
@@ -56,102 +57,14 @@ Complete description of all available actions with their parameters and results.
 - [validator](#validator) (1 actions)
   - [validate](#validate)
 
-## ai_service
+<sup>⭐ — extension (additional plugin). For more information contact the [developer](https://t.me/vensus137).</sup>
 
-**Description:** Сервис для интеграции ИИ в сценарии
+## ai_rag_service
 
-### completion
+**Description:** RAG-расширение для AI Service (векторный поиск и управление embeddings)
 
-**Description:** AI completion через ИИ
-
-**Input Parameters:**
-
-- **`prompt`** (`string`) — Текст запроса пользователя
-- **`system_prompt`** (`string`, optional) — Системный промпт для контекста
-- **`model`** (`string`, optional) — Модель AI (по умолчанию из настроек)
-- **`max_tokens`** (`integer`, optional) — Максимальное количество токенов (по умолчанию из настроек)
-- **`temperature`** (`float`, optional, range: 0.0-2.0) — Температура генерации (по умолчанию из настроек)
-- **`context`** (`string`, optional) — Кастомный контекст (добавляется в финальное user сообщение в блок ДОП. КОНТЕКСТ вместе с other чанками из rag_chunks)
-- **`rag_chunks`** (`array`, optional) — Массив чанков из RAG поиска для автоматического формирования messages. Чанки группируются по типам: chat_history (диалог), knowledge (база знаний), other (другое - добавляется в ДОП. КОНТЕКСТ). Формат: [{content, document_type, role, processed_at, ...}]
-- **`json_mode`** (`string`, optional, values: [`json_object`, `json_schema`]) — Режим JSON для структурированного ответа: 'json_object' или 'json_schema'
-- **`json_schema`** (`object`, optional) — JSON схема для режима json_schema (обязательна при json_mode='json_schema')
-- **`tools`** (`array`, optional) — Список доступных функций для вызова моделью (tool calling)
-- **`tool_choice`** (`string`, optional) — Управление выбором инструментов: 'none', 'auto', 'required' или объект с конкретной функцией
-- **`chunk_format`** (`object`, optional) — Формат отображения чанков в контексте. Шаблоны используют маркеры $ для подстановки значений: $content (обязательно) + любые поля из chunk_metadata. Поддерживается модификатор fallback: $field|fallback:значение. Маркеры работают только с данными чанка (content + chunk_metadata), не затрагивая общий контекст.
-- 🔑 **`ai_token`** (`string`) — AI API ключ из конфига тенанта (_config.ai_token)
-
-<details>
-<summary>⚙️ Additional Parameters</summary>
-
-- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
-
-</details>
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Результат: success, error, timeout
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`response_completion`** (`string`) — Completion ответ от ИИ
-  - **`prompt_tokens`** (`integer`) — Токены на вход (prompt + context)
-  - **`completion_tokens`** (`integer`) — Токены на выход (сгенерированный ответ)
-  - **`total_tokens`** (`integer`) — Общее количество токенов (prompt + completion)
-  - **`model`** (`string`) — Использованная модель
-  - **`response_dict`** (`object`) (optional) — Распарсенный словарь из JSON ответа (только при использовании json_mode)
-  - **`tool_calls`** (`array`) (optional) — Список вызовов функций, которые модель решила выполнить (только при использовании tools)
-
-**Note:**
-- 🔑 — field that is automatically taken from tenant configuration (_config) and does not require explicit passing in params
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "completion"
-  params:
-    prompt: "example"
-    # system_prompt: string (optional)
-    # model: string (optional)
-    # max_tokens: integer (optional)
-    # temperature: float (optional)
-    # context: string (optional)
-    # rag_chunks: array (optional)
-    # json_mode: string (optional)
-    # json_schema: object (optional)
-    # tools: array (optional)
-    # tool_choice: string (optional)
-    # chunk_format: object (optional)
-    ai_token: "example"
-```
-
-<details>
-<summary>📖 Additional Information</summary>
-
-**JSON режимы:**
-- `json_object`: модель возвращает валидный JSON (парсится в `response_dict`)
-- `json_schema`: строгая JSON схема (требуется `json_schema` параметр)
-
-**Tool Calling:**
-- Параметр `tools` позволяет модели вызывать функции
-- Модель решает, какие функции вызвать и с какими параметрами
-- Результаты вызовов в `response_data.tool_calls`
-- `tool_choice`: управление выбором ('none', 'auto', 'required', или конкретная функция)
-
-**Формат чанков (chunk_format):**
-- Настройка отображения чанков из RAG через шаблоны с маркерами `$`
-- Доступны: `$content` (обязательно) + любые поля из `chunk_metadata`
-- Поддерживается fallback: `$field|fallback:значение` (если поле пустое/отсутствует)
-- Маркеры работают только с данными чанка (content + chunk_metadata)
-- Примеры: `"[$username]: $content"`, `"[$category|fallback:Общее]: $content"`
-- Можно задать разные шаблоны для `chat_history`, `knowledge`, `other`
-
-</details>
-
-
-### delete_embedding
+<a id="delete_embedding"></a>
+### ⭐ delete_embedding
 
 **Description:** Удаление данных из vector_storage по document_id или по дате processed_at
 
@@ -231,82 +144,8 @@ data:
 </details>
 
 
-### embedding
-
-**Description:** Генерация embedding для текста через ИИ
-
-**Input Parameters:**
-
-- **`text`** (`string`) — Текст для генерации embedding
-- **`model`** (`string`, optional) — Модель для генерации embedding (по умолчанию из настроек ai_client.default_embedding_model)
-- **`dimensions`** (`integer`, optional) — Размерность embedding (по умолчанию из настроек ai_client.default_embedding_dimensions). Поддерживается только для OpenAI text-embedding-3-small и text-embedding-3-large
-- 🔑 **`ai_token`** (`string`) — AI API ключ из конфига тенанта (_config.ai_token)
-
-<details>
-<summary>⚙️ Additional Parameters</summary>
-
-- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
-
-</details>
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`embedding`** (`array`) — Вектор embedding (список чисел)
-  - **`model`** (`string`) — Использованная модель
-  - **`dimensions`** (`integer`) — Размерность embedding
-  - **`total_tokens`** (`integer`) — Общее количество токенов
-
-**Note:**
-- 🔑 — field that is automatically taken from tenant configuration (_config) and does not require explicit passing in params
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "embedding"
-  params:
-    text: "example"
-    # model: string (optional)
-    # dimensions: integer (optional)
-    ai_token: "example"
-```
-
-<details>
-<summary>📖 Additional Information</summary>
-
-**Генерация векторных представлений текста (embeddings):**
-- Используется для RAG (Retrieval-Augmented Generation) и векторного поиска
-- Возвращает массив чисел (`embedding`) - векторное представление текста
-
-**Размерность (dimensions):**
-- По умолчанию 1024 (настраивается в `ai_client.default_embedding_dimensions`)
-- Поддерживается не всеми моделями (для моделей без поддержки размерность фиксирована)
-
-**Пример:**
-```yaml
-action: embedding
-data:
-  text: "Текст для векторизации"
-  dimensions: 1024
-
-# Ответ:
-result: success
-response_data:
-  embedding: [0.123, -0.456, ...]  # Вектор из 1024 чисел
-  dimensions: 1024
-  total_tokens: 15
-```
-
-</details>
-
-
-### get_recent_chunks
+<a id="get_recent_chunks"></a>
+### ⭐ get_recent_chunks
 
 **Description:** Получение последних N чанков по дате created_at (не векторный поиск, просто выборка по дате, сортировка по created_at для правильного порядка истории)
 
@@ -396,7 +235,8 @@ data:
 </details>
 
 
-### save_embedding
+<a id="save_embedding"></a>
+### ⭐ save_embedding
 
 **Description:** Сохранение текста в vector_storage с автоматическим разбиением на чанки и генерацией embeddings. Поддерживает сохранение только текста без эмбеддинга через параметр generate_embedding=false
 
@@ -512,7 +352,8 @@ response_data:
 </details>
 
 
-### search_embedding
+<a id="search_embedding"></a>
+### ⭐ search_embedding
 
 **Description:** Поиск похожих чанков по тексту или вектору (semantic search) через cosine similarity
 
@@ -622,10 +463,183 @@ data:
 </details>
 
 
+## ai_service
+
+**Description:** Сервис для интеграции ИИ в сценарии
+
+<a id="completion"></a>
+### completion
+
+**Description:** AI completion через ИИ
+
+**Input Parameters:**
+
+- **`prompt`** (`string`) — Текст запроса пользователя
+- **`system_prompt`** (`string`, optional) — Системный промпт для контекста
+- **`model`** (`string`, optional) — Модель AI (по умолчанию из настроек)
+- **`max_tokens`** (`integer`, optional) — Максимальное количество токенов (по умолчанию из настроек)
+- **`temperature`** (`float`, optional, range: 0.0-2.0) — Температура генерации (по умолчанию из настроек)
+- **`context`** (`string`, optional) — Кастомный контекст (добавляется в финальное user сообщение в блок ДОП. КОНТЕКСТ вместе с other чанками из rag_chunks)
+- **`rag_chunks`** (`array`, optional) — Массив чанков из RAG поиска для автоматического формирования messages. Чанки группируются по типам: chat_history (диалог), knowledge (база знаний), other (другое - добавляется в ДОП. КОНТЕКСТ). Формат: [{content, document_type, role, processed_at, ...}]
+- **`json_mode`** (`string`, optional, values: [`json_object`, `json_schema`]) — Режим JSON для структурированного ответа: 'json_object' или 'json_schema'
+- **`json_schema`** (`object`, optional) — JSON схема для режима json_schema (обязательна при json_mode='json_schema')
+- **`tools`** (`array`, optional) — Список доступных функций для вызова моделью (tool calling)
+- **`tool_choice`** (`string`, optional) — Управление выбором инструментов: 'none', 'auto', 'required' или объект с конкретной функцией
+- **`chunk_format`** (`object`, optional) — Формат отображения чанков в контексте. Шаблоны используют маркеры $ для подстановки значений: $content (обязательно) + любые поля из chunk_metadata. Поддерживается модификатор fallback: $field|fallback:значение. Маркеры работают только с данными чанка (content + chunk_metadata), не затрагивая общий контекст.
+- 🔑 **`ai_token`** (`string`) — AI API ключ из конфига тенанта (_config.ai_token)
+
+<details>
+<summary>⚙️ Additional Parameters</summary>
+
+- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
+
+</details>
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Результат: success, error, timeout
+- **`error`** (`object`) (optional) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
+- **`response_data`** (`object`) — Данные ответа
+  - **`response_completion`** (`string`) — Completion ответ от ИИ
+  - **`prompt_tokens`** (`integer`) — Токены на вход (prompt + context)
+  - **`completion_tokens`** (`integer`) — Токены на выход (сгенерированный ответ)
+  - **`total_tokens`** (`integer`) — Общее количество токенов (prompt + completion)
+  - **`model`** (`string`) — Использованная модель
+  - **`response_dict`** (`object`) (optional) — Распарсенный словарь из JSON ответа (только при использовании json_mode)
+  - **`tool_calls`** (`array`) (optional) — Список вызовов функций, которые модель решила выполнить (только при использовании tools)
+
+**Note:**
+- 🔑 — field that is automatically taken from tenant configuration (_config) and does not require explicit passing in params
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "completion"
+  params:
+    prompt: "example"
+    # system_prompt: string (optional)
+    # model: string (optional)
+    # max_tokens: integer (optional)
+    # temperature: float (optional)
+    # context: string (optional)
+    # rag_chunks: array (optional)
+    # json_mode: string (optional)
+    # json_schema: object (optional)
+    # tools: array (optional)
+    # tool_choice: string (optional)
+    # chunk_format: object (optional)
+    ai_token: "example"
+```
+
+<details>
+<summary>📖 Additional Information</summary>
+
+**JSON режимы:**
+- `json_object`: модель возвращает валидный JSON (парсится в `response_dict`)
+- `json_schema`: строгая JSON схема (требуется `json_schema` параметр)
+
+**Tool Calling:**
+- Параметр `tools` позволяет модели вызывать функции
+- Модель решает, какие функции вызвать и с какими параметрами
+- Результаты вызовов в `response_data.tool_calls`
+- `tool_choice`: управление выбором ('none', 'auto', 'required', или конкретная функция)
+
+**Формат чанков (chunk_format):**
+- Настройка отображения чанков из RAG через шаблоны с маркерами `$`
+- Доступны: `$content` (обязательно) + любые поля из `chunk_metadata`
+- Поддерживается fallback: `$field|fallback:значение` (если поле пустое/отсутствует)
+- Маркеры работают только с данными чанка (content + chunk_metadata)
+- Примеры: `"[$username]: $content"`, `"[$category|fallback:Общее]: $content"`
+- Можно задать разные шаблоны для `chat_history`, `knowledge`, `other`
+
+</details>
+
+
+<a id="embedding"></a>
+### embedding
+
+**Description:** Генерация embedding для текста через ИИ
+
+**Input Parameters:**
+
+- **`text`** (`string`) — Текст для генерации embedding
+- **`model`** (`string`, optional) — Модель для генерации embedding (по умолчанию из настроек ai_client.default_embedding_model)
+- **`dimensions`** (`integer`, optional) — Размерность embedding (по умолчанию из настроек ai_client.default_embedding_dimensions). Поддерживается только для OpenAI text-embedding-3-small и text-embedding-3-large
+- 🔑 **`ai_token`** (`string`) — AI API ключ из конфига тенанта (_config.ai_token)
+
+<details>
+<summary>⚙️ Additional Parameters</summary>
+
+- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
+
+</details>
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Результат: success, error
+- **`error`** (`object`) (optional) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
+- **`response_data`** (`object`) — Данные ответа
+  - **`embedding`** (`array`) — Вектор embedding (список чисел)
+  - **`model`** (`string`) — Использованная модель
+  - **`dimensions`** (`integer`) — Размерность embedding
+  - **`total_tokens`** (`integer`) — Общее количество токенов
+
+**Note:**
+- 🔑 — field that is automatically taken from tenant configuration (_config) and does not require explicit passing in params
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "embedding"
+  params:
+    text: "example"
+    # model: string (optional)
+    # dimensions: integer (optional)
+    ai_token: "example"
+```
+
+<details>
+<summary>📖 Additional Information</summary>
+
+**Генерация векторных представлений текста (embeddings):**
+- Используется для RAG (Retrieval-Augmented Generation) и векторного поиска
+- Возвращает массив чисел (`embedding`) - векторное представление текста
+
+**Размерность (dimensions):**
+- По умолчанию 1024 (настраивается в `ai_client.default_embedding_dimensions`)
+- Поддерживается не всеми моделями (для моделей без поддержки размерность фиксирована)
+
+**Пример:**
+```yaml
+action: embedding
+data:
+  text: "Текст для векторизации"
+  dimensions: 1024
+
+# Ответ:
+result: success
+response_data:
+  embedding: [0.123, -0.456, ...]  # Вектор из 1024 чисел
+  dimensions: 1024
+  total_tokens: 15
+```
+
+</details>
+
+
 ## bot_hub
 
 **Description:** Центральный сервис для управления всеми ботами
 
+<a id="answer_callback_query"></a>
 ### answer_callback_query
 
 **Description:** Ответ на callback query (всплывающее уведомление или простое уведомление при нажатии на inline-кнопку)
@@ -660,6 +674,7 @@ data:
 ```
 
 
+<a id="build_keyboard"></a>
 ### build_keyboard
 
 **Description:** Построение клавиатуры из массива ID с использованием шаблонов
@@ -706,6 +721,7 @@ data:
 ```
 
 
+<a id="delete_message"></a>
 ### delete_message
 
 **Description:** Удаление сообщения ботом
@@ -734,6 +750,7 @@ data:
 ```
 
 
+<a id="send_message"></a>
 ### send_message
 
 **Description:** Отправка сообщения ботом
@@ -794,6 +811,7 @@ data:
 
 **Description:** Сервис для работы с инвойсами (создание, управление, обработка платежей)
 
+<a id="cancel_invoice"></a>
 ### cancel_invoice
 
 **Description:** Отмена инвойса (установка флага is_cancelled)
@@ -820,6 +838,7 @@ data:
 ```
 
 
+<a id="confirm_payment"></a>
 ### confirm_payment
 
 **Description:** Подтверждение платежа (ответ на pre_checkout_query с подтверждением)
@@ -854,6 +873,7 @@ data:
 ```
 
 
+<a id="create_invoice"></a>
 ### create_invoice
 
 **Description:** Создание инвойса в БД и отправка/создание ссылки
@@ -907,6 +927,7 @@ data:
 ```
 
 
+<a id="get_invoice"></a>
 ### get_invoice
 
 **Description:** Получение информации об инвойсе
@@ -942,6 +963,7 @@ data:
 ```
 
 
+<a id="get_user_invoices"></a>
 ### get_user_invoices
 
 **Description:** Получение всех инвойсов пользователя
@@ -979,6 +1001,7 @@ data:
 ```
 
 
+<a id="mark_invoice_as_paid"></a>
 ### mark_invoice_as_paid
 
 **Description:** Отметить инвойс как оплаченный (обработка события payment_successful)
@@ -1009,6 +1032,7 @@ data:
 ```
 
 
+<a id="reject_payment"></a>
 ### reject_payment
 
 **Description:** Отклонение платежа (ответ на pre_checkout_query с отклонением)
@@ -1045,6 +1069,7 @@ data:
 
 **Description:** Вспомогательные утилиты для управления выполнением сценариев
 
+<a id="check_value_in_array"></a>
 ### check_value_in_array
 
 **Description:** Проверка наличия значения в массиве
@@ -1087,6 +1112,7 @@ data:
 ```
 
 
+<a id="choose_from_array"></a>
 ### choose_from_array
 
 **Description:** Выбор случайных элементов из массива без повторений
@@ -1132,6 +1158,7 @@ data:
 ```
 
 
+<a id="format_data_to_text"></a>
 ### format_data_to_text
 
 **Description:** Форматирование структурированных данных (JSON/YAML) в текстовый формат для промптов и сообщений
@@ -1220,6 +1247,7 @@ data:
 </details>
 
 
+<a id="generate_array"></a>
 ### generate_array
 
 **Description:** Генерация массива случайных чисел в заданном диапазоне (по умолчанию без повторений)
@@ -1269,6 +1297,7 @@ data:
 ```
 
 
+<a id="generate_int"></a>
 ### generate_int
 
 **Description:** Генерация случайного целого числа в заданном диапазоне
@@ -1314,6 +1343,7 @@ data:
 ```
 
 
+<a id="generate_unique_id"></a>
 ### generate_unique_id
 
 **Description:** Генерация уникального ID через автоинкремент в БД (детерминированная генерация - при одинаковых seed возвращает тот же ID). Если seed не указан, генерируется случайный UUID
@@ -1354,6 +1384,7 @@ data:
 ```
 
 
+<a id="modify_array"></a>
 ### modify_array
 
 **Description:** Модификация массива: добавление, удаление элементов или очистка
@@ -1400,6 +1431,7 @@ data:
 ```
 
 
+<a id="set_cache"></a>
 ### set_cache
 
 **Description:** Установка временных данных в кэш сценария. Все переданные параметры возвращаются в response_data и автоматически попадают в плоский _cache по умолчанию.
@@ -1472,6 +1504,7 @@ step:
 </details>
 
 
+<a id="sleep"></a>
 ### sleep
 
 **Description:** Задержка выполнения на указанное количество секунд
@@ -1502,6 +1535,7 @@ step:
 
 **Description:** Сервис для обработки событий по сценариям
 
+<a id="execute_scenario"></a>
 ### execute_scenario
 
 **Description:** Выполнение сценария или массива сценариев по имени
@@ -1542,6 +1576,7 @@ step:
 ```
 
 
+<a id="wait_for_action"></a>
 ### wait_for_action
 
 **Description:** Ожидание завершения асинхронного действия по action_id. Возвращает результат основного действия AS IS (как будто оно выполнилось напрямую)
@@ -1582,6 +1617,7 @@ step:
 
 **Description:** Сервис для управления конфигурациями тенантов - координатор загрузки данных
 
+<a id="delete_storage"></a>
 ### delete_storage
 
 **Description:** Удаление значений или групп из storage. Если указан key или key_pattern - удаляется значение, иначе удаляется группа
@@ -1616,6 +1652,7 @@ step:
 ```
 
 
+<a id="get_storage"></a>
 ### get_storage
 
 **Description:** Получение значений storage для тенанта. Поддерживает получение всех значений, группы, конкретного значения, а также поиск по паттернам
@@ -1667,6 +1704,7 @@ step:
 ```
 
 
+<a id="get_storage_groups"></a>
 ### get_storage_groups
 
 **Description:** Получение списка уникальных ключей групп для тенанта. Возвращает только список group_key без значений (с ограничением на количество групп)
@@ -1708,6 +1746,7 @@ step:
 ```
 
 
+<a id="set_storage"></a>
 ### set_storage
 
 **Description:** Установка значений storage для тенанта. Поддерживает смешанный подход: полная структура через values или частичная через group_key/key/value
@@ -1763,6 +1802,7 @@ step:
 
 **Description:** Центральный сервис для управления состояниями пользователей
 
+<a id="clear_user_state"></a>
 ### clear_user_state
 
 **Description:** Очистка состояния пользователя
@@ -1791,6 +1831,7 @@ step:
 ```
 
 
+<a id="delete_user_storage"></a>
 ### delete_user_storage
 
 **Description:** Удаление значений из storage пользователя
@@ -1823,6 +1864,7 @@ step:
 ```
 
 
+<a id="get_tenant_users"></a>
 ### get_tenant_users
 
 **Description:** Получение списка всех user_id для указанного тенанта
@@ -1864,6 +1906,7 @@ step:
 ```
 
 
+<a id="get_user_state"></a>
 ### get_user_state
 
 **Description:** Получение состояния пользователя с проверкой истечения
@@ -1907,6 +1950,7 @@ step:
 ```
 
 
+<a id="get_user_storage"></a>
 ### get_user_storage
 
 **Description:** Получение значений storage для пользователя. Поддерживает получение всех значений, конкретного значения (key) или поиск по паттерну (key_pattern)
@@ -1956,6 +2000,7 @@ step:
 ```
 
 
+<a id="get_users_by_storage_value"></a>
 ### get_users_by_storage_value
 
 **Description:** Поиск пользователей по ключу и значению в storage. Позволяет найти всех пользователей, у которых в storage есть определенный ключ с определенным значением (например, найти всех пользователей с подключенной подпиской)
@@ -2001,6 +2046,7 @@ step:
 ```
 
 
+<a id="set_user_state"></a>
 ### set_user_state
 
 **Description:** Установка состояния пользователя
@@ -2043,6 +2089,7 @@ step:
 ```
 
 
+<a id="set_user_storage"></a>
 ### set_user_storage
 
 **Description:** Установка значений storage для пользователя. Поддерживает смешанный подход: полная структура через values или частичная через key/value
@@ -2098,6 +2145,7 @@ step:
 
 **Description:** Сервис для валидации условий в сценариях
 
+<a id="validate"></a>
 ### validate
 
 **Description:** Валидация условия с возвратом результата

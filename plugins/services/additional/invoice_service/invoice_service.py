@@ -120,7 +120,7 @@ class InvoiceService:
                 
                 if link_result.get('result') != 'success':
                     # If failed to create link, delete invoice from DB
-                    await master_repo.cancel_invoice(tenant_id, invoice_id)
+                    await master_repo.cancel_invoice(invoice_id)
                     error_msg = link_result.get('error', 'Unknown error')
                     if isinstance(error_msg, dict):
                         error_msg = error_msg.get('message', 'Unknown error')
@@ -164,7 +164,7 @@ class InvoiceService:
                 
                 if send_result.get('result') != 'success':
                     # If failed to send, delete invoice from DB
-                    await master_repo.cancel_invoice(tenant_id, invoice_id)
+                    await master_repo.cancel_invoice(invoice_id)
                     error_msg = send_result.get('error', 'Unknown error')
                     if isinstance(error_msg, dict):
                         error_msg = error_msg.get('message', 'Unknown error')
@@ -198,7 +198,7 @@ class InvoiceService:
     
     async def _get_bot_token(self, data: dict) -> tuple[Optional[str], Optional[int], Optional[Dict[str, Any]]]:
         """
-Get bot_token for confirming/rejecting payment
+        Get bot_token for confirming/rejecting payment
         
         Input data validation (tenant_id, bot_id, pre_checkout_query_id)
         is done centrally in ActionRegistry
