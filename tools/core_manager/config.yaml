@@ -62,7 +62,6 @@ system_update:
       - "requirements.txt"
       - "docker/"
       - "LICENSE"
-      - "config/tenant/"
     exclude:
       - "config/settings.yaml"
       - "config/.version"
