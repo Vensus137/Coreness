@@ -20,7 +20,7 @@ optional_dependencies:
 settings:
   github_url:
     type: string
-    default: "https://github.com/Vensus137/Coreness-Tenant"
+    default: ""
     description: "URL GitHub репозитория с конфигурациями публичных тенантов"
   
   github_token:
@@ -30,7 +30,7 @@ settings:
   
   sync_interval:
     type: integer
-    default: 30
+    default: 0
     description: "Интервал автоматической синхронизации с GitHub (в секундах). Интервал между окончанием предыдущей синхронизации и началом следующей. 0 = отключить автосинхронизацию."
   
   storage_max_depth:

@@ -7,52 +7,9 @@ users:
     access: true
   
   234567890:
-    tenant_owner: [101]
+    tenant_owner: [100]
     access: true
   
   9876543210:
-    tenant_owner: [102]
+    tenant_owner: [200]
     access: true
-
-mailing:
-  recipients: [123456789, 234567890, 9876543210]  # Mailing recipients
-  test_recipients: [111222333, 222333444]         # Test recipients
-  text: |
-    🎉 <b>Coreness v1.0.0 — Finally Here!</b>
-    
-    After hundreds of patches, dozens of refactorings, and several architectural transformations — we've reached <b>version 1.0</b>! 🚀
-    
-    <b>🎯 What is Coreness?</b>
-    
-    <b>Event-driven multi-tenant platform</b> for building automated workflows and AI-powered bots through YAML configuration. No code required — just describe your logic, and the platform handles execution, data storage, and integrations.
-    
-    <b>✨ Key Features Delivered:</b>
-    
-    ✅ <b>Multi-tenancy</b> — multiple isolated bots on a single platform
-    ✅ <b>RAG &amp; AI Agents</b> — vector search + LLM integration (OpenAI, Anthropic, DeepSeek)
-    ✅ <b>Scheduled Scenarios</b> — workflow automation with cron
-    ✅ <b>GitHub Sync</b> — Infrastructure as Code approach
-    ✅ <b>Plugin System</b> — easily extensible architecture
-    ✅ <b>Storage</b> — flexible key-value store for settings
-    ✅ <b>30+ Actions</b> — messages, AI, HTTP, validation, payments, and more
-    ✅ <b>Master Bot</b> — built-in tenant management (like @BotFather)
-    
-    <b>🤖 Perfect For:</b>
-    
-    • Telegram bots &amp; messengers
-    • Business process automation
-    • AI assistants &amp; chatbots
-    • Scheduled tasks &amp; notifications
-    
-    <b>🌐 Now Public:</b>
-    
-    The project now has a public repository with documentation, examples, and reference implementation:
-    
-    🔗 <a href="https://github.com/Vensus137/Coreness">GitHub: Coreness</a>
-    
-    <b>💬 Join the Community:</b>
-    
-    📢 Project Channel: <a href="https://t.me/coreness">t.me/coreness</a>
-    👤 Author: <a href="https://t.me/vensus137">@vensus137</a>
-    
-    <i>Create. Automate. Scale.</i>

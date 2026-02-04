@@ -4,6 +4,22 @@ All notable changes to this project documented in this file.
 
 ---
 
+## [1.1.1] - 2026-02-04
+
+### Changed
+- Documentation: quick start now uses system tenants (no GitHub); public tenants as optional block
+- Configuration: system tenants boundary set to 99 (`max_system_tenant_id: 99` in `config/settings.yaml`), 100+ are public
+- When `github_url` is not set, no errors are shown, sync is skipped, system works only with system tenants
+- Tenant 1 (master bot): scenario rework — language selection support (i18n), improved and lighter UX, documentation improved
+
+### Fixed
+- General system improvements and minor fixes
+
+### Technical Improvements
+- Backup system: simplified backup management with DB type separation into folders (sqlite/, postgresql/), added compression (gzip for SQLite, pg_dump -Z 9 for PostgreSQL), unified formats between utility and plugin
+
+---
+
 ## [1.1.0] - 2026-02-02
 
 ### Added
@@ -15,7 +31,7 @@ All notable changes to this project documented in this file.
 - Deployment guide (DEPLOYMENT.md) fully updated for the Core Manager utility
 
 ### Technical Improvements
-- Deployment utility fully reworked: replaced with Core Manager (`tools/core_manager`). Full bilingual support (EN/RU), optimized structure and logic, improved UI/UX, self-update refined. Deployment guide updated to match the new utility.
+- Deployment utility fully reworked: replaced with Core Manager (`tools/core_manager`). Full bilingual support (EN/RU), optimized structure and logic, improved UI/UX, self-update refined. Deployment guide updated to match the new utility
 
 ---
 

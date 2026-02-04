@@ -22,7 +22,7 @@ class SyncOrchestrator:
         
         # Get settings once on initialization
         global_settings = self.settings_manager.get_global_settings()
-        self.max_system_tenant_id = global_settings.get('max_system_tenant_id', 100)
+        self.max_system_tenant_id = global_settings.get('max_system_tenant_id', 99)
         
         # Get path to tenants folder (already created in tenant_hub)
         tenants_config_path = global_settings.get('tenants_config_path', 'config/tenant')

@@ -4,7 +4,7 @@ is_active: true
 # Bot commands (for BotCommand table)
 commands:
   - command: "tenant"
-    description: "Tenant menu"
+    description: "Menu of tenants"
     scope: "all_private_chats"
   - command: "help"
     description: "Help"

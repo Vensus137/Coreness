@@ -3,6 +3,10 @@
 # Purpose: universal scenarios for automatic processing
 # ============================================
 
+# ============================================
+# BLOCK 1: Delete Command Message
+# ============================================
+
 # Automatic deletion of command messages
 # Triggers automatically for all commands (starting with /)
 delete_command_message:
@@ -17,6 +21,10 @@ delete_command_message:
     - action: "delete_message"
       params:
         delete_message_id: "{message_id}"
+
+# ============================================
+# BLOCK 2: Check Message
+# ============================================
 
 # Check that text is not a command
 # Called programmatically from other scenarios via execute_scenario
@@ -34,3 +42,17 @@ check_message:
         - action_result: "failed"
           transition_action: "continue"   # If not a command - continue execution
 
+# ============================================
+# BLOCK 3: Default Check
+# ============================================
+default_check:
+  description: "Default check"
+
+  step:
+    - action: "execute_scenario"
+      params:
+        scenario: "access_check"
+
+    - action: "execute_scenario"
+      params:
+        scenario: "settings_check"

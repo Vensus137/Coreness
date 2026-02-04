@@ -17,10 +17,10 @@ from .migration.output import MigrationFormatter, MigrationLogger
 class MigrationHandler:
     """Handles universal database migrations."""
 
-    def __init__(self, project_root: Path, translator: Translator, config: dict):
+    def __init__(self, project_root: Path, translator: Translator, config_provider):
         self.project_root = project_root
         self.translator = translator
-        self.config = config
+        self.config_provider = config_provider
         self.formatter = MigrationFormatter()
         self.logger = MigrationLogger()
 
@@ -31,13 +31,16 @@ class MigrationHandler:
         print("="*60 + "\n")
 
         try:
+            # Get fresh config from provider (respects version_file changes)
+            config = self.config_provider._get_effective_config() if hasattr(self.config_provider, '_get_effective_config') else self.config_provider
+            
             # Build context
             context = DatabaseContext(
                 project_root=self.project_root,
-                database_config=self.config,
-                docker_compose_config=self.config.get("docker_compose", {}),
-                environment=self.config.get("environment", "prod"),
-                deployment_mode=self.config.get("deployment_mode", "docker")
+                database_config=config,
+                docker_compose_config=config.get("docker_compose", {}),
+                environment=config.get("environment", "prod"),
+                deployment_mode=config.get("deployment_mode", "docker")
             )
 
             if context.is_docker_mode():

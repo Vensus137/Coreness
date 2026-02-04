@@ -1,0 +1,37 @@
+translation_en:
+  start: |
+    🔧 <b>Master Bot</b> - System management
+    
+    Welcome to the system control panel!
+  start_inline:
+    - [{"🏠 Tenant management": "tenant"}, {"ℹ️ Help": "help"}]
+  help: |
+    🔧 <b>Help</b>
+    
+    <b>Commands:</b>
+    • /tenant - tenant management
+    • /help - this help
+    • /language - language change
+    
+    <i>Contact the system administrator if you have any problems.</i>
+  help_inline:
+    - [{"🏠 Tenant management": "tenant"}]
+
+translation_ru:
+  start: |
+    🔧 <b>Master Bot</b> - Системное управление
+    
+    Добро пожаловать в панель управления системой!
+  start_inline:
+    - [{"🏠 Управление тенантом": "tenant"}, {"ℹ️ Справка": "help"}]
+  help: |
+    🔧 <b>Справка</b>
+          
+    <b>Команды:</b>
+    • /tenant - управление тенантами
+    • /help - эта справка
+    • /language - смена языка
+          
+    <i>Обратитесь к администратору системы при возникновении проблем.</i>
+  help_inline:
+    - [{"🏠 Управление тенантом": "tenant"}]

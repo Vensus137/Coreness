@@ -1,0 +1,301 @@
+translation_en:
+  user_storage_menu: |
+    👤 <b>User Storage <code>{_cache.active_tenant_id}</code></b>
+    
+    Enter: <b>user_id</b> <b>key</b> <b>value</b>
+    
+    • <b>One word</b> (user_id) — view entire user storage
+    • <b>Two words</b> (user_id key) — view key value
+    • <b>Three words</b> (user_id key value) — change/add value
+    
+    Example: <code>123456789 temp_data some_value</code>
+  user_storage_menu_inline:
+    - [{"🔙 Back": "tenant"}]
+  user_storage_view_user: |
+    📄 <b>User Storage <code>{_cache.active_tenant_id}</code></b>
+    
+    User: <code>{_cache.temp_user_id}</code>
+    
+    <b>Storage in YAML format:</b>
+    <pre>{_cache.view_user.formatted_text|fallback:ℹ️ Storage is empty}</pre>
+
+    💡 To navigate to other data enter: <code>user_id key value</code>
+  user_storage_view_user_inline:
+    - [{"🗑️ Delete storage": "user_storage_delete_user_confirm"}, {"🔙 Back": "user_storage_menu"}]
+  user_storage_user_not_found: |
+    ❌ <b>User storage not found</b>
+    
+    User <code>{_cache.temp_user_id}</code> does not exist or storage is empty.
+    
+    💡 To navigate to other data enter: <code>user_id key value</code>
+  user_storage_user_not_found_inline:
+    - [{"🔙 Back": "user_storage_menu"}]
+  user_storage_view_key: |
+    📋 <b>User Storage <code>{_cache.active_tenant_id}</code></b>
+    
+    User: <code>{_cache.temp_user_id}</code>
+    Key: <code>{_cache.temp_key}</code>
+    
+    <b>Value:</b>
+    <pre>{_cache.view_key.formatted_text|fallback:not set}</pre>
+
+    💡 To navigate to other data enter: <code>user_id key value</code>
+  user_storage_view_key_inline:
+    - [{"🗑️ Delete value": "user_storage_delete_value_confirm"}, {"🔙 Back": "user_storage_menu"}]
+  user_storage_key_not_found: |
+    ❌ <b>Key not found</b>
+    
+    User: <code>{_cache.temp_user_id}</code>
+    Key: <code>{_cache.temp_key}</code>
+    
+    Key does not exist in user storage.
+    
+    💡 To navigate to other data enter: <code>user_id key value</code>
+  user_storage_key_not_found_inline:
+    - [{"🔙 Back": "user_storage_menu"}]
+  user_storage_edit_value: |
+    ⚠️ <b>Change confirmation</b>
+    
+    Tenant: <code>{_cache.user_storage_values.active_tenant_id}</code>
+    User: <code>{_cache.user_storage_values.temp_user_id}</code>
+    Key: <code>{_cache.user_storage_values.temp_key}</code>
+    
+    <b>Current value:</b>
+    <pre>{_cache.current_value.formatted_text|fallback:not set}</pre>
+
+    <b>New value:</b>
+    <pre>{_cache.user_storage_values.temp_value}</pre>
+    
+    Are you sure you want to save this value?
+    
+    💡 To navigate to other data enter: <code>user_id key value</code>
+  user_storage_edit_value_inline:
+    - [{"✅ Change": "user_storage_edit_execute"}, {"🗑️ Delete": "user_storage_delete_value_confirm"}, {"🔙 Back": "user_storage_menu"}]
+  user_storage_edit_new_value: |
+    ⚠️ <b>New value addition confirmation</b>
+    
+    Tenant: <code>{_cache.user_storage_values.active_tenant_id}</code>
+    User: <code>{_cache.user_storage_values.temp_user_id}</code>
+    Key: <code>{_cache.user_storage_values.temp_key}</code>
+    
+    <i>Key does not exist, a new one will be created.</i>
+    
+    <b>New value:</b>
+    <pre>{_cache.user_storage_values.temp_value}</pre>
+    
+    Are you sure you want to save this value?
+    
+    💡 To navigate to other data enter: <code>user_id key value</code>
+  user_storage_edit_new_value_inline:
+    - [{"✅ Add": "user_storage_edit_execute"}, {"🔙 Back": "user_storage_menu"}]
+  user_storage_edit_execute: |
+    ✅ <b>Value saved</b>
+    
+    User: <code>{_cache.user_storage_values.temp_user_id}</code>
+    Key: <code>{_cache.user_storage_values.temp_key}</code>
+    
+    <b>Saved value:</b>
+    <pre>{_cache.edit_saved.formatted_text|fallback:not set}</pre>
+  user_storage_edit_execute_inline:
+    - [{"🔙 Back": "user_storage_menu"}]
+  user_storage_delete_value_confirm: |
+    ⚠️ <b>Value deletion confirmation</b>
+    
+    Tenant: <code>{_cache.user_storage_values.active_tenant_id}</code>
+    User: <code>{_cache.user_storage_values.temp_user_id}</code>
+    Key: <code>{_cache.user_storage_values.temp_key}</code>
+    
+    <b>Current value:</b>
+    <pre>{_cache.delete_value.formatted_text|fallback:not set}</pre>
+    
+    Are you sure you want to delete this value?
+  user_storage_delete_value_confirm_inline:
+    - [{"✅ Yes, delete": "user_storage_delete_value_execute"}, {"❌ Cancel": "user_storage_menu"}]
+  user_storage_delete_value_not_found: |
+    ❌ <b>Value not found</b>
+    
+    User: <code>{_cache.temp_user_id}</code>
+    Key: <code>{_cache.temp_key}</code>
+    
+    Value does not exist.
+    
+    💡 To navigate to other data enter: <code>user_id key value</code>
+  user_storage_delete_value_not_found_inline:
+    - [{"🔙 Back": "user_storage_menu"}]
+  user_storage_delete_value_execute: |
+    ✅ <b>Value deleted</b>
+    
+    User: <code>{_cache.user_storage_values.temp_user_id}</code>
+    Key: <code>{_cache.user_storage_values.temp_key}</code>
+    Value: <code>{_cache.deleted_value.user_storage_values|fallback:failed to retrieve}</code>
+  user_storage_delete_value_execute_inline:
+    - [{"🔙 Back": "user_storage_menu"}]
+  user_storage_delete_user_confirm: |
+    ⚠️ <b>User storage deletion confirmation</b>
+    
+    Tenant: <code>{_cache.active_tenant_id}</code>
+    User: <code>{_cache.temp_user_id}</code>
+    
+    <b>Storage contents:</b>
+    <pre>{_cache.delete_user.formatted_text|fallback:Storage is empty}</pre>
+    
+    ⚠️ <b>Warning!</b> The entire user storage with all values will be deleted!
+  user_storage_delete_user_confirm_inline:
+    - [{"✅ Yes, delete": "user_storage_delete_user_execute"}, {"❌ Cancel": "user_storage_menu"}]
+  user_storage_delete_user_execute: |
+    ✅ <b>User storage deleted</b>
+    
+    User <code>{_cache.temp_user_id}</code> — storage successfully deleted.
+  user_storage_delete_user_execute_inline:
+    - [{"🔙 Back": "user_storage_menu"}]
+
+translation_ru:
+  user_storage_menu: |
+    👤 <b>User Storage <code>{_cache.active_tenant_id}</code></b>
+    
+    Введите: <b>user_id</b> <b>ключ</b> <b>значение</b>
+    
+    • <b>Одно слово</b> (user_id) — просмотр всего storage пользователя
+    • <b>Два слова</b> (user_id ключ) — просмотр значения ключа
+    • <b>Три слова</b> (user_id ключ значение) — изменение/добавление значения
+    
+    Пример: <code>123456789 temp_data some_value</code>
+  user_storage_menu_inline:
+    - [{"🔙 Назад": "tenant"}]
+  user_storage_view_user: |
+    📄 <b>User Storage <code>{_cache.active_tenant_id}</code></b>
+    
+    Пользователь: <code>{_cache.temp_user_id}</code>
+    
+    <b>Storage в YAML формате:</b>
+    <pre>{_cache.view_user.formatted_text|fallback:ℹ️ Storage пуст}</pre>
+
+    💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+  user_storage_view_user_inline:
+    - [{"🗑️ Удалить storage": "user_storage_delete_user_confirm"}, {"🔙 Назад": "user_storage_menu"}]
+  user_storage_user_not_found: |
+    ❌ <b>Storage пользователя не найден</b>
+    
+    Пользователь <code>{_cache.temp_user_id}</code> не существует или storage пуст.
+    
+    💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+  user_storage_user_not_found_inline:
+    - [{"🔙 Назад": "user_storage_menu"}]
+  user_storage_view_key: |
+    📋 <b>User Storage <code>{_cache.active_tenant_id}</code></b>
+    
+    Пользователь: <code>{_cache.temp_user_id}</code>
+    Ключ: <code>{_cache.temp_key}</code>
+    
+    <b>Значение:</b>
+    <pre>{_cache.view_key.formatted_text|fallback:не установлено}</pre>
+
+    💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+  user_storage_view_key_inline:
+    - [{"🗑️ Удалить значение": "user_storage_delete_value_confirm"}, {"🔙 Назад": "user_storage_menu"}]
+  user_storage_key_not_found: |
+    ❌ <b>Ключ не найден</b>
+    
+    Пользователь: <code>{_cache.temp_user_id}</code>
+    Ключ: <code>{_cache.temp_key}</code>
+    
+    Ключ не существует в storage пользователя.
+    
+    💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+  user_storage_key_not_found_inline:
+    - [{"🔙 Назад": "user_storage_menu"}]
+  user_storage_edit_value: |
+    ⚠️ <b>Подтверждение изменения</b>
+    
+    Тенант: <code>{_cache.user_storage_values.active_tenant_id}</code>
+    Пользователь: <code>{_cache.user_storage_values.temp_user_id}</code>
+    Ключ: <code>{_cache.user_storage_values.temp_key}</code>
+    
+    <b>Текущее значение:</b>
+    <pre>{_cache.current_value.formatted_text|fallback:не установлено}</pre>
+
+    <b>Новое значение:</b>
+    <pre>{_cache.user_storage_values.temp_value}</pre>
+    
+    Вы уверены, что хотите сохранить это значение?
+    
+    💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+  user_storage_edit_value_inline:
+    - [{"✅ Изменить": "user_storage_edit_execute"}, {"🗑️ Удалить": "user_storage_delete_value_confirm"}, {"🔙 Назад": "user_storage_menu"}]
+  user_storage_edit_new_value: |
+    ⚠️ <b>Подтверждение добавления нового значения</b>
+    
+    Тенант: <code>{_cache.user_storage_values.active_tenant_id}</code>
+    Пользователь: <code>{_cache.user_storage_values.temp_user_id}</code>
+    Ключ: <code>{_cache.user_storage_values.temp_key}</code>
+    
+    <i>Ключ не существует, будет создан новый.</i>
+    
+    <b>Новое значение:</b>
+    <pre>{_cache.user_storage_values.temp_value}</pre>
+    
+    Вы уверены, что хотите сохранить это значение?
+    
+    💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+  user_storage_edit_new_value_inline:
+    - [{"✅ Добавить": "user_storage_edit_execute"}, {"🔙 Назад": "user_storage_menu"}]
+  user_storage_edit_execute: |
+    ✅ <b>Значение сохранено</b>
+    
+    Пользователь: <code>{_cache.user_storage_values.temp_user_id}</code>
+    Ключ: <code>{_cache.user_storage_values.temp_key}</code>
+    
+    <b>Сохраненное значение:</b>
+    <pre>{_cache.edit_saved.formatted_text|fallback:не установлено}</pre>
+  user_storage_edit_execute_inline:
+    - [{"🔙 Назад": "user_storage_menu"}]
+  user_storage_delete_value_confirm: |
+    ⚠️ <b>Подтверждение удаления значения</b>
+    
+    Тенант: <code>{_cache.user_storage_values.active_tenant_id}</code>
+    Пользователь: <code>{_cache.user_storage_values.temp_user_id}</code>
+    Ключ: <code>{_cache.user_storage_values.temp_key}</code>
+    
+    <b>Текущее значение:</b>
+    <pre>{_cache.delete_value.formatted_text|fallback:не установлено}</pre>
+    
+    Вы уверены, что хотите удалить это значение?
+  user_storage_delete_value_confirm_inline:
+    - [{"✅ Да, удалить": "user_storage_delete_value_execute"}, {"❌ Отмена": "user_storage_menu"}]
+  user_storage_delete_value_not_found: |
+    ❌ <b>Значение не найдено</b>
+    
+    Пользователь: <code>{_cache.temp_user_id}</code>
+    Ключ: <code>{_cache.temp_key}</code>
+    
+    Значение не существует.
+    
+    💡 Для перехода к другим данным введите: <code>user_id ключ значение</code>
+  user_storage_delete_value_not_found_inline:
+    - [{"🔙 Назад": "user_storage_menu"}]
+  user_storage_delete_value_execute: |
+    ✅ <b>Значение удалено</b>
+    
+    Пользователь: <code>{_cache.user_storage_values.temp_user_id}</code>
+    Ключ: <code>{_cache.user_storage_values.temp_key}</code>
+    Значение: <code>{_cache.deleted_value.user_storage_values|fallback:не удалось получить}</code>
+  user_storage_delete_value_execute_inline:
+    - [{"🔙 Назад": "user_storage_menu"}]
+  user_storage_delete_user_confirm: |
+    ⚠️ <b>Подтверждение удаления storage пользователя</b>
+    
+    Тенант: <code>{_cache.active_tenant_id}</code>
+    Пользователь: <code>{_cache.temp_user_id}</code>
+    
+    <b>Содержимое storage:</b>
+    <pre>{_cache.delete_user.formatted_text|fallback:Storage пуст}</pre>
+    
+    ⚠️ <b>Внимание!</b> Будет удален весь storage пользователя со всеми значениями!
+  user_storage_delete_user_confirm_inline:
+    - [{"✅ Да, удалить": "user_storage_delete_user_execute"}, {"❌ Отмена": "user_storage_menu"}]
+  user_storage_delete_user_execute: |
+    ✅ <b>Storage пользователя удален</b>
+    
+    Пользователь <code>{_cache.temp_user_id}</code> - весь storage успешно удален.
+  user_storage_delete_user_execute_inline:
+    - [{"🔙 Назад": "user_storage_menu"}]

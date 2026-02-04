@@ -9,7 +9,7 @@
 
 # Access check scenario (called programmatically)
 access_check:
-  description: "Проверка доступа пользователя к Master боту"
+  description: "User access check to Master bot"
   
   step:
     # Get user settings from storage of tenant_1 (Master tenant)
@@ -53,9 +53,7 @@ access_denied:
     - action: "send_message"
       params:
         text: |
-          ❌ <b>Доступ ограничен</b>
-          
-          К сожалению, у вас нет прав для использования этой функции.
+          {_cache.translation.access_denied|fallback:{_cache.translation.default|fallback:Unknown error}}
         message_edit: false
       transition:
         - action_result: "any"
@@ -97,9 +95,7 @@ access_denied_admin:
     - action: "send_message"
       params:
         text: |
-          ❌ <b>Доступ ограничен</b>
-          
-          Эта функция доступна только администратору системы.
+          {_cache.translation.access_denied_admin|fallback:{_cache.translation.default|fallback:Unknown error}}
         message_edit: false
       transition:
         - action_result: "any"

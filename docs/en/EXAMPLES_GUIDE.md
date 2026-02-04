@@ -6,8 +6,9 @@
 
 - [🚀 Quick Start](#-quick-start)
   - [Basic Concepts](#basic-concepts)
-  - [Creating First Scenario](#creating-first-scenario)
-  - [Synchronizing Changes](#synchronizing-changes)
+  - [Creating First Scenario (System Tenant)](#creating-first-scenario-system-tenant)
+  - [Applying Changes (System Tenant)](#applying-changes-system-tenant)
+  - [Public Tenants (Optional)](#public-tenants-optional)
 - [💳 Advanced Examples](#-advanced-examples)
   - [Working with Payments (Invoices)](#working-with-payments-invoices)
     - [Payment Mechanism Overview](#payment-mechanism-overview)
@@ -43,15 +44,19 @@ Welcome to Coreness! This section will help you quickly create your first bot an
 
 **Placeholders** — dynamic data substitution from event or previous actions. For example: `{username}`, `{user_id}`, `{event_text}`.
 
-### Creating First Scenario
+**System and public tenants:** By default you can work with the platform using **system tenants** (ID < 100): configuration lives in the project folder `config/tenant/`, no GitHub required. **Public tenants** (ID ≥ 100) use an external repository and require separate setup — see [Public Tenants (Optional)](#public-tenants-optional).
+
+### Creating First Scenario (System Tenant)
+
+Use a system tenant to get started immediately without configuring a repository. Folder structure and scenario format are the same for all tenant types; only the ID range and configuration source differ.
 
 #### 1. Configure Tenant
 
-Create folder in `tenant/` using format `tenant_<ID>` (e.g., `tenant_101/`).
+Create a folder under `config/tenant/` using format `tenant_<ID>` with **ID < 100** (e.g. `tenant_10/`). The project already includes a system tenant `tenant_1/` (master bot) by default — you can use it or take it as a reference.
 
 #### 2. Configure Bot
 
-Create file `tg_bot.yaml`:
+Inside the tenant folder create `tg_bot.yaml`:
 
 ```yaml
 bot_name: "My Bot"
@@ -61,9 +66,11 @@ is_active: true
 
 #### 3. Create Scenarios
 
-Create `scenarios/` folder and scenario files in it (can use subfolders for organization).
+Create a `scenarios/` folder inside the tenant folder and add scenario files (subfolders are allowed for organization).
 
 #### 4. Write Scenario
+
+For example in `scenarios/start.yaml`:
 
 ```yaml
 start:
@@ -97,23 +104,25 @@ start:
 
 📖 More about actions, parameters and placeholders: [SCENARIO_CONFIG_GUIDE.md](SCENARIO_CONFIG_GUIDE.md), [ACTION_GUIDE.md](ACTION_GUIDE.md)
 
-### Synchronizing Changes
+### Applying Changes (System Tenant)
 
-After making changes to scenarios and push to [GitHub repository](https://github.com/Vensus137/Coreness-Tenant):
+System tenant configuration is read from the local `config/tenant/` folder. After editing scenarios or `tg_bot.yaml`:
 
-#### Automatic Synchronization
-
-System automatically checks repository changes and synchronizes updated tenants in background.
-
-#### Force Synchronization
-
-For immediate update use master bot:
-1. Open `master_bot`
+1. Open **master bot**
 2. Send command `/tenant`
-3. Enter your tenant ID (if not entered previously)
-4. Click **"Synchronize"** button
+3. Enter your tenant ID (if not already selected)
+4. Click **"Synchronize"**
 
-System will automatically load and update data.
+The system will pick up changes from local files and update data. No GitHub repository is used for system tenants.
+
+### Public Tenants (Optional)
+
+If you need a **public tenant** (ID ≥ 100) — e.g. for a client bot whose config lives in an external repository — folder structure and scenario format are the same: `tenant_<ID>/`, `tg_bot.yaml`, `scenarios/`, etc. The only difference is system setup:
+
+- Configuration is stored in an **external repository** (Repository-Tenant), not in the project folder.
+- Syncing changes: **polling** (periodic repository check) or **webhooks** (extension). After pushing to the repository, tenants are picked up on the next check or manually via master bot (command `/tenant` → "Synchronize").
+
+📖 Tenant types and synchronization: [TENANT_CONFIG_GUIDE.md](TENANT_CONFIG_GUIDE.md).
 
 ---
 

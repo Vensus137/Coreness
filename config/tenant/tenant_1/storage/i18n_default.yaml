@@ -1,0 +1,52 @@
+translation_en:
+  default: |
+    Unknown error, contact the system administrator
+  default_inline:
+    - [{"ℹ️ Help": "help"}]
+  default_error: |
+    ⚠️ <b>System error</b>
+    An error occurred while processing the request.
+    Please try again later or contact the system administrator.
+    
+    User ID: <code>{user_id}</code>
+    Error log: <code>{last_error.message|fallback:Unknown error}</code>
+  access_denied: |
+    ❌ <b>Access denied</b>
+    
+    Unfortunately, you do not have permission to use this function.
+  access_denied_admin: |
+    ❌ <b>Access denied</b>
+    
+    This function is only available to the system administrator.
+  success_language: |
+    Language set successfully
+    For language change at any time, use the /language command
+  success_language_inline:
+    - [{"🏠 Tenant management": "tenant"}, {"ℹ️ Help": "help"}]
+
+translation_ru:
+  default: |
+    Неизвестная ошибка, обратитесь к администратору системы
+  default_inline:
+      - [{"ℹ️ Справка": "help"}]
+  default_error: |
+    ⚠️ <b>Системная ошибка</b>
+    
+    Произошла ошибка при обработке запроса.
+    Повторите попытку позднее или обратитесь к администратору системы.
+    
+    ID пользователя: <code>{user_id}</code>
+    Лог ошибки: <code>{last_error.message|fallback:Неизвестная ошибка}</code>
+  access_denied: |
+    ❌ <b>Доступ ограничен</b>
+    
+    К сожалению, у вас нет прав для использования этой функции.
+  access_denied_admin: |
+    ❌ <b>Доступ ограничен</b>
+    
+    Эта функция доступна только администратору системы.
+  success_language: |
+    Язык установлен успешно
+    Для смены языка в любое время, используйте команду /language
+  success_language_inline:
+    - [{"🏠 Управление тенантом": "tenant"}, {"ℹ️ Справка": "help"}]

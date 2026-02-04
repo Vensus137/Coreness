@@ -1,0 +1,106 @@
+# ============================================
+# User Settings
+# Purpose: user settings management
+# ============================================
+
+
+# ============================================
+# BLOCK 1: Check Settings
+# ============================================
+
+settings_check:
+  description: "Check user settings"
+
+  step:
+    - action: "get_user_storage"
+      params:
+        key: "language"
+        _response_key: "language"
+        _namespace: "user"
+      transition:
+        - action_result: "not_found"
+          transition_action: "jump_to_scenario"
+          transition_value: "choose_language"
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+
+    - action: "validate"
+      params:
+        condition: "{_cache.user.language|fallback:} in ['en', 'ru']"
+      transition:
+        - action_result: "failed"
+          transition_action: "jump_to_scenario"
+          transition_value: "choose_language"
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+    
+    - action: "execute_scenario"
+      params:
+        scenario: "get_translation"
+
+get_translation:
+  description: "Get translation"
+
+  step:
+    - action: "get_storage"
+      params:
+        group_key: "translation_{_cache.user.language|fallback:{language_code|fallback:en}}"
+        _response_key: "translation"
+
+# ============================================
+# BLOCK 2: Choose Language
+# ============================================
+
+choose_language:
+  description: "Choose user language"
+  
+  step:
+    - action: "send_message"
+      params:
+        text: |
+          {language_code|equals:ru|value:Выберите ваш язык|fallback:Choose your language}
+        inline:
+          - [{"English": "set_language_en"}, {"Русский": "set_language_ru"}]
+        message_edit: false
+      transition:
+        - action_result: "any"
+          transition_action: "abort"
+
+# ============================================
+# BLOCK 3: Set Language
+# ============================================
+
+set_language:
+  description: "Set user language"
+
+  trigger:
+    - event_type: "callback"
+      condition: |
+        $callback_data ~ "set_language_"
+
+  step:
+    - action: "set_user_storage"
+      params:
+        key: "language"
+        value: '{callback_data|regex:set_language_(.+)|lower}'
+        _response_key: "language"
+        _namespace: "user"
+      transition:
+        - action_result: "error"
+          transition_action: "jump_to_scenario"
+          transition_value: "default_error"
+
+    - action: "execute_scenario"
+      params:
+        scenario: "get_translation"
+
+    - action: "send_message"
+      params:
+        text: |
+          {_cache.translation.success_language|fallback:{_cache.translation.default|fallback:Unknown error}}
+        inline: "{_cache.translation.success_language_inline|fallback:{_cache.translation.default_inline|fallback:}}"
+      transition:
+        - action_result: "any"
+          transition_action: "abort"

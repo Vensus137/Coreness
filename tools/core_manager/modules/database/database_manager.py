@@ -19,11 +19,14 @@ class DatabaseManager:
         self.config = config
         self.version_file = version_file
         self.docker_compose_config = docker_compose_config
-        self._effective_config = self._build_effective_config()
-        self.migration_handler = MigrationHandler(project_root, translator, self._effective_config)
+        # Pass self as config provider so MigrationHandler always gets fresh config
+        self.migration_handler = MigrationHandler(project_root, translator, self)
 
-    def _build_effective_config(self) -> Dict[str, Any]:
-        """Merge environment and deployment_mode from version_file into database config."""
+    def _get_effective_config(self) -> Dict[str, Any]:
+        """
+        Build effective config by merging environment and deployment_mode from version_file.
+        Always rebuilds to respect current version_file state (not cached).
+        """
         effective = dict(self.config)
         effective.setdefault("environment", self.version_file.get("environment", "prod"))
         effective.setdefault("deployment_mode", self.version_file.get("deployment_mode", "docker"))
@@ -35,8 +38,8 @@ class DatabaseManager:
         """Get list of menu items (id, label, handler)."""
         return [
             ("1", self.translator.get("database.universal_migration"), self.migration_handler.run),
-            ("2", self.translator.get("database.create_backup"), lambda: run_backup(self.project_root, self._effective_config, self.translator)),
-            ("3", self.translator.get("database.restore_backup"), lambda: run_restore(self.project_root, self._effective_config, self.translator)),
+            ("2", self.translator.get("database.create_backup"), lambda: run_backup(self.project_root, self._get_effective_config(), self.translator)),
+            ("3", self.translator.get("database.restore_backup"), lambda: run_restore(self.project_root, self._get_effective_config(), self.translator)),
         ]
     
     def run(self):
