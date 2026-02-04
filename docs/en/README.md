@@ -185,6 +185,6 @@ Latest changes, new features, breaking changes, and migrations.
 5. **[Tenant Setup](TENANT_CONFIG_GUIDE.md)** — configure your bot
 6. **[Storage Attributes](STORAGE_CONFIG_GUIDE.md)** — work with data
 7. **[AI Models](AI_MODELS_GUIDE.md)** — AI setup (optional)
-8. **[Changelog](../CHANGELOG.md)** — latest changes (optional)
+8. **[Changelog](CHANGELOG.md)** — latest changes (optional)
 
 ---
