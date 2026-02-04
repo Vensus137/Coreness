@@ -1,5 +1,6 @@
 """Database restore handler - refactored."""
 
+import gzip
 import os
 import shutil
 import subprocess
@@ -135,17 +136,42 @@ def _do_restore_from_file(db_conn, context: DatabaseContext, backup_path: Path, 
 
 
 def _restore_sqlite(db_conn, backup_path: Path, formatter, translator) -> bool:
-    """Restore SQLite database."""
+    """Restore SQLite database from compressed backup."""
     sqlite_path = Path(db_conn.db_path)
+    temp_backup = None
+    
+    # Create temporary backup of current database
     if sqlite_path.exists():
-        before = sqlite_path.parent / f"core.db.before_restore_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        shutil.copy2(sqlite_path, before)
-        formatter.print_info(f"{translator.get('database.current_backed_up')}: {before.name}")
+        temp_backup = sqlite_path.parent / f"core.db.before_restore_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        shutil.copy2(sqlite_path, temp_backup)
+        formatter.print_info(f"{translator.get('database.current_backed_up')}: {temp_backup.name}")
     
     formatter.print_info(translator.get("database.restoring"))
-    shutil.copy2(backup_path, sqlite_path)
-    formatter.print_success(f"✓ {translator.get('database.restore_success')}: {backup_path.name}")
-    return True
+    
+    try:
+        # Check if backup is compressed
+        if backup_path.suffix == '.gz':
+            # Decompress gzip backup
+            with gzip.open(backup_path, 'rb') as f_in:
+                with open(sqlite_path, 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+        else:
+            # Direct copy for uncompressed backups
+            shutil.copy2(backup_path, sqlite_path)
+        
+        # If successful, delete temporary backup
+        if temp_backup and temp_backup.exists():
+            temp_backup.unlink()
+        
+        formatter.print_success(f"✓ {translator.get('database.restore_success')}: {backup_path.name}")
+        return True
+        
+    except Exception as e:
+        # On error, restore from temporary backup if it exists
+        if temp_backup and temp_backup.exists():
+            shutil.copy2(temp_backup, sqlite_path)
+            formatter.print_error(f"Restore failed, rolled back to previous state: {e}")
+        raise
 
 
 def _restore_postgresql(db_conn, context: DatabaseContext, backup_path: Path, formatter, translator) -> bool:

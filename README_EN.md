@@ -12,6 +12,8 @@
 
 > 🌐 **Language**: [Русский](README.md) | **English**
 
+> **Note on language:** The project supports English (docs, code, tooling). You may still run into occasional inaccuracies or mixed-language bits.
+
 `Coreness` is an **event-driven** platform for building automated **workflows** through configuration files. You describe the logic in YAML, and the platform handles execution, data storage, and integrations.
 
 **Key Use Cases:**

@@ -34,7 +34,7 @@ class TenantHub:
         
         # Get max system tenant ID from global settings
         global_settings = self.settings_manager.get_global_settings()
-        self.max_system_tenant_id = global_settings.get('max_system_tenant_id', 100)
+        self.max_system_tenant_id = global_settings.get('max_system_tenant_id', 99)
         
         # Webhook settings
         plugin_settings = self.settings_manager.get_plugin_settings('tenant_hub')

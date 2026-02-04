@@ -177,7 +177,7 @@ class DatabaseManager:
             return SQLiteManager(**self._kwargs)
     
     async def create_backup(self, backup_filename: Optional[str] = None) -> Optional[str]:
-        """Creates database backup in plain SQL + gzip format for PostgreSQL or .bak.gz for SQLite"""
+        """Creates database backup with compression in type-specific folder"""
         return await self.backup_ops.create_backup(backup_filename)
     
     async def restore_backup(self, backup_filename: Optional[str] = None) -> bool:

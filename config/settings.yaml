@@ -21,7 +21,7 @@ global:
   file_base_path: "resources"           # Base directory for all files
   backup_dir: "data/backups"            # Base directory for all database backups
   tenants_config_path: "config/tenant"  # Path to tenant configurations
-  max_system_tenant_id: 100             # Maximum system tenant ID
+  max_system_tenant_id: 99              # Maximum system tenant ID (100+ = public)
   
   # Graceful shutdown settings
   shutdown:

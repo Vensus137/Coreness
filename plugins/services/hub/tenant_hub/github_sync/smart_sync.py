@@ -44,7 +44,20 @@ class SmartGitHubSync(GitHubSyncBase):
         WITH PROTECTION: automatically filters system tenants
         """
         try:
-            # Check GitHub configuration
+            # No URL = sync disabled by design, system uses only system tenants
+            if not (self.github_url or "").strip():
+                self.logger.info(
+                    "GitHub sync not configured (github_url empty); synchronization skipped, system will use only system tenants"
+                )
+                return {
+                    "result": "success",
+                    "response_data": {
+                        "changed_tenants": {},
+                        "sync_all": False,
+                        "has_changes": False,
+                        "current_sha": None
+                    }
+                }
             validation_error = self._validate_github_config()
             if validation_error:
                 return {

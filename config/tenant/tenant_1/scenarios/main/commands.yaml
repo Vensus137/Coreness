@@ -1,5 +1,7 @@
-# Master Bot Commands
-# Hidden command /start - not shown in command list
+# ============================================
+# BLOCK 1: Start
+# ============================================
+
 start:
   description: "Hidden command to start Master Bot"
   
@@ -10,23 +12,19 @@ start:
       callback_data: "start"
 
   step:
-    # Access check
     - action: "execute_scenario"
       params:
-        scenario: "access_check"
+        scenario: "default_check"
 
-    # Greeting (will execute only after successful access check)
     - action: "send_message"
       params:
         text: |
-          🔧 <b>Master Bot</b> - Системное управление
-          
-          Добро пожаловать в панель управления системой!
-        inline:
-          - [{"🏠 Управление тенантом": "tenant"}, {"ℹ️ Справка": "help"}]
-        message_edit: true
+          {_cache.translation.start|fallback:{_cache.translation.default|fallback:Unknown error}}
+        inline: "{_cache.translation.start_inline|fallback:{_cache.translation.default_inline|fallback:}}"
 
-# Help command - brief information about Master Bot
+# ============================================
+# BLOCK 2: Help
+# ============================================
 help:
   description: "Help command with brief information about Master Bot"
   
@@ -37,28 +35,19 @@ help:
       callback_data: "help"
 
   step:
-    # Access check
     - action: "execute_scenario"
       params:
-        scenario: "access_check"
-    
-    # Bot information (will execute only after successful access check)
+        scenario: "default_check"
+
     - action: "send_message"
       params:
         text: |
-          🔧 <b>Справка</b>
-          
-          <b>Команды:</b>
-          • /tenant - управление тенантами
-          • /help - эта справка
-          • /mail - рассылка сообщений (для администратора)
-          
-          <i>Обратитесь к администратору системы при возникновении проблем.</i>
-        inline:
-          - [{"🏠 Управление тенантом": "tenant"}]
-        message_edit: true
+          {_cache.translation.help|fallback:{_cache.translation.default|fallback:Unknown error}}
+        inline: "{_cache.translation.help_inline|fallback:{_cache.translation.default_inline|fallback:}}"
 
-# Public command /me - user information
+# ============================================
+# BLOCK 3: Me
+# ============================================
 me:
   description: "Public command to display user information"
   
@@ -71,16 +60,18 @@ me:
     - action: "send_message"
       params:
         text: |
-          👤 <b>Информация о пользователе</b>
+          👤 <b>User information</b>
           
           <b>ID:</b> <code>{user_id}</code>
-          <b>Username:</b> <code>@{username|fallback:не указан}</code>
-          <b>Имя:</b> <code>{first_name|fallback:не указано}</code>
-          <b>Фамилия:</b> <code>{last_name|fallback:не указана}</code>
-          <b>Язык:</b> <code>{language_code|fallback:не указан}</code>
+          <b>Username:</b> <code>@{username|fallback:not specified}</code>
+          <b>First name:</b> <code>{first_name|fallback:not specified}</code>
+          <b>Last name:</b> <code>{last_name|fallback:not specified}</code>
+          <b>Language:</b> <code>{language_code|fallback:not specified}</code>
         message_edit: true
 
-# Hidden command /file - get file_id and type of attachments
+# ============================================
+# BLOCK 4: File Info
+# ============================================
 file_info:
   description: "Hidden command to get file_id and type of attachments for subsequent forwarding"
   
@@ -93,8 +84,23 @@ file_info:
     - action: "send_message"
       params:
         text: |
-          📎 <b>Информация о файле</b>
+          📎 <b>File information</b>
           
-          <b>file_id:</b> <code>{event_attachment[0].file_id|fallback:{reply_attachment[0].file_id|fallback:Файл не найден}}</code>
-          <b>type:</b> <code>{event_attachment[0].type|fallback:{reply_attachment[0].type|fallback:Тип не найден}}</code>
+          <b>file_id:</b> <code>{event_attachment[0].file_id|fallback:{reply_attachment[0].file_id|fallback:File not found}}</code>
+          <b>type:</b> <code>{event_attachment[0].type|fallback:{reply_attachment[0].type|fallback:Type not found}}</code>
         message_edit: true
+
+# ============================================
+# BLOCK 5: Language
+# ============================================
+language:
+  description: "Language change command"
+  
+  trigger:
+    - event_type: "message"
+      event_text: "/language"
+
+  step:
+    - action: "execute_scenario"
+      params:
+        scenario: "choose_language"

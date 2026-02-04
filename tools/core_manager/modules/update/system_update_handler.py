@@ -185,10 +185,20 @@ class SystemUpdateHandler:
             return True
 
         cwd = get_compose_cwd(compose_path, dc_config)
-        compose_files = [str(compose_path)]
-        override_path = cwd / f"docker-compose.override-{environment}.yml"
-        if override_path.exists():
-            compose_files.append(str(override_path))
+        # Always use base + all environment files to see all services (no orphan warnings)
+        compose_files = []
+        base_compose = cwd / "docker-compose.yml"
+        if base_compose.exists():
+            compose_files.append(str(base_compose))
+        
+        # Add all environment-specific files from config
+        config_files = dc_config.get("config_files", {}) or {}
+        for env_name, env_file in config_files.items():
+            env_compose = cwd / env_file
+            if env_compose.exists():
+                compose_files.append(str(env_compose))
+        
+        # Override files are managed by docker compose automatically, no need to specify
         compose_f_args = [arg for f in compose_files for arg in ("-f", f)]
 
         skip_list = dc_config.get("skip_restart_services", {}) or {}
@@ -342,11 +352,13 @@ class SystemUpdateHandler:
             print(f"{self.t.get('system_update.select_version')}:")
             for i, ver_info in enumerate(available, 1):
                 ver = ver_info["version"]
+                # Use release name if available, otherwise use version (tag name)
+                display_name = ver_info.get("name", ver)
                 marker = " (latest)" if ver == latest else ""
                 marker += " (current)" if ver == current else ""
                 if ver_info.get("prerelease"):
                     marker += f" ({self.t.get('system_update.prerelease_label')})"
-                print(f"  {i}. {ver}{marker}")
+                print(f"  {i}. {display_name}{marker}")
             print(f"  0. {self.t.get('system_update.cancel_option')}")
 
             choice = input(f"\n{self.t.get('messages.choice')} (0-{len(available)}): ").strip()
@@ -398,8 +410,6 @@ class SystemUpdateHandler:
 
                 # Backup
                 print(Colors.info(self.t.get("system_update.creating_backup")))
-                files_list = updater._get_files_to_update(repo_path)
-                updater.files_to_update = files_list
                 backup_path = updater.backup_files()
                 if not backup_path:
                     print(Colors.error(self.t.get("system_update.backup_failed")))

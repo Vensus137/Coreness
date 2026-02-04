@@ -48,9 +48,9 @@ system_update:
     - requests
     - gitpython
   repository:
-    url: "https://github.com/Vensus137/Coreness"
+    url: "https://github.com/Vensus137/Project-Beta"
     branch: "main"
-  token_env: "GITHUB_TOKEN"   # Optional
+  token_env: "GITHUB_TOKEN"
   settings:
     backup_dir: ".core_update_backup"
   files:
@@ -63,12 +63,14 @@ system_update:
       - "docker/"
       - "LICENSE"
     exclude:
+      - "config/tenant/"
       - "config/settings.yaml"
       - "config/.version"
       - "resources/"
       - "logs/"
       - "data/"
       - "**/tests/"
+      - "**/extensions/"
 
 # === DOCKER COMPOSE (optional, for docker deployment) ===
 # Used to restart containers and install dc command after system update. Postgres is handled by database module.

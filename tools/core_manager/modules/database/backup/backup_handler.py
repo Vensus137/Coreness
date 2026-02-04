@@ -49,15 +49,22 @@ def run_backup(project_root: Path, config: dict, translator) -> bool:
 
 
 def _backup_sqlite(db_conn, backup_dir: Path, backup_name: str, formatter, translator) -> bool:
-    """Backup SQLite database."""
+    """Backup SQLite database with gzip compression."""
+    import gzip
+    
     sqlite_path = Path(db_conn.db_path)
     if not sqlite_path.exists():
         formatter.print_error(translator.get("database.sqlite_not_found"))
         return False
     
-    backup_file = backup_dir / f"{backup_name}.db"
+    backup_file = backup_dir / f"{backup_name}.db.gz"
     formatter.print_info(translator.get("database.creating_backup"))
-    shutil.copy2(sqlite_path, backup_file)
+    
+    # Compress SQLite file with maximum compression level
+    with open(sqlite_path, 'rb') as f_in:
+        with gzip.open(backup_file, 'wb', compresslevel=9) as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    
     size_mb = backup_file.stat().st_size / (1024 * 1024)
     formatter.print_success(
         f"✓ {translator.get('database.backup_created')}: {backup_file.name} ({size_mb:.2f} MB)"
@@ -106,7 +113,7 @@ def _backup_postgresql(db_conn, context: DatabaseContext, backup_dir: Path, back
 
 
 def _try_native_pg_dump(conn_info: dict, backup_file: Path, formatter, translator) -> bool:
-    """Try to create backup using native pg_dump."""
+    """Try to create backup using native pg_dump with compression."""
     try:
         env = os.environ.copy()
         env["PGPASSWORD"] = conn_info.get("password", "")
@@ -117,7 +124,8 @@ def _try_native_pg_dump(conn_info: dict, backup_file: Path, formatter, translato
             "-p", str(conn_info.get("port", 5432)),
             "-U", conn_info.get("username", "postgres"),
             "-d", conn_info.get("database", "core_db"),
-            "-F", "c",
+            "-F", "c",  # Custom format (already compressed)
+            "-Z", "9",  # Maximum compression level
             "-f", str(backup_file),
         ]
         

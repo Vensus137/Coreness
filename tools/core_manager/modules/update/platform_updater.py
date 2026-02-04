@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional, Set
 
 from .file_filter import FileFilter
 
@@ -97,21 +97,105 @@ class PlatformUpdater:
         ff = FileFilter(repo_path)
         return ff.get_files_for_update(includes, excludes)
 
+    def _is_excluded(self, rel_path: str, excludes: List[str]) -> bool:
+        """Check if path matches any exclude pattern."""
+        norm_path = rel_path.replace("\\", "/")
+        
+        for exc in excludes:
+            norm_exc = exc.replace("\\", "/")
+            
+            # Pattern: **/folder/ - any folder at any level
+            if norm_exc.startswith("**/"):
+                suffix = norm_exc[3:]
+                if suffix.endswith("/"):
+                    folder = suffix[:-1]
+                    # Check if path contains this folder
+                    if f"/{folder}/" in norm_path or norm_path.startswith(f"{folder}/") or norm_path.endswith(f"/{folder}"):
+                        return True
+                    # Check if path is inside this folder
+                    parts = norm_path.split("/")
+                    if folder in parts:
+                        return True
+                else:
+                    # Pattern: **/file.ext
+                    if norm_path.endswith(suffix) or f"/{suffix}" in norm_path:
+                        return True
+            
+            # Pattern: folder/ - specific folder from root
+            elif norm_exc.endswith("/"):
+                folder = norm_exc[:-1]
+                if norm_path.startswith(folder + "/") or f"/{folder}/" in norm_path or norm_path.endswith(f"/{folder}") or norm_path == folder:
+                    return True
+            
+            # Pattern: exact match
+            elif norm_path == norm_exc:
+                return True
+        
+        return False
+
+    def _sync_directory(self, src_dir: Path, dst_dir: Path, rel_base: str, excludes: List[str]) -> None:
+        """Sync directory: copy new files, delete old files (except excluded)."""
+        # Get all files in source directory
+        src_files: Set[str] = set()
+        if src_dir.exists():
+            for item in src_dir.rglob("*"):
+                if item.is_file():
+                    rel = item.relative_to(src_dir)
+                    rel_full = (Path(rel_base) / rel).as_posix()
+                    if not self._is_excluded(rel_full, excludes):
+                        src_files.add(str(rel))
+        
+        # Get all files in destination directory
+        dst_files: Set[str] = set()
+        if dst_dir.exists():
+            for item in dst_dir.rglob("*"):
+                if item.is_file():
+                    rel = item.relative_to(dst_dir)
+                    rel_full = (Path(rel_base) / rel).as_posix()
+                    if not self._is_excluded(rel_full, excludes):
+                        dst_files.add(str(rel))
+        
+        # Copy new/updated files from source
+        for rel in src_files:
+            src_file = src_dir / rel
+            dst_file = dst_dir / rel
+            dst_file.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src_file, dst_file)
+        
+        # Delete old files not in source (except excluded)
+        for rel in dst_files:
+            if rel not in src_files:
+                rel_full = (Path(rel_base) / rel).as_posix()
+                if not self._is_excluded(rel_full, excludes):
+                    dst_file = dst_dir / rel
+                    if dst_file.exists():
+                        dst_file.unlink()
+        
+        # Clean up empty directories
+        if dst_dir.exists():
+            for item in sorted(dst_dir.rglob("*"), reverse=True):
+                if item.is_dir() and not any(item.iterdir()):
+                    try:
+                        item.rmdir()
+                    except Exception:
+                        pass
+
     def backup_files(self) -> Optional[Path]:
-        """Create backup of files to be updated. Returns backup path or None."""
-        if not self.files_to_update:
+        """Create backup of files/directories to be updated. Returns backup path or None."""
+        includes = self.files_config.get("include", [])
+        if not includes:
             return None
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = self.project_root / f"{self.backup_dir}_{timestamp}"
         backup_path.mkdir(parents=True, exist_ok=True)
 
-        for rel_path in self.files_to_update:
-            src = self.project_root / rel_path
+        for pattern in includes:
+            src = self.project_root / pattern
             if not src.exists():
                 continue
 
-            dst = backup_path / rel_path
+            dst = backup_path / pattern
             try:
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 if src.is_dir():
@@ -124,27 +208,29 @@ class PlatformUpdater:
         return backup_path
 
     def update_files(self, repo_path: Path) -> bool:
-        """Update project files from repo by overwriting in place (Windows-safe, no delete)."""
-        self.files_to_update = self._get_files_to_update(repo_path)
-        if not self.files_to_update:
+        """Update project files: copy files, sync directories with delete old files (except excluded)."""
+        includes = self.files_config.get("include", [])
+        excludes = self.files_config.get("exclude", [])
+        
+        if not includes:
             return False
 
-        for rel_path in self.files_to_update:
-            src = repo_path / rel_path
-            dst = self.project_root / rel_path
+        for pattern in includes:
+            src = repo_path / pattern
+            dst = self.project_root / pattern
+            
             if not src.exists():
                 continue
-
-            dst.parent.mkdir(parents=True, exist_ok=True)
+            
+            # For files: simply copy
             if src.is_file():
+                dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dst)
-            else:
-                for item in src.rglob("*"):
-                    if item.is_file():
-                        rel = item.relative_to(src)
-                        target = dst / rel
-                        target.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copy2(item, target)
+            
+            # For directories: sync with delete old files (except excluded)
+            elif src.is_dir():
+                rel_base = pattern.rstrip("/")
+                self._sync_directory(src, dst, rel_base, excludes)
 
         return True
 

@@ -122,16 +122,17 @@ class DockerPostgresOperations:
             # Create temp file inside container for dump
             container_dump = f"/tmp/backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dump"
 
-            # Execute pg_dump: use docker exec when we have container_id (compose doesn't see it)
+            # Execute pg_dump with compression: use docker exec when we have container_id (compose doesn't see it)
             # Use -h 127.0.0.1 to force IPv4 TCP connection (IPv6 ::1 may not be allowed in pg_hba.conf)
+            # -Z 9 enables maximum compression level
             if container_id:
-                cmd = ["docker", "exec", container_id, "pg_dump", "-h", "127.0.0.1", "-U", username, "-d", database, "-F", "c", "-f", container_dump]
+                cmd = ["docker", "exec", container_id, "pg_dump", "-h", "127.0.0.1", "-U", username, "-d", database, "-F", "c", "-Z", "9", "-f", container_dump]
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
             else:
                 cmd = [
                     "docker", "compose"] + f_args + [
                     "exec", "-T", service_name,
-                    "pg_dump", "-h", "127.0.0.1", "-U", username, "-d", database, "-F", "c", "-f", container_dump,
+                    "pg_dump", "-h", "127.0.0.1", "-U", username, "-d", database, "-F", "c", "-Z", "9", "-f", container_dump,
                 ]
                 result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=300)
 

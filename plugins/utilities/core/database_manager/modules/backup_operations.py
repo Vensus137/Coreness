@@ -23,16 +23,23 @@ class BackupOperations:
         self.engine = engine
         self.settings_manager = settings_manager
     
-    def _get_backup_dir(self) -> str:
-        """Gets backup directory from global settings"""
+    def _get_backup_dir(self, db_type: str = None) -> str:
+        """
+        Gets backup directory from global settings.
+        If db_type is provided, returns path to type-specific subdirectory.
+        """
         global_settings = self.settings_manager.get_global_settings()
-        return global_settings.get('backup_dir', 'data/backups')
+        base_dir = global_settings.get('backup_dir', 'data/backups')
+        
+        if db_type:
+            return os.path.join(base_dir, db_type)
+        return base_dir
     
     async def create_backup(self, backup_filename: Optional[str] = None) -> Optional[str]:
-        """Creates database backup in plain SQL + gzip format for PostgreSQL or .bak.gz for SQLite"""
+        """Creates database backup with gzip compression in type-specific folder"""
         try:
-            backup_dir = self._get_backup_dir()
             db_type = self.db_config.get('type')
+            backup_dir = self._get_backup_dir(db_type)
             
             if db_type == 'sqlite':
                 return await self._create_sqlite_backup(backup_dir, self.db_config, backup_filename)
@@ -47,10 +54,10 @@ class BackupOperations:
             return None
     
     async def restore_backup(self, backup_filename: Optional[str] = None) -> bool:
-        """Restores database from backup"""
+        """Restores database from backup in type-specific folder"""
         try:
-            backup_dir = self._get_backup_dir()
             db_type = self.db_config.get('type')
+            backup_dir = self._get_backup_dir(db_type)
             
             # If filename not specified, find latest backup
             if backup_filename is None:
@@ -74,23 +81,15 @@ class BackupOperations:
             return False
     
     def _find_latest_backup(self, backup_dir: str, db_type: str) -> Optional[str]:
-        """Finds latest backup in directory for specified DB type"""
+        """Finds latest backup in type-specific directory (simplified - no extension filtering needed)"""
         try:
             if not os.path.exists(backup_dir):
                 return None
             
-            # Determine file extension based on DB type
-            if db_type == 'sqlite':
-                extension = '.bak.gz'
-            elif db_type == 'postgresql':
-                extension = '.sql.gz'
-            else:
-                return None
-            
-            # Find all backup files with required extension
+            # Find all backup files with 'backup_' prefix
             backup_files = []
             for filename in os.listdir(backup_dir):
-                if filename.endswith(extension):
+                if filename.startswith('backup_'):
                     file_path = os.path.join(backup_dir, filename)
                     if os.path.isfile(file_path):
                         backup_files.append((filename, os.path.getmtime(file_path)))
@@ -107,7 +106,7 @@ class BackupOperations:
             return None
     
     async def _create_sqlite_backup(self, backup_dir: str, db_config: dict, backup_filename: Optional[str] = None) -> Optional[str]:
-        """Creates SQLite backup in .bak.gz format"""
+        """Creates SQLite backup with gzip compression"""
         try:
             db_path = db_config.get('db_path')
             
@@ -118,22 +117,21 @@ class BackupOperations:
             # Form backup filename
             if backup_filename:
                 # If name specified, add extension if missing
-                if not backup_filename.endswith('.bak.gz'):
-                    backup_filename = f"{backup_filename}.bak.gz"
+                if not backup_filename.endswith('.db.gz'):
+                    backup_filename = f"{backup_filename}.db.gz"
             else:
                 # Generate automatically with timestamp
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                db_filename = os.path.basename(db_path) if db_path else "core.db"
-                backup_filename = f"{db_filename}_{timestamp}.bak.gz"
+                backup_filename = f"backup_{timestamp}.db.gz"
             
             backup_path = os.path.join(backup_dir, backup_filename)
-            # Create directory if needed (including subdirectories from path in filename)
-            os.makedirs(os.path.dirname(backup_path), exist_ok=True)
+            # Create directory if needed
+            os.makedirs(backup_dir, exist_ok=True)
             
-            # Read DB file and compress it
+            # Read DB file and compress with maximum compression level
             with open(db_path, 'rb') as f_in:
-                with gzip.open(backup_path, 'wb') as f_out:
-                    f_out.writelines(f_in)
+                with gzip.open(backup_path, 'wb', compresslevel=9) as f_out:
+                    shutil.copyfileobj(f_in, f_out)
             
             self.logger.info(f"SQLite backup created: {backup_path}")
             return backup_path
@@ -143,7 +141,7 @@ class BackupOperations:
             return None
     
     async def _create_postgresql_backup(self, backup_dir: str, db_config: dict, backup_filename: Optional[str] = None) -> Optional[str]:
-        """Creates PostgreSQL backup in plain SQL + gzip format"""
+        """Creates PostgreSQL backup with custom format and compression"""
         backup_path = None
         try:
             # Get connection parameters from config
@@ -156,24 +154,27 @@ class BackupOperations:
             # Form backup filename
             if backup_filename:
                 # If name specified, add extension if missing
-                if not backup_filename.endswith('.sql.gz'):
-                    backup_filename = f"{backup_filename}.sql.gz"
+                if not backup_filename.endswith('.dump'):
+                    backup_filename = f"{backup_filename}.dump"
             else:
                 # Generate automatically with timestamp
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                backup_filename = f"postgresql_backup_{timestamp}.sql.gz"
+                backup_filename = f"backup_{timestamp}.dump"
             
             backup_path = os.path.join(backup_dir, backup_filename)
-            # Create directory if needed (including subdirectories from path in filename)
-            os.makedirs(os.path.dirname(backup_path), exist_ok=True)
+            # Create directory if needed
+            os.makedirs(backup_dir, exist_ok=True)
             
-            # Command for creating dump
+            # Command for creating dump with custom format and compression
             cmd = [
                 'pg_dump',
                 '-h', str(postgresql_host),
                 '-p', str(postgresql_port),
                 '-U', postgresql_username,
                 '-d', postgresql_database,
+                '-F', 'c',  # Custom format (already compressed)
+                '-Z', '9',  # Maximum compression level
+                '-f', backup_path,
                 '--no-password'
             ]
             
@@ -182,31 +183,20 @@ class BackupOperations:
             if postgresql_password:
                 env['PGPASSWORD'] = postgresql_password
             
-            # Run pg_dump and compress output via gzip
-            process = subprocess.Popen(
+            # Run pg_dump
+            result = subprocess.run(
                 cmd,
                 env=env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=False  # Work with binary data for gzip
+                capture_output=True,
+                text=True,
+                timeout=300
             )
             
-            # Compress output and save to file
-            with gzip.open(backup_path, 'wb') as f_out:
-                while True:
-                    chunk = process.stdout.read(8192)
-                    if not chunk:
-                        break
-                    f_out.write(chunk)
-            
-            # Wait for process completion
-            process.wait()
-            
-            if process.returncode == 0:
+            if result.returncode == 0:
                 self.logger.info(f"PostgreSQL backup created: {backup_path}")
                 return backup_path
             else:
-                error_msg = process.stderr.read().decode('utf-8') if process.stderr else "Unknown error"
+                error_msg = result.stderr if result.stderr else "Unknown error"
                 self.logger.error(f"Error creating PostgreSQL backup: {error_msg}")
                 # Remove partially created file on error
                 if os.path.exists(backup_path):
@@ -275,7 +265,7 @@ class BackupOperations:
             return False
     
     async def _restore_postgresql_backup(self, backup_path: str, db_config: dict) -> bool:
-        """Restores PostgreSQL from backup"""
+        """Restores PostgreSQL from custom format backup"""
         try:
             # Check backup file existence
             if not os.path.exists(backup_path):
@@ -289,19 +279,20 @@ class BackupOperations:
             postgresql_database = db_config.get('database')
             postgresql_password = db_config.get('password')
             
-            # First clear DB for clean restoration
-            if not await self._clear_postgresql_database(db_config):
-                self.logger.warning("Failed to clear DB before restoration, continuing...")
-            
-            # Command for restoration
+            # Command for restoration using pg_restore for custom format
             cmd = [
-                'psql',
+                'pg_restore',
                 '-h', str(postgresql_host),
                 '-p', str(postgresql_port),
                 '-U', postgresql_username,
                 '-d', postgresql_database,
-                '--quiet',
-                '--no-password'
+                '--clean',
+                '--if-exists',
+                '--disable-triggers',
+                '--no-owner',
+                '--no-acl',
+                '--no-password',
+                backup_path
             ]
             
             # Set password via environment variable
@@ -309,42 +300,28 @@ class BackupOperations:
             if postgresql_password:
                 env['PGPASSWORD'] = postgresql_password
             
-            # Unpack gzip if needed and pass to psql
-            if backup_path.endswith('.gz'):
-                # Unpack and pass to psql
-                with gzip.open(backup_path, 'rb') as f_in:
-                    process = subprocess.Popen(
-                        cmd,
-                        env=env,
-                        stdin=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=False
-                    )
-                    process.stdin.write(f_in.read())
-                    process.stdin.close()
-                    process.wait()
-            else:
-                # Pass file directly
-                with open(backup_path, 'rb') as f_in:
-                    process = subprocess.Popen(
-                        cmd,
-                        env=env,
-                        stdin=f_in,
-                        stderr=subprocess.PIPE,
-                        text=False
-                    )
-                    process.wait()
+            result = subprocess.run(
+                cmd,
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
             
-            if process.returncode == 0:
+            if result.returncode == 0:
                 self.logger.info(f"PostgreSQL DB restored from {backup_path}")
                 return True
             else:
-                error_msg = process.stderr.read().decode('utf-8') if process.stderr else "Unknown error"
-                self.logger.error(f"Error restoring PostgreSQL: {error_msg}")
+                stderr = result.stderr if result.stderr else "Unknown error"
+                # pg_restore may return non-zero but still succeed with warnings
+                if "errors ignored on restore" in stderr:
+                    self.logger.warning(f"PostgreSQL restored with warnings: {stderr}")
+                    return True
+                self.logger.error(f"Error restoring PostgreSQL: {stderr}")
                 return False
                 
         except FileNotFoundError:
-            self.logger.error("psql not found, PostgreSQL restoration impossible")
+            self.logger.error("pg_restore not found, PostgreSQL restoration impossible")
             return False
         except Exception as e:
             self.logger.error(f"Error restoring PostgreSQL backup: {e}")
