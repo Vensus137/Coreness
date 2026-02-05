@@ -8,8 +8,6 @@ keywords: coreness changelog, version history, updates, breaking changes, migrat
 
 All notable changes to this project documented in this file.
 
----
-
 ## [1.1.1] - 2026-02-04
 
 ### Changed

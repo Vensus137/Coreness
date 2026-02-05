@@ -60,7 +60,7 @@ master-bot/
 - **Available to:** all users
 - **Action:** choose interface language (Russian / English). The selected language is stored in User Storage and applied to all Master Bot scenarios (menus, messages, buttons).
 
-Before operations, the `default_check` scenario runs: access check and loading of translations for the user’s current language.
+Before operations, the `default_check` scenario runs: access check and loading of translations for the user's current language.
 
 ### 2. Tenant Management
 
