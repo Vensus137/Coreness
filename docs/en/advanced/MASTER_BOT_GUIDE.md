@@ -1,3 +1,9 @@
+---
+title: Master Bot — Tenant Management
+description: Guide to Master Bot in Coreness. System bot for managing tenants, creating bots and synchronizing configurations.
+keywords: master bot, tenant management, bot creation, coreness admin
+---
+
 # Master Bot — Tenant Management System
 
 **Master Bot** is a system bot for managing platform tenants `Coreness`, working similar to [@BotFather](http://t.me/botfather) in **Telegram**.

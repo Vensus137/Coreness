@@ -1,3 +1,9 @@
+---
+title: System Settings Configuration
+description: Configuring global Coreness parameters via settings.yaml. Database, logging, Redis and other system settings.
+keywords: system settings, settings.yaml, coreness configuration, database settings
+---
+
 # Platform Configuration Settings
 
 ℹ️ This section — examples and explanations for main system configuration files:

@@ -1,3 +1,9 @@
+---
+title: System Actions Guide
+description: Complete reference of all available actions in Coreness. Sending messages, AI operations, HTTP requests, validation, payments and more.
+keywords: coreness actions, send_message, completion, validate, telegram api, AI actions
+---
+
 # 🎯 Actions Guide
 
 > **Note:** This guide is being translated. Some parts may still be in Russian or incomplete.

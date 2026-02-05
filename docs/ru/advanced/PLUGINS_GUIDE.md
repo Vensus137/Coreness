@@ -1,3 +1,9 @@
+---
+title: Разработка плагинов
+description: Руководство по созданию собственных плагинов для Coreness. Структура плагинов, lifecycle методы, DI и примеры.
+keywords: разработка плагинов, coreness plugins, lifecycle methods, plugin development
+---
+
 # Руководство по плагинам
 
 ## Обзор архитектуры

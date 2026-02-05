@@ -1,3 +1,9 @@
+---
+title: История изменений
+description: Changelog Coreness. Последние изменения, новые функции, breaking changes и миграции между версиями.
+keywords: changelog coreness, история изменений, обновления, breaking changes, миграция
+---
+
 # Changelog
 
 Все важные изменения в проекте документируются в этом файле.

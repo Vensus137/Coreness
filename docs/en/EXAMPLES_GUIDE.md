@@ -1,3 +1,9 @@
+---
+title: Practical Scenario Examples
+description: Step-by-step guide to building Telegram bots with Coreness. Quick start, examples with payments, RAG storage and AI models.
+keywords: telegram bot examples, coreness quick start, RAG examples, bot payments, AI agents examples
+---
+
 # 📚 Practical Scenario Examples
 
 > **📖 Collection of practical examples** — from quick start to advanced scenarios with payments, RAG storage, and complex logic.

@@ -1,3 +1,9 @@
+---
+title: Logging Guide
+description: Working with logs in Coreness. Log structure, log level configuration, Docker logs and debugging.
+keywords: coreness logging, logs, debugging, docker logs, log levels
+---
+
 # Logging Guide
 
 ## Overview

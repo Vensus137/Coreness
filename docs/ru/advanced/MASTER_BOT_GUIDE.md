@@ -1,3 +1,9 @@
+---
+title: Master Bot — Управление тенантами
+description: Руководство по Master Bot в Coreness. Системный бот для управления тенантами, создания ботов и синхронизации конфигураций.
+keywords: master bot, управление тенантами, создание ботов, coreness admin
+---
+
 # Master Bot — Система управления тенантами
 
 **Master Bot** — это системный бот для управления тенантами платформы `Coreness`, работающий по аналогии с [@BotFather](http://t.me/botfather) в **Telegram**.

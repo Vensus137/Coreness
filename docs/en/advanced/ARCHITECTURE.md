@@ -1,3 +1,9 @@
+---
+title: Platform Architecture
+description: Detailed Coreness architecture description. Event-driven system, plugins, DI container, multitenancy and project structure.
+keywords: coreness architecture, event-driven, dependency injection, plugins, multitenancy
+---
+
 # Project Architecture
 
 ## ⚠️ System Requirements

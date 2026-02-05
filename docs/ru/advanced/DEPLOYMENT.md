@@ -1,3 +1,9 @@
+---
+title: Руководство по развертыванию
+description: Полное руководство по установке и развертыванию Coreness. Docker, PostgreSQL, webhook настройка и обновление сервера.
+keywords: развертывание coreness, docker deployment, postgresql setup, webhook configuration
+---
+
 # Развёртывание
 
 Краткий гайд по развёртыванию платформы с нуля.

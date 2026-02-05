@@ -1,3 +1,9 @@
+---
+title: Testing Guide
+description: Testing approaches in Coreness. Unit tests, integration testing, E2E tests and scenario testing.
+keywords: coreness testing, unit tests, integration testing, e2e testing, pytest
+---
+
 # Testing Guide
 
 Complete guide for project testing, including Python tests (pytest).

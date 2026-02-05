@@ -1,0 +1,162 @@
+# Coreness — Official Website (coreness.tech)
+# MkDocs + Material + i18n (RU/EN)
+# Build: cd site && mkdocs build | Serve: cd site && mkdocs serve
+# Languages: default Russian at /, English at /en/
+# Sitemap: auto-generated, copied to language folders via hooks for SEO.
+
+site_name: Coreness
+site_description: 'Самостоятельно размещаемая мультитенантная платформа для создания AI-агентов и Telegram-ботов'
+site_author: 'Coreness Team'
+site_url: https://coreness.tech/
+copyright: 'Copyright &copy; 2026 Coreness'
+
+repo_name: Vensus137/Coreness
+repo_url: https://github.com/Vensus137/Coreness
+edit_uri: edit/main/
+
+# Folder structure: docs/en/ and docs/ru/ (index.md = project README, copied in CI)
+docs_dir: docs
+site_dir: ../site
+
+validation:
+  links:
+    anchors: info
+    not_found: info
+    unrecognized_links: info
+  nav:
+    not_found: info
+    omitted_files: info
+
+hooks:
+  - docs_hooks.py
+
+theme:
+  name: material
+  language: ru
+  custom_dir: overrides
+  logo: https://img.icons8.com/?size=100&id=ui9RED2rRCKK&format=png&color=FFFFFF
+  favicon: https://img.icons8.com/?size=100&id=ui9RED2rRCKK&format=png&color=000000
+  icon:
+    alternate: material/web
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Переключить на темную тему
+    - scheme: slate
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Переключить на светлую тему
+  features:
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+
+plugins:
+  - search:
+      lang:
+        - ru
+        - en
+  - meta
+  - i18n:
+      docs_structure: folder
+      languages:
+        - locale: ru
+          default: true
+          name: Русский
+          build: true
+          site_name: "Coreness"
+        - locale: en
+          name: English
+          build: true
+          site_name: "Coreness"
+          nav_translations:
+            Главная: Home
+            Быстрый старт: Quick Start
+            Руководства: Guides
+            Сценарии: Scenarios
+            Настройка тенантов: Tenant Setup
+            Хранилище: Storage
+            Справочники: Reference
+            Действия: Actions
+            События: Events
+            Модели AI: AI Models
+            История изменений: Changelog
+            Расширенное: Advanced
+            Обзор: Overview
+            Архитектура: Architecture
+            Развертывание: Deployment
+            Конфигурация плагинов: Plugin Config
+            Разработка плагинов: Plugins Development
+            Настройки системы: Settings
+            Системные действия: System Actions
+            Логирование: Logging
+            Тестирование: Testing
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - tables
+  - attr_list
+
+# Paths relative to each language folder (docs/en, docs/ru). index.md = project README (copied in workflow).
+# README.md in each folder is excluded when index.md exists; use sidebar for doc index.
+nav:
+  - Главная: index.md
+  - Быстрый старт: EXAMPLES_GUIDE.md
+  - Руководства:
+    - Сценарии: SCENARIO_CONFIG_GUIDE.md
+    - Настройка тенантов: TENANT_CONFIG_GUIDE.md
+    - Хранилище: STORAGE_CONFIG_GUIDE.md
+  - Справочники:
+    - Действия: ACTION_GUIDE.md
+    - События: EVENT_GUIDE.md
+    - Модели AI: AI_MODELS_GUIDE.md
+  - История изменений: CHANGELOG.md
+  - Расширенное:
+    - Обзор: advanced/README.md
+    - Архитектура: advanced/ARCHITECTURE.md
+    - Развертывание: advanced/DEPLOYMENT.md
+    - Master Bot: advanced/MASTER_BOT_GUIDE.md
+    - Конфигурация плагинов: advanced/PLUGIN_CONFIG_GUIDE.md
+    - Разработка плагинов: advanced/PLUGINS_GUIDE.md
+    - Настройки системы: advanced/SETTINGS_CONFIG_GUIDE.md
+    - Системные действия: advanced/SYSTEM_ACTION_GUIDE.md
+    - Логирование: advanced/LOGGING_GUIDE.md
+    - Тестирование: advanced/TESTING_GUIDE.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Vensus137/Coreness
+    - icon: fontawesome/brands/telegram
+      link: https://t.me/coreness
+  alternate:
+    - name: Русский
+      link: /
+      lang: ru
+    - name: English
+      link: /en/
+      lang: en
+  meta:
+    og_image: assets/images/og-image.png
+    twitter_card: summary_large_image
+    keywords: "AI agents, Telegram bots, self-hosted, multitenant platform, Python, AI платформа, Telegram боты"

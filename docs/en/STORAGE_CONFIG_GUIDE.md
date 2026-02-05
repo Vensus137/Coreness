@@ -1,3 +1,9 @@
+---
+title: Attribute Storage Guide
+description: Working with attribute storage in Coreness. Tenant Storage, User Storage, value types and usage in scenarios.
+keywords: coreness storage, key-value storage, tenant storage, user storage, tenant settings
+---
+
 # Storage Configuration Guide (Data Storage)
 
 > **📖 Complete guide** to creating and configuring data storage for flexible management of settings, limits, features, and user data.

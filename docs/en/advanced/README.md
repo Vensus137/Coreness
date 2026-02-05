@@ -1,3 +1,9 @@
+---
+title: Advanced Documentation
+description: Advanced Coreness documentation for experienced users. Architecture, deployment, plugin development and system settings.
+keywords: coreness architecture, deployment, plugins, master bot, system settings
+---
+
 # 📚 Coreness Extended Documentation
 
 Advanced guides for deep understanding of the platform, plugin development, and infrastructure management.
