@@ -1,7 +1,0 @@
-# docs/ копируется из корня репозитория при сборке
-docs/
-
-# Temporary files
-*.pyc
-__pycache__/
-.DS_Store

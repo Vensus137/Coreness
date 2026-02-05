@@ -1,7 +1,7 @@
 ---
 title: Advanced Documentation
 description: Advanced Coreness documentation for experienced users. Architecture, deployment, plugin development and system settings.
-keywords: coreness architecture, deployment, plugins, master bot, system settings
+keywords: coreness architecture, deployment, plugins, system settings
 ---
 
 # 📚 Coreness Extended Documentation
@@ -13,12 +13,6 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 ---
 
 ## ⚡ Documentation Table of Contents
-
-### 🔧 [Master Bot — Tenant Management System](MASTER_BOT_GUIDE.md)
-- [Purpose](MASTER_BOT_GUIDE.md#-purpose)
-- [Structure](MASTER_BOT_GUIDE.md#-structure)
-- [Core Features](MASTER_BOT_GUIDE.md#-core-features)
-- [Security](MASTER_BOT_GUIDE.md#-security)
 
 ### 🏗️ [Platform Architecture](ARCHITECTURE.md)
 - [System Requirements](ARCHITECTURE.md#-system-requirements)
@@ -70,26 +64,6 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 - [Unit Tests](TESTING_GUIDE.md#unit-tests)
 - [Integration Testing](TESTING_GUIDE.md#integration-testing)
 - [E2E Testing](TESTING_GUIDE.md#e2e-testing)
-
----
-
-## 🚀 Getting Started
-
-#### [🔧 Master Bot — Tenant Management System](MASTER_BOT_GUIDE.md)
-
-**Ready-to-use solution for managing tenants via Telegram**
-
-Master Bot is a system bot for managing all platform tenants, working similar to @BotFather in Telegram.
-
-**Features:**
-- Select and switch between tenants
-- Set bot and AI provider tokens
-- Manage Tenant Storage and User Storage
-- Sync data with GitHub repositories
-- Role-based access control (admin, owner, user)
-- Scheduled automated tasks
-
-**When to use:** For centralized management of all tenants, bot configuration, Storage operations, and configuration synchronization.
 
 ---
 
@@ -252,8 +226,7 @@ For platform developers:
 For platform administrators:
 
 1. **[Deployment](DEPLOYMENT.md)** — deploy the platform
-2. **[Master Bot](MASTER_BOT_GUIDE.md)** — configure tenant management
-3. **[System Settings](SETTINGS_CONFIG_GUIDE.md)** — optimize configuration
+2. **[System Settings](SETTINGS_CONFIG_GUIDE.md)** — optimize configuration
 
 ---
 

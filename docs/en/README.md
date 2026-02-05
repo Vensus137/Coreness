@@ -20,6 +20,12 @@ Welcome to the **Coreness** platform documentation — a system for building bot
   - [Working with Payments](EXAMPLES_GUIDE.md#working-with-payments-invoices)
   - [Working with RAG Storage](EXAMPLES_GUIDE.md#working-with-rag-storage)
 
+### 🔧 [Master Bot — Tenant Management](MASTER_BOT_GUIDE.md)
+- [Purpose](MASTER_BOT_GUIDE.md#-purpose)
+- [Structure](MASTER_BOT_GUIDE.md#-structure)
+- [Core Features](MASTER_BOT_GUIDE.md#-core-features)
+- [Security](MASTER_BOT_GUIDE.md#-security)
+
 ### 📋 [Scenario Creation Guide](SCENARIO_CONFIG_GUIDE.md)
 - [Scenario Structure](SCENARIO_CONFIG_GUIDE.md#-scenario-structure)
 - [Triggers](SCENARIO_CONFIG_GUIDE.md#-triggers-trigger)
@@ -71,6 +77,14 @@ A collection of practical examples — from quick start to advanced scenarios wi
 
 ---
 
+#### [🔧 Master Bot — Tenant Management](MASTER_BOT_GUIDE.md)
+
+System bot for managing platform tenants (similar to @BotFather): tenant selection, token setup, Storage management, GitHub sync, access control.
+
+**When to use:** For centralized tenant management, bot configuration, and configuration synchronization after deploying the platform.
+
+---
+
 ## 📖 Complete Documentation Index
 
 #### [📋 Scenario Creation Guide](SCENARIO_CONFIG_GUIDE.md)
@@ -88,6 +102,16 @@ A collection of practical examples — from quick start to advanced scenarios wi
 - Practical examples for different tasks
 
 **When to use:** When creating new scenarios or modifying existing ones. This is the main guide for working with bot logic.
+
+---
+
+#### [🔧 Master Bot — Tenant Management](MASTER_BOT_GUIDE.md)
+
+**What it is:** Guide to the system bot for managing tenants — selecting and switching tenants, token setup, Tenant Storage and User Storage management, GitHub synchronization.
+
+**Why you need it:** After deploying the platform, Master Bot provides a single point to manage all tenants and bots via Telegram.
+
+**When to use:** For setting up and administering tenants, managing configurations and Storage.
 
 ---
 
@@ -185,12 +209,13 @@ Latest changes, new features, breaking changes, and migrations.
 ## 📚 Recommended Learning Order
 
 1. **[Practical Examples](EXAMPLES_GUIDE.md)** — create your first bot and explore examples
-2. **[Scenario Guide](SCENARIO_CONFIG_GUIDE.md)** — learn scenario creation
-3. **[Actions Guide](ACTION_GUIDE.md)** — learn available actions
-4. **[Events Guide](EVENT_GUIDE.md)** — learn working with placeholders
-5. **[Tenant Setup](TENANT_CONFIG_GUIDE.md)** — configure your bot
-6. **[Storage Attributes](STORAGE_CONFIG_GUIDE.md)** — work with data
-7. **[AI Models](AI_MODELS_GUIDE.md)** — AI setup (optional)
-8. **[Changelog](CHANGELOG.md)** — latest changes (optional)
+2. **[Master Bot](MASTER_BOT_GUIDE.md)** — configure tenant management (if deploying the platform)
+3. **[Scenario Guide](SCENARIO_CONFIG_GUIDE.md)** — learn scenario creation
+4. **[Actions Guide](ACTION_GUIDE.md)** — learn available actions
+5. **[Events Guide](EVENT_GUIDE.md)** — learn working with placeholders
+6. **[Tenant Setup](TENANT_CONFIG_GUIDE.md)** — configure your bot
+7. **[Storage Attributes](STORAGE_CONFIG_GUIDE.md)** — work with data
+8. **[AI Models](AI_MODELS_GUIDE.md)** — AI setup (optional)
+9. **[Changelog](CHANGELOG.md)** — latest changes (optional)
 
 ---
