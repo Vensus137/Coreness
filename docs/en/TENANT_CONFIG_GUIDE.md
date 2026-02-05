@@ -1,3 +1,9 @@
+---
+title: Tenant Configuration Guide
+description: Configuring tenants and Telegram bots in Coreness. Bot configuration, scenario organization, external repository synchronization.
+keywords: telegram bot setup, tenant configuration, multitenancy, github synchronization
+---
+
 # Tenant Configuration Guide
 
 ℹ️ **Purpose:** Setting up tenants (clients) and their Telegram bots for working with the system.

@@ -1,3 +1,9 @@
+---
+title: Changelog
+description: Coreness changelog. Latest changes, new features, breaking changes and migrations between versions.
+keywords: coreness changelog, version history, updates, breaking changes, migration
+---
+
 # Changelog
 
 All notable changes to this project documented in this file.

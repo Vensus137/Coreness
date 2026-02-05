@@ -1,3 +1,9 @@
+---
+title: AI Models Guide
+description: Reference for available AI models in Coreness. OpenAI, Google, Anthropic, DeepSeek and other providers via aggregators.
+keywords: AI models, OpenAI, Anthropic, Google Gemini, DeepSeek, completion, temperature, tokens
+---
+
 # AI Models Guide
 
 **Data Source:** OpenRouter  

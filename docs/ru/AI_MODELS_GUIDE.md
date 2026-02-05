@@ -1,3 +1,9 @@
+---
+title: Гайд по моделям AI
+description: Справочник по доступным AI моделям в Coreness. OpenAI, Google, Anthropic, DeepSeek и другие провайдеры через агрегаторы.
+keywords: AI модели, OpenAI, Anthropic, Google Gemini, DeepSeek, completion, температура, токены
+---
+
 # Гайд по моделям AI
 
 **Источник данных:** Polza.AI  

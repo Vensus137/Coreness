@@ -1,3 +1,9 @@
+---
+title: Scenario Creation Guide
+description: Complete guide to creating scenarios for Telegram bots. Triggers, actions, transitions, placeholders and async operations.
+keywords: telegram bot scenarios, YAML configuration, triggers, placeholders, scenario transitions
+---
+
 # Scenario Creation Guide
 
 > **📖 Complete guide** to creating and configuring scenarios for Telegram bots with support for placeholders, transitions, and dynamic logic.

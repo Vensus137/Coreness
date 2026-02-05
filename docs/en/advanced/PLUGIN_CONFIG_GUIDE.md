@@ -1,3 +1,9 @@
+---
+title: Plugin Configuration Guide
+description: Structure and configuration of plugins in Coreness. config.yaml, interfaces, dependencies and configuration examples.
+keywords: coreness plugins, config.yaml, plugin interfaces, dependency injection
+---
+
 # YAML Config Templates for Plugins (Services and Utilities)
 
 This document serves as a reference for formatting configs for all project plugin types (services and utilities).

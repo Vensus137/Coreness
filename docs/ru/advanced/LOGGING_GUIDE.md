@@ -1,3 +1,9 @@
+---
+title: Руководство по логированию
+description: Работа с логами в Coreness. Структура логов, настройка уровней логирования, Docker logs и отладка.
+keywords: логирование coreness, logs, debugging, docker logs, log levels
+---
+
 # Гайд по логированию
 
 ## Обзор

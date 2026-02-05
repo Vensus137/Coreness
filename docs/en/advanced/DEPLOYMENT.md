@@ -1,3 +1,9 @@
+---
+title: Deployment Guide
+description: Complete guide to installing and deploying Coreness. Docker, PostgreSQL, webhook setup and server updates.
+keywords: coreness deployment, docker deployment, postgresql setup, webhook configuration
+---
+
 # Deployment
 
 Short guide for deploying the platform from scratch.

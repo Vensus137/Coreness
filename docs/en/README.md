@@ -1,4 +1,10 @@
-# 📚 Coreness Documentation
+---
+title: Coreness — Platform for AI Agents and Telegram Bots
+description: Self-hosted multitenant platform for building AI agents and Telegram bots with declarative YAML configurations. Quick start guides, tutorials and API reference.
+keywords: Coreness, AI agents, Telegram bots, self-hosted platform, multitenant, Python, YAML configuration, automation, chatbots, RAG, AI models
+---
+
+# Coreness — Platform for Automation and AI Solutions
 
 Welcome to the **Coreness** platform documentation — a system for building bots, automating business processes, and AI solutions through declarative YAML configurations.
 

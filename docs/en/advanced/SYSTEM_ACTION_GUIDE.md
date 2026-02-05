@@ -1,3 +1,9 @@
+---
+title: System Actions
+description: Reference for Coreness system actions. Special actions for internal operations and integrations.
+keywords: system actions, coreness system actions, internal operations
+---
+
 # 🎯 System Actions Guide
 
 > **Note:** This guide is being translated. Some parts may still be in Russian or incomplete.

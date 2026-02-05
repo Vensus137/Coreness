@@ -1,3 +1,9 @@
+---
+title: Plugin Development
+description: Guide to creating custom plugins for Coreness. Plugin structure, lifecycle methods, DI and examples.
+keywords: plugin development, coreness plugins, lifecycle methods, custom plugins
+---
+
 # Plugin Guide
 
 ## Architecture Overview

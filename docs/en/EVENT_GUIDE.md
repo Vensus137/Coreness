@@ -1,3 +1,9 @@
+---
+title: System Events Guide
+description: Reference of all fields available in Coreness events. Message fields, callbacks, attachments and other data for use in placeholders.
+keywords: coreness events, placeholders, event fields, telegram events, user_id, chat_id
+---
+
 # 📡 System Events Guide
 
 Complete description of all fields available in events after parsing through EventParser.
