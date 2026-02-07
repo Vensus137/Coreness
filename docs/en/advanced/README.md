@@ -14,62 +14,20 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ## ⚡ Documentation Table of Contents
 
-### 🏗️ [Platform Architecture](ARCHITECTURE.md)
-- [System Requirements](ARCHITECTURE.md#-system-requirements)
-- [Libraries Used](ARCHITECTURE.md#libraries-used)
-- [Operational Database](ARCHITECTURE.md#operational-database)
-- [Project Structure](ARCHITECTURE.md#project-structure)
-- [Plugin Architecture](ARCHITECTURE.md#plugin-architecture)
-- [Application Lifecycle](ARCHITECTURE.md#application-lifecycle)
-
-### 🚀 [Deployment and Operations](DEPLOYMENT.md)
-- [Quick Start](DEPLOYMENT.md#quick-start)
-- [Core Operations](DEPLOYMENT.md#core-operations)
-  - [Server Update](DEPLOYMENT.md#server-update)
-  - [Repository Deployment](DEPLOYMENT.md#repository-deployment)
-  - [Database Operations](DEPLOYMENT.md#database-operations)
-- [Configuration](DEPLOYMENT.md#configuration)
-- [Docker](DEPLOYMENT.md#docker)
-- [Webhook Setup](DEPLOYMENT.md#webhook-setup)
-
-### 🔌 [Plugin Development](PLUGINS_GUIDE.md)
-- [Architecture Overview](PLUGINS_GUIDE.md#architecture-overview)
-- [Plugin Types](PLUGINS_GUIDE.md#plugin-types)
-- [Creating Plugins](PLUGINS_GUIDE.md#creating-plugins)
-- [Lifecycle Methods](PLUGINS_GUIDE.md#lifecycle-methods)
-- [Dependency Injection](PLUGINS_GUIDE.md#dependency-injection)
-- [Best Practices](PLUGINS_GUIDE.md#best-practices)
-
-### ⚙️ [Plugin Configuration](PLUGIN_CONFIG_GUIDE.md)
-- [config.yaml Structure](PLUGIN_CONFIG_GUIDE.md#configyaml-structure)
-- [Base Fields](PLUGIN_CONFIG_GUIDE.md#base-fields)
-- [Plugin Interfaces](PLUGIN_CONFIG_GUIDE.md#plugin-interfaces)
-- [Configuration Examples](PLUGIN_CONFIG_GUIDE.md#configuration-examples)
-
-### 🎯 [System Actions](SYSTEM_ACTION_GUIDE.md)
-
-### ⚙️ [System Settings](SETTINGS_CONFIG_GUIDE.md)
-- [settings.yaml Structure](SETTINGS_CONFIG_GUIDE.md#settingsyaml-structure)
-- [Plugin Management](SETTINGS_CONFIG_GUIDE.md#plugin-management)
-- [Global Settings](SETTINGS_CONFIG_GUIDE.md#global-settings)
-
-### 📝 [Logging](LOGGING_GUIDE.md)
-- [Logging Levels](LOGGING_GUIDE.md#logging-levels)
-- [Log Structure](LOGGING_GUIDE.md#log-structure)
-- [Logging Configuration](LOGGING_GUIDE.md#logging-configuration)
-- [Docker Logs](LOGGING_GUIDE.md#docker-logs)
-
-### 🧪 [Testing](TESTING_GUIDE.md)
-- [Scenario Testing](TESTING_GUIDE.md#scenario-testing)
-- [Unit Tests](TESTING_GUIDE.md#unit-tests)
-- [Integration Testing](TESTING_GUIDE.md#integration-testing)
-- [E2E Testing](TESTING_GUIDE.md#e2e-testing)
+- [Platform Architecture](ARCHITECTURE.md)
+- [Deployment and Operations](DEPLOYMENT.md)
+- [Plugin Development](PLUGINS_GUIDE.md)
+- [Plugin Configuration](PLUGIN_CONFIG_GUIDE.md)
+- [System Actions](SYSTEM_ACTION_GUIDE.md)
+- [System Settings](SETTINGS_CONFIG_GUIDE.md)
+- [Logging](LOGGING_GUIDE.md)
+- [Testing](TESTING_GUIDE.md)
 
 ---
 
 ## 📖 Complete Documentation Index
 
-#### [🏗️ Platform Architecture](ARCHITECTURE.md)
+### [🏗️ Platform Architecture](ARCHITECTURE.md)
 
 **What it is:** Detailed description of platform architecture, patterns, and operational principles.
 
@@ -87,7 +45,7 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ---
 
-#### [🚀 Deployment and Operations](DEPLOYMENT.md)
+### [🚀 Deployment and Operations](DEPLOYMENT.md)
 
 **What it is:** Complete guide for platform installation and updates.
 
@@ -107,7 +65,7 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ---
 
-#### [🔌 Plugin Development](PLUGINS_GUIDE.md)
+### [🔌 Plugin Development](PLUGINS_GUIDE.md)
 
 **What it is:** Guide for creating custom services and utilities.
 
@@ -125,7 +83,7 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ---
 
-#### [⚙️ Plugin Configuration](PLUGIN_CONFIG_GUIDE.md)
+### [⚙️ Plugin Configuration](PLUGIN_CONFIG_GUIDE.md)
 
 **What it is:** Detailed description of config.yaml structure for plugins.
 
@@ -142,7 +100,7 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ---
 
-#### [🎯 System Actions](SYSTEM_ACTION_GUIDE.md)
+### [🎯 System Actions](SYSTEM_ACTION_GUIDE.md)
 
 **What it is:** Complete reference of platform internal actions.
 
@@ -159,7 +117,7 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ---
 
-#### [⚙️ System Settings](SETTINGS_CONFIG_GUIDE.md)
+### [⚙️ System Settings](SETTINGS_CONFIG_GUIDE.md)
 
 **What it is:** Global platform parameters.
 
@@ -176,7 +134,7 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ---
 
-#### [📝 Logging](LOGGING_GUIDE.md)
+### [📝 Logging](LOGGING_GUIDE.md)
 
 **What it is:** Working with logs and debugging.
 
@@ -194,7 +152,7 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ---
 
-#### [🧪 Testing](TESTING_GUIDE.md)
+### [🧪 Testing](TESTING_GUIDE.md)
 
 **What it is:** Platform testing approaches.
 

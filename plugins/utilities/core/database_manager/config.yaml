@@ -1,5 +1,6 @@
 name: "database_manager"
 description: "Централизованный доступ к базе данных и связанным репозиториям."
+description_en: "Centralized database access and related repositories."
 singleton: true
 
 dependencies:
@@ -13,6 +14,7 @@ settings:
     type: string
     default: "sqlite"
     description: "Пресет базы данных: 'sqlite' или 'postgresql'"
+    description_en: "Database preset: 'sqlite' or 'postgresql'"
   
   database:
     type: object
@@ -45,6 +47,7 @@ settings:
         pool_reset_on_return: "commit"
       
       description: "Конфигурация SQLite с ограничениями пула и оптимизациями"
+      description_en: "SQLite configuration with pool limits and optimizations"
 
     postgresql:
       # Connection components
@@ -88,74 +91,94 @@ settings:
           autocommit: false
           future: true
     description: "Доступные пресеты баз данных: sqlite и postgresql"
+    description_en: "Available database presets: sqlite and postgresql"
 
 methods:
   get_repository:
     description: "Получить репозиторий для работы с базой данных"
+    description_en: "Get repository for database access"
     input:
       repo_name:
         type: string
         description: "Название репозитория (cache, actions)"
+        description_en: "Repository name (cache, actions)"
     output:
       type: object
       description: "Объект репозитория для работы с БД"
+      description_en: "Repository instance for DB access"
 
   create_all:
     description: "Создаёт все таблицы в БД согласно моделям"
+    description_en: "Create all tables in DB according to models"
     input: {}
     output:
       type: void
       description: "Нет возвращаемого значения"
+      description_en: "No return value"
 
   get_database_config:
     description: "Возвращает полную конфигурацию текущей базы данных"
+    description_en: "Return full configuration of current database"
     input: {}
     output:
       type: dict
       description: "Словарь с полной конфигурацией БД (включает type, url и параметры подключения в зависимости от типа БД: host, port, username, password, database для PostgreSQL или db_path для SQLite)"
+      description_en: "Dict with full DB config (type, url, connection params)"
       
   get_available_databases:
     description: "Возвращает список доступных баз данных"
+    description_en: "Return list of available databases"
     input: {}
     output:
       type: list
       description: "Список доступных пресетов баз данных"
+      description_en: "List of available database presets"
 
   drop_all_views:
     description: "Удаляет все системные view для PostgreSQL (для SQLite игнорируется). Используется перед миграцией."
+    description_en: "Drop all system views for PostgreSQL (ignored for SQLite). Used before migration."
     input: {}
     output:
       type: boolean
       description: "Результат операции удаления view"
+      description_en: "Result of drop views operation"
 
   create_all_views:
     description: "Создаёт все view для PostgreSQL (для SQLite игнорируется)"
+    description_en: "Create all views for PostgreSQL (ignored for SQLite)"
     input: {}
     output:
       type: boolean
       description: "Результат операции создания view"
+      description_en: "Result of create views operation"
 
   create_backup:
     description: "Создает бэкап базы данных в формате plain SQL + gzip для PostgreSQL или .bak.gz для SQLite. Использует глобальную переменную backup_dir из настроек"
+    description_en: "Create DB backup (plain SQL + gzip for PostgreSQL, .bak.gz for SQLite). Uses backup_dir from settings"
     input:
       backup_filename:
         type: string
         optional: true
         description: "Опциональное имя файла бэкапа (без расширения). Если не указано, генерируется автоматически с timestamp"
+        description_en: "Optional backup filename (no extension). If not set, generated with timestamp"
     output:
       type: string
       description: "Путь к созданному файлу бэкапа или None в случае ошибки"
+      description_en: "Path to created backup file or None on error"
 
   restore_backup:
     description: "Восстанавливает базу данных из бэкапа. Использует глобальную переменную backup_dir из настроек"
+    description_en: "Restore database from backup. Uses backup_dir from settings"
     input:
       backup_filename:
         type: string
         optional: true
         description: "Опциональное имя файла бэкапа для восстановления. Если не указано, восстанавливается из последнего бэкапа"
+        description_en: "Optional backup filename to restore. If not set, restores from latest backup"
     output:
       type: boolean
       description: "True если восстановление успешно, False в случае ошибки"
+      description_en: "True if restore succeeded, False on error"
 
 features:
   - "Одна точка входа для работы с БД во всех слоях проекта"

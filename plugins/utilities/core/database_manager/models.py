@@ -268,7 +268,7 @@ class Invoice(Base):
     amount = Column(Integer, nullable=False)  # Number of stars (integer)
     link = Column(Text, nullable=True)  # Invoice link (if created as link)
     is_cancelled = Column(Boolean, default=False)  # For internal logic (mark as inactive)
-    telegram_payment_charge_id = Column(String(100), nullable=True)  # Payment ID in Telegram (after payment)
+    telegram_payment_charge_id = Column(String(200), nullable=True)  # Payment ID in Telegram (after payment)
     paid_at = Column(TIMESTAMP, nullable=True)  # Payment time (NULL if not paid)
     created_at = Column(TIMESTAMP, nullable=False, default=dtf_now_local)  # Creation time
     updated_at = Column(TIMESTAMP, nullable=False, default=dtf_now_local, onupdate=dtf_now_local)  # Update time

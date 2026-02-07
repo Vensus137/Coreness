@@ -1,5 +1,6 @@
 name: "user_hub"
 description: "Центральный сервис для управления состояниями пользователей"
+description_en: "Central service for managing user states"
 singleton: true
 
 dependencies:
@@ -14,10 +15,12 @@ settings:
     type: integer
     default: 100
     description: "Максимальное количество записей storage, возвращаемых при получении данных. Ограничение на выгрузку огромных storage. По умолчанию 100 записей."
+    description_en: "Max storage records returned when fetching. Limit for large storage. Default 100."
 
 actions:
   set_user_state:
     description: "Установка состояния пользователя"
+    description_en: "Set user state"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -29,54 +32,67 @@ actions:
             optional: false
             min: 1
             description: "ID пользователя Telegram"
+            description_en: "Telegram user ID"
           tenant_id:
             type: integer
             optional: false
             min: 1
             description: "ID тенанта"
+            description_en: "Tenant ID"
           state:
             type: string
             optional: true
             description: "Состояние пользователя (None или пустая строка для сброса)"
+            description_en: "User state (None or empty to clear)"
           expires_in_seconds:
             type: integer
             optional: true
             min: 0
             description: "Время истечения в секундах (None или 0 = навсегда, устанавливается 3000 год)"
+            description_en: "Expiry in seconds (None or 0 = forever)"
     output:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         description: "Данные ответа"
+        description_en: "Response data"
         properties:
           user_state:
             type: string
             optional: true
             description: "Состояние пользователя или None если истекло/не установлено"
+            description_en: "User state or None if expired/not set"
           user_state_expired_at:
             type: string
             optional: true
             description: "Время истечения состояния (ISO) или None если не установлено"
+            description_en: "State expiry time (ISO) or None if not set"
 
   get_user_state:
     description: "Получение состояния пользователя с проверкой истечения"
+    description_en: "Get user state with expiry check"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -88,46 +104,57 @@ actions:
             optional: false
             min: 1
             description: "ID пользователя Telegram"
+            description_en: "Telegram user ID"
           tenant_id:
             type: integer
             optional: false
             min: 1
             description: "ID тенанта"
+            description_en: "Tenant ID"
     output:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         description: "Данные ответа"
+        description_en: "Response data"
         properties:
           user_state:
             type: string
             optional: true
             replaceable: true
             description: "Состояние пользователя или None если истекло/не установлено"
+            description_en: "User state or None if expired/not set"
           user_state_expired_at:
             type: string
             optional: true
             description: "Время истечения состояния (ISO) или None если не установлено"
+            description_en: "State expiry time (ISO) or None if not set"
 
   clear_user_state:
     description: "Очистка состояния пользователя"
+    description_en: "Clear user state"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -139,33 +166,41 @@ actions:
             optional: false
             min: 1
             description: "ID пользователя Telegram"
+            description_en: "Telegram user ID"
           tenant_id:
             type: integer
             optional: false
             min: 1
             description: "ID тенанта"
+            description_en: "Tenant ID"
     output:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
 
   get_user_storage:
     description: "Получение значений storage для пользователя. Поддерживает получение всех значений, конкретного значения (key) или поиск по паттерну (key_pattern)"
+    description_en: "Get user storage values. Supports full values, single key, or key_pattern search"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -177,43 +212,53 @@ actions:
             optional: false
             min: 1
             description: "ID тенанта"
+            description_en: "Tenant ID"
           user_id:
             type: integer
             optional: false
             min: 1
             description: "ID пользователя Telegram"
+            description_en: "Telegram user ID"
           key:
             type: string
             optional: true
             description: "Ключ для получения конкретного значения (точное совпадение, приоритет над key_pattern)"
+            description_en: "Key for single value (exact match, priority over key_pattern)"
           key_pattern:
             type: string
             optional: true
             min_length: 1
             description: "Паттерн для поиска ключей (ILIKE, используется если key не указан)"
+            description_en: "Pattern for key search (ILIKE, used when key not set)"
           format:
             type: boolean
             optional: true
             description: "Если true, возвращает дополнительное поле formatted_text с данными в формате YAML"
+            description_en: "If true, returns formatted_text with YAML data"
     output:
       result:
         type: string
         description: "Результат: success, error, not_found"
+        description_en: "Result: success, error, not_found"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         properties:
@@ -221,65 +266,80 @@ actions:
             type: any
             replaceable: true
             description: "Запрошенные данные. Если указан key - возвращается прямое значение (примитив или объект как есть). Если ничего не указано - возвращается полная структура {key: value}"
+            description_en: "Requested data. If key set - raw value. If none - full {key: value}"
           formatted_text:
             type: string
             optional: true
             description: "Отформатированный текст в формате YAML (возвращается только если format=true)"
+            description_en: "Formatted YAML text (only when format=true)"
 
   set_user_storage:
     description: "Установка значений storage для пользователя. Поддерживает смешанный подход: полная структура через values или частичная через key/value"
+    description_en: "Set user storage. Full structure via values or partial via key/value"
     access_rules: ["data_integrity"]
     public: true
     input:
       data:
         type: object
         description: "Параметры для установки значений. Приоритет: key -> value -> values"
+        description_en: "Parameters for setting values. Priority: key -> value -> values"
         properties:
           tenant_id:
             type: integer
             optional: false
             min: 1
             description: "ID тенанта"
+            description_en: "Tenant ID"
           user_id:
             type: integer
             optional: false
             min: 1
             description: "ID пользователя Telegram"
+            description_en: "Telegram user ID"
           key:
             type: string
             optional: true
             description: "Ключ значения (с поддержкой плейсхолдеров). Если указан, используется смешанный подход"
+            description_en: "Value key (placeholder support). If set, mixed approach"
           value:
             type: any
             optional: true
             description: "Значение для установки. Используется вместе с key"
+            description_en: "Value to set. Used with key"
           values:
             type: object
             optional: true
             description: "Полная структура для установки {key: value}. Используется только если не указан key"
+            description_en: "Full structure to set {key: value}. Only when key not set"
           format:
             type: boolean
             optional: true
             description: "Если true, возвращает дополнительное поле formatted_text с данными в формате YAML"
+            description_en: "If true, returns formatted_text with YAML data"
     output:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         properties:
@@ -287,13 +347,16 @@ actions:
             type: any
             replaceable: true
             description: "Установленные данные. Если установлено одно значение (key + value) - возвращается прямое значение (примитив или объект как есть). Если установлена структура (values без key) - возвращается структура {key: value}"
+            description_en: "Set data. Single value or full {key: value} structure"
           formatted_text:
             type: string
             optional: true
             description: "Отформатированный текст в формате YAML (возвращается только если format=true)"
+            description_en: "Formatted YAML text (only when format=true)"
 
   delete_user_storage:
     description: "Удаление значений из storage пользователя"
+    description_en: "Delete values from user storage"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -305,42 +368,52 @@ actions:
             optional: false
             min: 1
             description: "ID тенанта"
+            description_en: "Tenant ID"
           user_id:
             type: integer
             optional: false
             min: 1
             description: "ID пользователя Telegram"
+            description_en: "Telegram user ID"
           key:
             type: string
             optional: true
             description: "Ключ для удаления конкретного значения (точное совпадение, приоритет над key_pattern). Если не указаны key и key_pattern - удаляются все записи пользователя"
+            description_en: "Key to delete (exact). If key and key_pattern both unset - delete all user records"
           key_pattern:
             type: string
             optional: true
             min_length: 1
             description: "Паттерн для поиска ключей для удаления (ILIKE, используется если key не указан). Если не указаны key и key_pattern - удаляются все записи пользователя"
+            description_en: "Pattern for keys to delete (ILIKE). If both unset - delete all"
     output:
       result:
         type: string
         description: "Результат: success, error, not_found"
+        description_en: "Result: success, error, not_found"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки (например, ошибки валидации полей)"
+            description_en: "Error details (e.g. field validation errors)"
 
   get_tenant_users:
     description: "Получение списка всех user_id для указанного тенанта"
+    description_en: "Get list of all user_id for tenant"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -350,25 +423,31 @@ actions:
           tenant_id:
             type: integer
             description: "ID тенанта"
+            description_en: "Tenant ID"
     output:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         properties:
@@ -376,14 +455,17 @@ actions:
             type: array
             replaceable: true
             description: "Массив ID пользователей Telegram"
+            description_en: "Array of Telegram user IDs"
             items:
               type: integer
           user_count:
             type: integer
             description: "Количество пользователей"
+            description_en: "Number of users"
 
   get_users_by_storage_value:
     description: "Поиск пользователей по ключу и значению в storage. Позволяет найти всех пользователей, у которых в storage есть определенный ключ с определенным значением (например, найти всех пользователей с подключенной подпиской)"
+    description_en: "Find users by storage key and value (e.g. users with subscription)"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -395,34 +477,42 @@ actions:
             optional: false
             min: 1
             description: "ID тенанта"
+            description_en: "Tenant ID"
           key:
             type: string
             optional: false
             min_length: 1
             description: "Ключ для поиска в storage"
+            description_en: "Storage key to search"
           value:
             type: "string|integer|float|boolean|array|object"
             optional: false
             description: "Значение для поиска (может быть простым типом или JSON объектом)"
+            description_en: "Value to search (primitive or JSON object)"
     output:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         properties:
@@ -430,11 +520,13 @@ actions:
             type: array
             replaceable: true
             description: "Массив ID пользователей Telegram, у которых storage[key] == value"
+            description_en: "Array of Telegram user IDs where storage[key] == value"
             items:
               type: integer
           user_count:
             type: integer
             description: "Количество найденных пользователей"
+            description_en: "Number of users found"
 
 features:
   - "Центральное управление состояниями пользователей"

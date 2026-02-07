@@ -1,5 +1,6 @@
 name: "settings_manager"
 description: "Менеджер глобальных настроек системы"
+description_en: "System-wide settings manager"
 singleton: true
 
 dependencies:
@@ -11,138 +12,177 @@ settings:
     type: string
     default: "config"
     description: "Папка с глобальными конфигурационными файлами"
+    description_en: "Folder with global config files"
 
 methods:
   get_startup_time:
     description: "Получить время запуска приложения"
+    description_en: "Get application startup time"
     input: {}
     output:
       type: datetime
       description: "Время запуска приложения (локальное время)"
+      description_en: "Application startup time (local)"
 
   get_settings_section:
     description: "Получить секцию настроек из config/settings.yaml по имени"
+    description_en: "Get settings section from config/settings.yaml by name"
     input:
       section:
         type: string
         description: "Имя секции (например, 'logger', 'database_service')"
+        description_en: "Section name (e.g. 'logger', 'database_service')"
     output:
       type: dict
       optional: true
       description: "Секция настроек или None, если не найдена"
+      description_en: "Settings section or None if not found"
 
   get_plugin_info:
     description: "Получить полную информацию о плагине из PluginsManager"
+    description_en: "Get full plugin info from PluginsManager"
     input:
       plugin_name:
         type: string
         description: "Имя плагина (утилиты или сервиса)"
+        description_en: "Plugin name (utility or service)"
     output:
       type: dict
       description: "Полная конфигурация плагина, включая actions, methods и т.д."
+      description_en: "Full plugin config including actions, methods, etc."
 
   get_plugin_settings:
     description: "Универсальный метод для получения настроек любого плагина (утилиты или сервиса)"
+    description_en: "Get settings for any plugin (utility or service)"
     input:
       plugin_name:
         type: string
         description: "Имя утилиты или сервиса"
+        description_en: "Utility or service name"
     output:
       type: dict
       description: "Итоговые настройки плагина с приоритетом глобальные > локальные"
+      description_en: "Merged plugin settings (global > local)"
 
   get_all_settings:
     description: "Получить все настройки из settings.yaml"
+    description_en: "Get all settings from settings.yaml"
     input: {}
     output:
       type: dict
       description: "Все настройки из settings.yaml"
+      description_en: "All settings from settings.yaml"
 
   get_project_root:
     description: "Получить корень проекта"
+    description_en: "Get project root"
     input: {}
     output:
       type: Path
       description: "Путь к корню проекта"
+      description_en: "Path to project root"
 
   get_global_settings:
     description: "Получить глобальные настройки из секции 'global'"
+    description_en: "Get global settings from 'global' section"
     input: {}
     output:
       type: dict
       description: "Глобальные настройки"
+      description_en: "Global settings"
 
   get_file_base_path:
     description: "Получить базовый путь для файлов из глобальных настроек"
+    description_en: "Get base path for files from global settings"
     input: {}
     output:
       type: string
       description: "Базовый путь для файлов (например, 'resources')"
+      description_en: "Base path for files (e.g. 'resources')"
       
   resolve_file_path:
     description: "Разрешить относительный путь файла относительно базового пути"
+    description_en: "Resolve relative file path against base path"
     input:
       relative_path:
         type: string
         description: "Относительный путь (например, 'speech/tts/file.mp3')"
+        description_en: "Relative path (e.g. 'speech/tts/file.mp3')"
     output:
       type: string
       description: "Полный путь относительно корня проекта"
+      description_en: "Full path relative to project root"
 
   get_relative_path:
     description: "Получить относительный путь файла от базового пути"
+    description_en: "Get relative file path from base path"
     input:
       full_path:
         type: string
         description: "Полный путь к файлу"
+        description_en: "Full path to file"
     output:
       type: string
       description: "Относительный путь относительно базового пути"
+      description_en: "Relative path from base path"
 
   resolve_env_variables:
     description: "Универсальный метод для обработки переменных окружения в данных"
+    description_en: "Process environment variables in data (${VARIABLE} format)"
     input:
       data:
         type: any
         description: "Данные для обработки (dict, list, str, или другие типы)"
+        description_en: "Data to process (dict, list, str, or other types)"
     output:
       type: any
       description: "Данные с замененными переменными окружения в формате ${VARIABLE}"
+      description_en: "Data with replaced ${VARIABLE} env vars"
 
   reload:
     description: "Перезагрузить настройки системы"
+    description_en: "Reload system settings"
     input: {}
     output:
       type: void
       description: "Нет возвращаемого значения"
+      description_en: "No return value"
 
   get_startup_plan:
     description: "Получить полный план запуска приложения с кэшированием"
+    description_en: "Get full startup plan with caching"
     input: {}
     output:
       type: dict
       description: "План запуска с включенными сервисами, нужными утилитами и порядком инициализации"
+      description_en: "Startup plan with enabled services, required utilities, init order"
 
   get_enabled_services:
     description: "Получить список включенных сервисов с кэшированием"
+    description_en: "Get list of enabled services (cached)"
     input: {}
     output:
       type: list
       description: "Список имен включенных сервисов"
+      description_en: "List of enabled service names"
 
   get_required_utilities:
     description: "Получить список нужных утилит для включенных сервисов с кэшированием"
+    description_en: "Get list of required utilities for enabled services (cached)"
     input: {}
     output:
       type: list
       description: "Список имен нужных утилит"
+      description_en: "List of required utility names"
 
   invalidate_startup_cache:
     description: "Инвалидировать кэш планов запуска"
+    description_en: "Invalidate startup plan cache"
     input: {}
     output:
       type: void
       description: "Нет возвращаемого значения"
+      description_en: "No return value"
       
 features:
   - "Загрузка глобальных настроек из config/settings.yaml"

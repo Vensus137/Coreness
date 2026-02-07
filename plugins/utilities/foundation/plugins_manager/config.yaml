@@ -1,5 +1,6 @@
 name: "plugins_manager"
 description: "Менеджер утилит и сервисов с поддержкой зависимостей и DI"
+description_en: "Utilities and services manager with dependency and DI support"
 singleton: true
 dependencies:
   - "logger"
@@ -8,83 +9,108 @@ settings:
     type: string
     default: "plugins"
     description: "Корневая папка с плагинами"
+    description_en: "Root folder for plugins"
   utilities_dir:
     type: string
     default: "utilities"
     description: "Папка с утилитами внутри plugins"
+    description_en: "Utilities folder inside plugins"
   services_dir:
     type: string
     default: "services"
     description: "Папка с сервисами внутри plugins"
+    description_en: "Services folder inside plugins"
 methods:
   get_plugin_info:
     description: "Универсальный метод для получения информации о любом плагине (утилите или сервисе)"
+    description_en: "Get info for any plugin (utility or service)"
     input:
       plugin_name:
         type: string
         description: "Имя плагина"
+        description_en: "Plugin name"
     output:
       type: dict
       optional: true
       description: "Информация о плагине или None"
+      description_en: "Plugin info or None"
   get_plugin_type:
     description: "Получить тип плагина (утилита или сервис)"
+    description_en: "Get plugin type (utility or service)"
     input:
       plugin_name:
         type: string
         description: "Имя плагина"
+        description_en: "Plugin name"
     output:
       type: string
       optional: true
       description: "'utilities', 'services' или None"
+      description_en: "'utilities', 'services' or None"
   get_all_plugins_info:
     description: "Получить информацию о всех плагинах (утилиты + сервисы)"
+    description_en: "Get info for all plugins (utilities + services)"
     input: {}
     output:
       type: dict
       description: "Словарь {имя_плагина: информация_о_плагине}"
+      description_en: "Dict {plugin_name: plugin_info}"
   get_plugins_by_type:
     description: "Получить все плагины определенного типа"
+    description_en: "Get all plugins of given type"
     input:
       plugin_type:
         type: string
         description: "'utilities' или 'services'"
+        description_en: "'utilities' or 'services'"
     output:
       type: dict
       description: "Словарь с плагинами указанного типа"
+      description_en: "Dict with plugins of specified type"
   get_plugin_dependencies:
     description: "Получить ВСЕ зависимости плагина (обязательные + опциональные)"
+    description_en: "Get ALL plugin dependencies (mandatory + optional)"
     input:
       plugin_name:
         type: string
         description: "Имя плагина"
+        description_en: "Plugin name"
     output:
       type: list
       description: "Список всех зависимостей"
+      description_en: "List of all dependencies"
   get_plugin_mandatory_dependencies:
     description: "Получить только обязательные зависимости плагина"
+    description_en: "Get only mandatory plugin dependencies"
     input:
       plugin_name:
         type: string
         description: "Имя плагина"
+        description_en: "Plugin name"
     output:
       type: list
       description: "Список обязательных зависимостей"
+      description_en: "List of mandatory dependencies"
   get_plugin_optional_dependencies:
     description: "Получить только опциональные зависимости плагина"
+    description_en: "Get only optional plugin dependencies"
     input:
       plugin_name:
         type: string
         description: "Имя плагина"
+        description_en: "Plugin name"
     output:
       type: list
       description: "Список опциональных зависимостей"
+      description_en: "List of optional dependencies"
   reload:
     description: "Перезагрузить информацию о плагинах"
+    description_en: "Reload plugin info"
     input: {}
     output:
       type: void
       description: "Нет возвращаемого значения"
+      description_en: "No return value"
 features:
   - "Рекурсивное сканирование и загрузка информации о всех плагинах (утилиты и сервисы)"
   - "Автоматическое определение типа плагина по расположению в папке"

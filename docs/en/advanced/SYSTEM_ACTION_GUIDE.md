@@ -1,5 +1,5 @@
 ---
-title: System Actions
+title: System Actions Guide
 description: Reference for Coreness system actions. Special actions for internal operations and integrations.
 keywords: system actions, coreness system actions, internal operations
 ---
@@ -45,12 +45,12 @@ Complete description of all available actions with their parameters and results.
 
 ## action_hub
 
-**Description:** Центральный хаб действий для маршрутизации к сервисам
+**Description:** Central action hub for routing to services
 
 <a id="get_available_actions"></a>
 ### get_available_actions
 
-**Description:** Получение всех доступных действий с их метаданными
+**Description:** Get all available actions with metadata
 
 **Input Parameters:**
 
@@ -63,12 +63,12 @@ Complete description of all available actions with their parameters and results.
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Словарь всех доступных действий с метаданными
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
+- **`response_data`** (`object`) — Dict of all available actions with metadata
 
 **Usage Example:**
 
@@ -82,16 +82,16 @@ Complete description of all available actions with their parameters and results.
 
 ## bot_hub
 
-**Description:** Центральный сервис для управления всеми ботами
+**Description:** Central service for managing all bots
 
 <a id="get_bot_info"></a>
 ### get_bot_info
 
-**Description:** Получение информации о боте из базы данных (с кэшированием)
+**Description:** Get bot info from database (with caching)
 
 **Input Parameters:**
 
-- **`bot_id`** (`integer`, required, min: 1) — ID бота
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
 - **`force_refresh`** (`boolean`, optional) — Принудительное обновление из БД (игнорирует кэш)
 
 <details>
@@ -103,20 +103,20 @@ Complete description of all available actions with their parameters and results.
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`bot_id`** (`integer`) — ID бота
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
+- **`response_data`** (`object`) — Response data
+  - **`bot_id`** (`integer`) — Bot ID
   - **`telegram_bot_id`** (`integer`) — ID бота в Telegram
-  - **`tenant_id`** (`integer`) — ID тенанта
+  - **`tenant_id`** (`integer`) — Tenant ID
   - **`bot_token`** (`string`) — Токен бота
   - **`username`** (`string`) — Username бота
   - **`first_name`** (`string`) — Имя бота
-  - **`is_active`** (`boolean`) — Активен ли бот
-  - **`bot_command`** (`array`) — Команды бота
+  - **`is_active`** (`boolean`) — Whether bot is active
+  - **`bot_command`** (`array`) — Bot commands
 
 **Usage Example:**
 
@@ -132,11 +132,11 @@ Complete description of all available actions with their parameters and results.
 <a id="get_bot_status"></a>
 ### get_bot_status
 
-**Description:** Получение статуса пулинга и активности бота
+**Description:** Get polling status and bot activity
 
 **Input Parameters:**
 
-- **`bot_id`** (`integer`, required, min: 1) — ID бота
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -147,14 +147,14 @@ Complete description of all available actions with their parameters and results.
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`is_polling`** (`boolean`) — Активен ли пулинг: true - активен, false - не активен
-  - **`is_active`** (`boolean`) — Активен ли бот из настроек БД: true - активен, false - не активен
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
+- **`response_data`** (`object`) — Response data
+  - **`is_polling`** (`boolean`) — Whether polling is active: true/false
+  - **`is_active`** (`boolean`) — Whether bot is active from DB settings: true/false
 
 **Usage Example:**
 
@@ -169,7 +169,7 @@ Complete description of all available actions with their parameters and results.
 <a id="get_telegram_bot_info"></a>
 ### get_telegram_bot_info
 
-**Description:** Получение информации о боте через Telegram API
+**Description:** Get bot info via Telegram API
 
 **Input Parameters:**
 
@@ -184,12 +184,12 @@ Complete description of all available actions with their parameters and results.
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
+- **`response_data`** (`object`) — Response data
   - **`telegram_bot_id`** (`integer`) — ID бота в Telegram
   - **`username`** (`string`) — Username бота
   - **`first_name`** (`string`) — Имя бота
@@ -211,20 +211,20 @@ Complete description of all available actions with their parameters and results.
 <a id="set_bot_token"></a>
 ### set_bot_token
 
-**Description:** Установка токена бота. Бот должен быть создан через синхронизацию конфигурации (sync_bot_config). Токен будет проверен автоматически при запуске пулинга
+**Description:** Set bot token. Bot must be created via sync_bot_config. Token validated on polling start
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
-- **`bot_token`** (`string|None`, optional) — Токен бота (опционально, если не передан - поле не обновляется, если передан null - удаляется)
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`bot_token`** (`string|None`, optional) — Bot token (optional; if not passed - unchanged, if null - removed)
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
 
 **Usage Example:**
 
@@ -240,19 +240,19 @@ Complete description of all available actions with their parameters and results.
 <a id="start_bot"></a>
 ### start_bot
 
-**Description:** Запуск бота
+**Description:** Start bot
 
 **Input Parameters:**
 
-- **`bot_id`** (`integer`, required, min: 1) — ID бота
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
 
 **Usage Example:**
 
@@ -267,18 +267,18 @@ Complete description of all available actions with their parameters and results.
 <a id="stop_all_bots"></a>
 ### stop_all_bots
 
-**Description:** Остановка всех ботов
+**Description:** Stop all bots
 
 **Input Parameters:**
 
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
 
 **Usage Example:**
 
@@ -292,19 +292,19 @@ Complete description of all available actions with their parameters and results.
 <a id="stop_bot"></a>
 ### stop_bot
 
-**Description:** Остановка бота
+**Description:** Stop bot
 
 **Input Parameters:**
 
-- **`bot_id`** (`integer`, required, min: 1) — ID бота
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
 
 **Usage Example:**
 
@@ -319,14 +319,14 @@ Complete description of all available actions with their parameters and results.
 <a id="sync_bot"></a>
 ### sync_bot
 
-**Description:** Синхронизация бота: конфигурация + команды (обертка над sync_bot_config + sync_bot_commands)
+**Description:** Sync bot: config + commands (wrapper over sync_bot_config + sync_bot_commands)
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
-- **`bot_token`** (`string`, required, min length: 1) — Токен бота
-- **`is_active`** (`boolean`, optional) — Активен ли бот (по умолчанию true)
-- **`bot_commands`** (`array`, optional) — Список команд для применения (опционально)
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`bot_token`** (`string`, required, min length: 1) — Bot token
+- **`is_active`** (`boolean`, optional) — Whether bot is active (default true)
+- **`bot_commands`** (`array`, optional) — List of commands to apply (optional)
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -337,14 +337,14 @@ Complete description of all available actions with their parameters and results.
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`bot_id`** (`integer`) — ID бота
-  - **`action`** (`string`) — Действие: created или updated
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
+- **`response_data`** (`object`) — Response data
+  - **`bot_id`** (`integer`) — Bot ID
+  - **`action`** (`string`) — Action: created or updated
 
 **Usage Example:**
 
@@ -362,20 +362,20 @@ Complete description of all available actions with their parameters and results.
 <a id="sync_bot_commands"></a>
 ### sync_bot_commands
 
-**Description:** Синхронизация команд бота: сохранение в БД → применение в Telegram
+**Description:** Sync bot commands: save to DB → apply in Telegram
 
 **Input Parameters:**
 
-- **`bot_id`** (`integer`, required, min: 1) — ID бота
-- **`command_list`** (`array`) — Список команд для применения
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+- **`command_list`** (`array`) — List of commands to apply
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
 
 **Usage Example:**
 
@@ -391,13 +391,13 @@ Complete description of all available actions with their parameters and results.
 <a id="sync_bot_config"></a>
 ### sync_bot_config
 
-**Description:** Синхронизация конфигурации бота: создание/обновление бота + запуск пулинга. Если bot_token не передан, используется токен из БД (приоритет конфига)
+**Description:** Sync bot config: create/update bot + start polling. Token from DB if bot_token not passed
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
-- **`bot_token`** (`string`, optional, min length: 1) — Токен бота (опционально, если не передан - используется из БД)
-- **`is_active`** (`boolean`) — Активен ли бот
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`bot_token`** (`string`, optional, min length: 1) — Bot token (optional; from DB if not passed)
+- **`is_active`** (`boolean`) — Whether bot is active
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -408,14 +408,14 @@ Complete description of all available actions with their parameters and results.
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`bot_id`** (`integer`) — ID бота
-  - **`action`** (`string`) — Действие: created или updated
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
+- **`response_data`** (`object`) — Response data
+  - **`bot_id`** (`integer`) — Bot ID
+  - **`action`** (`string`) — Action: created or updated
 
 **Usage Example:**
 
@@ -431,24 +431,24 @@ Complete description of all available actions with their parameters and results.
 
 ## event_processor
 
-**Description:** Сервис для обработки событий от пулинга
+**Description:** Service for processing polling events
 
 <a id="process_event"></a>
 ### process_event
 
-**Description:** Обработка события от пулинга
+**Description:** Process polling event
 
 **Input Parameters:**
 
-- **`data`** (`object`) — Сырое событие от пулинга
+- **`data`** (`object`) — Raw event from polling
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -462,25 +462,25 @@ Complete description of all available actions with their parameters and results.
 
 ## scenario_processor
 
-**Description:** Сервис для обработки событий по сценариям
+**Description:** Service for processing events by scenarios
 
 <a id="process_scenario_event"></a>
 ### process_scenario_event
 
-**Description:** Обработка события по сценариям
+**Description:** Process event by scenarios
 
 **Input Parameters:**
 
-- **`event_type`** (`string`, required, min length: 1) — Тип события (message, callback_query, etc.)
-- **`bot_id`** (`integer`, required, min: 1) — ID бота от которого пришло событие
+- **`event_type`** (`string`, required, min length: 1) — Event type (message, callback_query, etc.)
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID that received the event
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат обработки (success/error)
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Processing result (success/error)
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -496,20 +496,20 @@ Complete description of all available actions with their parameters and results.
 <a id="sync_scenarios"></a>
 ### sync_scenarios
 
-**Description:** Синхронизация сценариев тенанта: удаление старых → сохранение новых → перезагрузка кэша
+**Description:** Sync tenant scenarios: delete old → save new → reload cache
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID tenant'а для синхронизации сценариев
-- **`scenarios`** (`array`) — Массив сценариев для синхронизации
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID for scenario sync
+- **`scenarios`** (`array`) — Array of scenarios to sync
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат синхронизации (success/partial_success/error)
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Sync result (success/partial_success/error)
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -524,16 +524,16 @@ Complete description of all available actions with their parameters and results.
 
 ## tenant_hub
 
-**Description:** Сервис для управления конфигурациями тенантов - координатор загрузки данных
+**Description:** Service for managing tenant configurations - data loading coordinator
 
 <a id="get_tenant_status"></a>
 ### get_tenant_status
 
-**Description:** Получение статуса тенанта
+**Description:** Get tenant status
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -544,19 +544,19 @@ Complete description of all available actions with their parameters and results.
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
-- **`response_data`** (`object`) — Данные ответа
-  - **`bot_is_active`** (`boolean`) — Активен ли бот тенанта из настроек БД (флаг is_active в БД)
-  - **`bot_is_polling`** (`boolean`) — Активен ли пулинг бота тенанта (запущен ли процесс пулинга)
-  - **`bot_is_webhook_active`** (`boolean`) — Активен ли вебхук бота тенанта (установлен ли вебхук через Telegram API)
-  - **`bot_is_working`** (`boolean`) — Работает ли бот тенанта (пулинг ИЛИ вебхуки активны). Показывает реальный статус работы бота
-  - **`last_updated_at`** (`string`) (optional) — Дата последнего успешного обновления тенанта
-  - **`last_failed_at`** (`string`) (optional) — Дата последней ошибки при обновлении тенанта
-  - **`last_error`** (`string`) (optional) — Текст последней ошибки при обновлении тенанта
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Response data
+  - **`bot_is_active`** (`boolean`) — Whether tenant bot is active from DB settings (is_active flag)
+  - **`bot_is_polling`** (`boolean`) — Whether tenant bot polling is active (polling process running)
+  - **`bot_is_webhook_active`** (`boolean`) — Whether tenant bot webhook is active (webhook set via Telegram API)
+  - **`bot_is_working`** (`boolean`) — Whether tenant bot is working (polling OR webhooks active). Actual bot status
+  - **`last_updated_at`** (`string`) (optional) — Date of last successful tenant update
+  - **`last_failed_at`** (`string`) (optional) — Date of last error when updating tenant
+  - **`last_error`** (`string`) (optional) — Text of last error when updating tenant
 
 **Usage Example:**
 
@@ -571,7 +571,7 @@ Complete description of all available actions with their parameters and results.
 <a id="get_tenants_list"></a>
 ### get_tenants_list
 
-**Description:** Получение списка всех ID тенантов с разделением на публичные и системные
+**Description:** Get list of all tenant IDs split into public and system
 
 **Input Parameters:**
 
@@ -585,16 +585,16 @@ Complete description of all available actions with their parameters and results.
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - **`tenant_ids`** (`array`) — Массив ID всех тенантов
-  - **`public_tenant_ids`** (`array`) — Массив ID публичных тенантов
-  - **`system_tenant_ids`** (`array`) — Массив ID системных тенантов
-  - **`tenant_count`** (`integer`) — Общее количество тенантов
+  - **`tenant_ids`** (`array`) — Array of all tenant IDs
+  - **`public_tenant_ids`** (`array`) — Array of public tenant IDs
+  - **`system_tenant_ids`** (`array`) — Array of system tenant IDs
+  - **`tenant_count`** (`integer`) — Total number of tenants
 
 **Usage Example:**
 
@@ -608,18 +608,18 @@ Complete description of all available actions with their parameters and results.
 <a id="sync_all_tenants"></a>
 ### sync_all_tenants
 
-**Description:** Синхронизация всех тенантов (сначала pull из GitHub, потом синхронизация всех)
+**Description:** Sync all tenants (pull from GitHub first, then sync all)
 
 **Input Parameters:**
 
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, partial_success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, partial_success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -633,19 +633,19 @@ Complete description of all available actions with their parameters and results.
 <a id="sync_tenant"></a>
 ### sync_tenant
 
-**Description:** Синхронизация конфигурации тенанта с базой данных (сначала обновляет из GitHub, затем синхронизирует)
+**Description:** Sync tenant configuration with database (fetch from GitHub first, then sync)
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта для синхронизации
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID to sync
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error, timeout, not_found
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error, timeout, not_found
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -660,19 +660,19 @@ Complete description of all available actions with their parameters and results.
 <a id="sync_tenant_bot"></a>
 ### sync_tenant_bot
 
-**Description:** Синхронизация бота тенанта: pull из GitHub + парсинг + синхронизация
+**Description:** Sync tenant bot: pull from GitHub + parse + sync
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -687,19 +687,19 @@ Complete description of all available actions with their parameters and results.
 <a id="sync_tenant_config"></a>
 ### sync_tenant_config
 
-**Description:** Синхронизация конфига тенанта: pull из GitHub + парсинг + синхронизация
+**Description:** Sync tenant config: pull from GitHub + parse + sync
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -714,19 +714,19 @@ Complete description of all available actions with their parameters and results.
 <a id="sync_tenant_data"></a>
 ### sync_tenant_data
 
-**Description:** Синхронизация данных тенанта: создание/обновление тенанта
+**Description:** Sync tenant data: create/update tenant
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -741,19 +741,19 @@ Complete description of all available actions with their parameters and results.
 <a id="sync_tenant_scenarios"></a>
 ### sync_tenant_scenarios
 
-**Description:** Синхронизация сценариев тенанта: pull из GitHub + парсинг + синхронизация
+**Description:** Sync tenant scenarios: pull from GitHub + parse + sync
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -768,19 +768,19 @@ Complete description of all available actions with their parameters and results.
 <a id="sync_tenant_storage"></a>
 ### sync_tenant_storage
 
-**Description:** Синхронизация storage тенанта: pull из GitHub + парсинг + синхронизация
+**Description:** Sync tenant storage: pull from GitHub + parse + sync
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -795,11 +795,11 @@ Complete description of all available actions with their parameters and results.
 <a id="sync_tenants_from_files"></a>
 ### sync_tenants_from_files
 
-**Description:** Синхронизация тенантов из списка измененных файлов (универсальный метод для вебхуков и пуллинга)
+**Description:** Sync tenants from list of changed files (universal method for webhooks and polling)
 
 **Input Parameters:**
 
-- **`files`** (`array`) — Список файлов в формате ["path1", "path2"] или [{"filename": "path"}, ...]
+- **`files`** (`array`) — List of files in format ["path1", "path2"] or [{"filename": "path"}, ...]
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -810,11 +810,11 @@ Complete description of all available actions with their parameters and results.
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, partial_success, error
-- **`response_data`** (`object`) (optional) — Данные ответа (synced_tenants, total_tenants, errors)
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
+- **`result`** (`string`) — Result: success, partial_success, error
+- **`response_data`** (`object`) (optional) — Response data (synced_tenants, total_tenants, errors)
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
 
 **Usage Example:**
 
@@ -829,20 +829,20 @@ Complete description of all available actions with their parameters and results.
 <a id="update_tenant_config"></a>
 ### update_tenant_config
 
-**Description:** Обновление конфига тенанта (обновляет БД, инвалидирует кэш). Обновляет только переданные поля, остальные не трогает
+**Description:** Update tenant config (updates DB, invalidates cache). Only updates provided fields
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
-- **`ai_token`** (`string|None`, optional) — AI API токен для тенанта (опционально, если не передан - поле не обновляется, если передан null - удаляется)
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`ai_token`** (`string|None`, optional) — AI API token for tenant (optional; if not passed - field unchanged, if null - removed)
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 

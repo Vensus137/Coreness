@@ -1,5 +1,6 @@
 name: "id_generator"
 description: "Утилита для генерации детерминированных уникальных ID через IdSequence"
+description_en: "Utility for generating deterministic unique IDs via IdSequence"
 singleton: true
 
 dependencies:
@@ -13,19 +14,23 @@ settings:
     type: integer
     default: 600
     description: "Время жизни кэша для ID (в секундах)"
+    description_en: "Cache TTL for IDs (seconds)"
 
 methods:
   get_or_create_unique_id:
     description: "Получение или создание уникального ID для seed (детерминированный - при одинаковых seed возвращает тот же ID). Если seed не указан, генерируется случайный UUID"
+    description_en: "Get or create unique ID for seed (deterministic). If seed not set, random UUID is generated"
     input:
       seed:
         type: string
         optional: true
         description: "Seed для генерации ID. При повторном запросе с тем же seed вернется тот же ID. Если не указан, генерируется случайный UUID"
+        description_en: "Seed for ID generation. Same seed returns same ID. If not set, random UUID"
     output:
       type: integer
       optional: true
       description: "Уникальный ID или None при ошибке"
+      description_en: "Unique ID or None on error"
 
 features:
   - "Детерминированная генерация ID - при одинаковых seed возвращает тот же ID"

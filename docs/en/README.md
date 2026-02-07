@@ -1,97 +1,58 @@
 ---
-title: Coreness — Platform for AI Agents and Telegram Bots
-description: Self-hosted multitenant platform for building AI agents and Telegram bots with declarative YAML configurations. Quick start guides, tutorials and API reference.
+title: Documentation
+description: Platform for AI agents and Telegram bots with YAML. Quick start, guides and reference.
 keywords: Coreness, AI agents, Telegram bots, self-hosted platform, multitenant, Python, YAML configuration, automation, chatbots, RAG, AI models
 ---
 
 # Coreness — Platform for Automation and AI Solutions
 
-Welcome to the **Coreness** platform documentation — a system for building bots, automating business processes, and AI solutions through declarative YAML configurations.
+**Coreness** is an event-driven platform for building automated workflows through configuration files. You describe the logic in YAML; the platform handles execution, data storage, and integrations.
+
+**Key use cases:** bot development (Telegram and others), business process automation, AI assistants and chatbots with LLM, scheduled tasks.
+
+This documentation covers quick start, scenario guides, and reference.
 
 > 🔧 **For advanced users:** [Advanced Documentation](advanced/README.md) — architecture, plugins, deployment
 
----
-
 ## ⚡ Documentation Table of Contents
 
-### 🚀 [Practical Scenario Examples](EXAMPLES_GUIDE.md)
-- [Quick Start](EXAMPLES_GUIDE.md#-quick-start)
-- [Advanced Examples](EXAMPLES_GUIDE.md#-advanced-examples)
-  - [Working with Payments](EXAMPLES_GUIDE.md#working-with-payments-invoices)
-  - [Working with RAG Storage](EXAMPLES_GUIDE.md#working-with-rag-storage)
-
-### 🔧 [Master Bot — Tenant Management](MASTER_BOT_GUIDE.md)
-- [Purpose](MASTER_BOT_GUIDE.md#-purpose)
-- [Structure](MASTER_BOT_GUIDE.md#-structure)
-- [Core Features](MASTER_BOT_GUIDE.md#-core-features)
-- [Security](MASTER_BOT_GUIDE.md#-security)
-
-### 📋 [Scenario Creation Guide](SCENARIO_CONFIG_GUIDE.md)
-- [Scenario Structure](SCENARIO_CONFIG_GUIDE.md#-scenario-structure)
-- [Triggers](SCENARIO_CONFIG_GUIDE.md#-triggers-trigger)
-- [Scheduled Scenarios](SCENARIO_CONFIG_GUIDE.md#-scheduled-scenarios-cron-execution)
-- [Actions (step)](SCENARIO_CONFIG_GUIDE.md#-actions-step)
-  - [Data Caching](SCENARIO_CONFIG_GUIDE.md#data-caching-in-scenarios)
-  - [Saving Context Between Scenarios](SCENARIO_CONFIG_GUIDE.md#saving-context-between-scenarios)
-- [Transitions](SCENARIO_CONFIG_GUIDE.md#-transitions-transition)
-- [Placeholders](SCENARIO_CONFIG_GUIDE.md#-placeholders)
-  - [Placeholder Syntax](SCENARIO_CONFIG_GUIDE.md#placeholder-syntax)
-  - [Available Data](SCENARIO_CONFIG_GUIDE.md#available-data)
-  - [Accessing Nested Elements](SCENARIO_CONFIG_GUIDE.md#accessing-nested-elements)
-  - [Modifiers](SCENARIO_CONFIG_GUIDE.md#modifiers)
-  - [Usage Examples](SCENARIO_CONFIG_GUIDE.md#usage-examples)
-- [Async Actions](SCENARIO_CONFIG_GUIDE.md#-async-actions-async-actions)
-
-### 🎯 [System Actions Guide](ACTION_GUIDE.md)
-
-### 📡 [System Events Guide](EVENT_GUIDE.md)
-- [Common Fields](EVENT_GUIDE.md#common-fields)
-- [Message Fields](EVENT_GUIDE.md#message-fields)
-- [Callback Fields](EVENT_GUIDE.md#callback-fields)
-- [Attachment Fields](EVENT_GUIDE.md#attachment-fields)
-
-### ⚙️ [Tenant Configuration Guide](TENANT_CONFIG_GUIDE.md)
-- [tg_bot.yaml](TENANT_CONFIG_GUIDE.md#-tg_botyaml)
-- [Tenant Synchronization](TENANT_CONFIG_GUIDE.md#-tenant-synchronization)
-
-### 💾 [Storage Attributes Guide](STORAGE_CONFIG_GUIDE.md)
-- [Tenant Storage](STORAGE_CONFIG_GUIDE.md#-tenant-storage)
-- [User Storage](STORAGE_CONFIG_GUIDE.md#-user-storage)
-- [Usage in Scenarios](STORAGE_CONFIG_GUIDE.md#-usage-in-scenarios)
-
-### 🤖 [AI Models Guide](AI_MODELS_GUIDE.md)
-- [Models](AI_MODELS_GUIDE.md#models)
-- [Parameter Descriptions](AI_MODELS_GUIDE.md#parameter-descriptions)
-
-### 🔄 [Changelog](CHANGELOG.md)
+- [Practical Scenario Examples](EXAMPLES_GUIDE.md)
+- [Master Bot — Tenant Management](MASTER_BOT_GUIDE.md)
+- [Scenario Creation Guide](SCENARIO_CONFIG_GUIDE.md)
+- [System Actions Guide](ACTION_GUIDE.md)
+- [System Events Guide](EVENT_GUIDE.md)
+- [Tenant Configuration Guide](TENANT_CONFIG_GUIDE.md)
+- [Storage Attributes Guide](STORAGE_CONFIG_GUIDE.md)
+- [AI Models Guide](AI_MODELS_GUIDE.md)
+- [Changelog](CHANGELOG.md)
 
 ---
 
 ## 🚀 Getting Started
 
-#### [📖 Practical Scenario Examples](EXAMPLES_GUIDE.md)
+### [📖 Practical Scenario Examples](EXAMPLES_GUIDE.md)
 
-A collection of practical examples — from quick start to advanced scenarios with payments, RAG storage, and complex logic. Includes step-by-step guide for creating your first bot, basic scenario examples, advanced examples working with payments and vector storage for RAG (Retrieval-Augmented Generation).
+A collection of examples: from quick start to scenarios with payments and RAG. Step-by-step first bot guide, basic and advanced examples included.
 
-**When to use:** If you're new to the platform, want to quickly create a test bot, or looking for implementation examples for specific tasks (e.g., working with payments, saving and searching data in vector storage).
+**When to use:** You're new to the platform, want a test bot fast, or need an example for a specific task (payments, vector storage).
 
 ---
 
-#### [🔧 Master Bot — Tenant Management](MASTER_BOT_GUIDE.md)
+### [🔧 Master Bot — Tenant Management](MASTER_BOT_GUIDE.md)
 
-System bot for managing platform tenants (similar to @BotFather): tenant selection, token setup, Storage management, GitHub sync, access control.
+System bot for managing tenants (like @BotFather). Use it to switch tenants, set tokens, manage Storage, and sync with GitHub.
 
-**When to use:** For centralized tenant management, bot configuration, and configuration synchronization after deploying the platform.
+**When to use:** You need one place to manage all tenants and bots after deployment.
 
 ---
 
 ## 📖 Complete Documentation Index
 
-#### [📋 Scenario Creation Guide](SCENARIO_CONFIG_GUIDE.md)
+### [📋 Scenario Creation Guide](SCENARIO_CONFIG_GUIDE.md)
 
-**What it is:** Complete guide to creating and configuring scenarios for Telegram bots with support for placeholders, transitions, and dynamic logic.
+**What it is:** Guide to creating scenarios for Telegram bots. Placeholders, transitions, and dynamic logic are covered.
 
-**Why you need it:** All your bot actions (commands, menus, message handling) are implemented through scenarios. This describes the entire creation process: from writing triggers to complex logic with transitions and placeholders, with examples for each case.
+**Why you need it:** Commands, menus, and message handling all live in scenarios. The guide walks you from triggers to advanced logic, with examples.
 
 **What's inside:**
 - Scenario structure
@@ -105,21 +66,21 @@ System bot for managing platform tenants (similar to @BotFather): tenant selecti
 
 ---
 
-#### [🔧 Master Bot — Tenant Management](MASTER_BOT_GUIDE.md)
+### [🔧 Master Bot — Tenant Management](MASTER_BOT_GUIDE.md)
 
-**What it is:** Guide to the system bot for managing tenants — selecting and switching tenants, token setup, Tenant Storage and User Storage management, GitHub synchronization.
+**What it is:** Guide to Master Bot. Tenant selection, token setup, Storage, and GitHub sync.
 
-**Why you need it:** After deploying the platform, Master Bot provides a single point to manage all tenants and bots via Telegram.
+**Why you need it:** One entry point in Telegram to manage all tenants and bots after deployment.
 
-**When to use:** For setting up and administering tenants, managing configurations and Storage.
+**When to use:** Setting up tenants, configs, and Storage.
 
 ---
 
-#### [⚙️ Tenant Configuration Guide](TENANT_CONFIG_GUIDE.md)
+### [⚙️ Tenant Configuration Guide](TENANT_CONFIG_GUIDE.md)
 
 **What it is:** Guide to configuring tenants (clients) and their Telegram bots.
 
-**Why you need it:** When adding a new bot to the system or configuring a new tenant. This describes how to configure a bot (token, commands, scenario groups), how to organize folder structure for scenarios, and how synchronization with external repository works.
+**Why you need it:** Adding a bot or a new tenant? This covers token, commands, scenario groups, folder layout, and repo sync.
 
 **What's inside:**
 - Tenant configuration structure
@@ -133,11 +94,11 @@ System bot for managing platform tenants (similar to @BotFather): tenant selecti
 
 ---
 
-#### [💾 Storage Attributes Guide](STORAGE_CONFIG_GUIDE.md)
+### [💾 Storage Attributes Guide](STORAGE_CONFIG_GUIDE.md)
 
-**What it is:** Guide to working with tenant attribute storage (Storage) — a flexible key-value structure for storing settings, limits, and functions.
+**What it is:** Guide to tenant attribute storage (Storage). Key-value store for settings, limits, and flags.
 
-**Why you need it:** When you need to store tenant settings (user limits, function parameters, tariffs, etc.) without changing the database schema. Storage allows you to flexibly add new attributes through configuration files.
+**Why you need it:** Store tenant settings without changing the DB. Add new attributes via config files.
 
 **What's inside:**
 - Storage structure and file organization
@@ -149,11 +110,11 @@ System bot for managing platform tenants (similar to @BotFather): tenant selecti
 
 ---
 
-#### [🎯 System Actions Guide](ACTION_GUIDE.md)
+### [🎯 System Actions Guide](ACTION_GUIDE.md)
 
-**What it is:** Complete reference of all available actions in the system.
+**What it is:** Reference of all actions in the system.
 
-**Why you need it:** When you know what you want to do in a scenario — send a message, delete it, process data through AI — here you'll find the needed action and all its parameters. This is the main reference for actions like `send_message`, `delete_message`, `completion`, `validate`, and others.
+**Why you need it:** Need to send a message, delete it, or call AI? Here you find each action and its parameters. Reference for `send_message`, `delete_message`, `completion`, `validate`, and more.
 
 **What's inside:**
 - List of all available actions in the system
@@ -165,11 +126,11 @@ System bot for managing platform tenants (similar to @BotFather): tenant selecti
 
 ---
 
-#### [📡 System Events Guide](EVENT_GUIDE.md)
+### [📡 System Events Guide](EVENT_GUIDE.md)
 
-**What it is:** Complete reference of all fields available in events.
+**What it is:** Reference of all fields in events.
 
-**Why you need it:** When you use placeholders in scenarios (e.g., `{username}` or `{user_id}`), this data comes from events. Here are described all available fields: user ID, chat ID, message text, attachments, callback button data, and much more.
+**Why you need it:** Placeholders like `{username}` or `{user_id}` get data from events. Here are all fields: user_id, chat_id, message text, attachments, callback data.
 
 **What's inside:**
 - Common fields for all events (user_id, chat_id, message_id, username, etc.)
@@ -182,11 +143,11 @@ System bot for managing platform tenants (similar to @BotFather): tenant selecti
 
 ---
 
-#### [🤖 AI Models Guide](AI_MODELS_GUIDE.md)
+### [🤖 AI Models Guide](AI_MODELS_GUIDE.md)
 
-**What it is:** Reference for available AI models through Polza.AI and their parameters.
+**What it is:** Reference for AI models (Polza.AI) and their parameters.
 
-**Why you need it:** When you use the `completion` action in scenarios and want to choose a suitable AI model. Here are described all available models (OpenAI, Google, Anthropic, DeepSeek, etc.), their parameters, prices, and capabilities.
+**Why you need it:** Using `completion` and need to pick a model? Here are the models (OpenAI, Google, Anthropic, DeepSeek, etc.), parameters, and prices.
 
 **What's inside:**
 - List of all available models by providers
@@ -198,11 +159,11 @@ System bot for managing platform tenants (similar to @BotFather): tenant selecti
 
 ---
 
-#### [🔄 Changelog](CHANGELOG.md)
+### [🔄 Changelog](CHANGELOG.md)
 
 Latest changes, new features, breaking changes, and migrations.
 
-**When to use:** For tracking platform updates and checking breaking changes when updating.
+**When to use:** Before upgrading — see what changed and what might break.
 
 ---
 

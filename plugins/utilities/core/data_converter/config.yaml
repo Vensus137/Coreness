@@ -1,5 +1,6 @@
 name: "data_converter"
 description: "Универсальный конвертер объектов в словари с поддержкой ORM и JSON"
+description_en: "Universal object-to-dict converter with ORM and JSON support"
 singleton: true
 
 dependencies:
@@ -12,68 +13,87 @@ settings:
     type: boolean
     default: true
     description: "Автоматически определять JSON поля"
+    description_en: "Auto-detect JSON fields"
   strict_json_validation:
     type: boolean
     default: false
     description: "Строгая валидация JSON (возвращать ошибку при невалидном JSON)"
+    description_en: "Strict JSON validation (return error on invalid JSON)"
   enable_cyclic_reference_detection:
     type: boolean
     default: true
     description: "Включить обнаружение циклических ссылок"
+    description_en: "Enable cyclic reference detection"
   max_recursion_depth:
     type: integer
     default: 100
     description: "Максимальная глубина рекурсии для предотвращения переполнения стека"
+    description_en: "Max recursion depth to prevent stack overflow"
   safe_mode:
     type: boolean
     default: true
     description: "Безопасный режим - пропускать проблемные объекты вместо ошибок"
+    description_en: "Safe mode - skip problematic objects instead of raising"
 
 methods:
   to_dict:
     description: "Конвертирует ORM объект в словарь с автоматическим декодированием JSON"
+    description_en: "Convert ORM object to dict with auto JSON decode"
     input:
       orm_object:
         type: object
         description: "SQLAlchemy ORM объект"
+        description_en: "SQLAlchemy ORM object"
       json_fields:
         type: list
         optional: true
         description: "Список полей для принудительного декодирования"
+        description_en: "List of fields to force-decode"
     output:
       type: dict
       description: "Словарь с данными ORM объекта"
+      description_en: "Dict with ORM object data"
   to_dict_list:
     description: "Конвертирует список ORM объектов в список словарей"
+    description_en: "Convert list of ORM objects to list of dicts"
     input:
       orm_objects:
         type: list
         description: "Список SQLAlchemy ORM объектов"
+        description_en: "List of SQLAlchemy ORM objects"
       json_fields:
         type: list
         optional: true
         description: "Список полей для принудительного декодирования"
+        description_en: "List of fields to force-decode"
     output:
       type: list
       description: "Список словарей с данными ORM объектов"
+      description_en: "List of dicts with ORM object data"
   to_safe_dict:
     description: "Конвертирует любой объект в безопасный словарь/список/значение"
+    description_en: "Convert any object to safe dict/list/value"
     input:
       obj:
         type: any
         description: "Объект для конвертации (dict, list, datetime, или любой другой тип)"
+        description_en: "Object to convert (dict, list, datetime, or any type)"
     output:
       type: any
       description: "Безопасный объект, готовый для JSON сериализации"
+      description_en: "Safe object ready for JSON serialization"
   is_json_field:
     description: "Проверяет, является ли значение JSON-строкой"
+    description_en: "Check if value is JSON string"
     input:
       value:
         type: any
         description: "Значение для проверки"
+        description_en: "Value to check"
     output:
       type: bool
       description: "True если значение является валидным JSON"
+      description_en: "True if value is valid JSON"
 
 features:
   - "Автоматическое декодирование JSON полей в ORM объектах"

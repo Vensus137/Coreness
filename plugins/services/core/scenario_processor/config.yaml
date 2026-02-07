@@ -1,5 +1,6 @@
 name: scenario_processor
-description: Сервис для обработки событий по сценариям
+description: "Сервис для обработки событий по сценариям"
+description_en: "Service for processing events by scenarios"
 singleton: true
 type: service
 
@@ -20,10 +21,12 @@ settings:
     type: integer
     default: 315360000
     description: "TTL для кэша сценариев (10 лет в секундах). Вечный кэш, инвалидируется явно"
+    description_en: "TTL for scenario cache (10 years in seconds). Long-lived cache, invalidated explicitly"
 
 actions:
   process_scenario_event:
     description: Обработка события по сценариям
+    description_en: Process event by scenarios
     access_rules: ["no_access"]
     input:
       data:
@@ -34,33 +37,41 @@ actions:
             optional: false
             min_length: 1
             description: Тип события (message, callback_query, etc.)
+            description_en: Event type (message, callback_query, etc.)
           bot_id:
             type: integer
             optional: false
             min: 1
             description: ID бота от которого пришло событие
+            description_en: Bot ID that received the event
     output:
       result:
         type: string
         description: Результат обработки (success/error)
+        description_en: Processing result (success/error)
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
 
   execute_scenario:
     description: "Выполнение сценария или массива сценариев по имени"
+    description_en: "Execute scenario or array of scenarios by name"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -71,48 +82,60 @@ actions:
             type: "string|array"
             optional: false
             description: "Название сценария (строка) или массив названий сценариев"
+            description_en: "Scenario name (string) or array of scenario names"
           tenant_id:
             type: integer
             optional: false
             min: 1
             description: "ID tenant'а (передается автоматически из контекста)"
+            description_en: "Tenant ID (passed from context)"
           return_cache:
             type: boolean
             optional: true
             description: "Возвращать ли _cache из выполненного сценария (по умолчанию true). ВАЖНО: работает только для одиночных сценариев (строка), для массива сценариев игнорируется и кэш не возвращается"
+            description_en: "Return _cache from executed scenario (default true). Only for single scenario (string), ignored for array"
     output:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         description: "Данные ответа с результатом выполнения сценария"
+        description_en: "Response data with scenario execution result"
         properties:
           scenario_result:
             type: string
             description: "Результат выполнения сценария: success, error, abort, break, stop"
+            description_en: "Scenario result: success, error, abort, break, stop"
           _cache:
             type: object
             optional: true
             description: "Кэш из выполненного сценария, возвращается только для одиночных сценариев (не для массива), если return_cache=true и в сценарии был установлен _cache через set_cache. Данные попадают в _cache[action_name] автоматически"
+            description_en: "Cache from executed scenario (single scenario only, when return_cache=true). Data in _cache[action_name]"
 
   sync_scenarios:
     description: "Синхронизация сценариев тенанта: удаление старых → сохранение новых → перезагрузка кэша"
+    description_en: "Sync tenant scenarios: delete old → save new → reload cache"
     access_rules: ["system_access"]
     input:
       data:
@@ -123,52 +146,65 @@ actions:
             optional: false
             min: 1
             description: ID tenant'а для синхронизации сценариев
+            description_en: Tenant ID for scenario sync
           scenarios:
             type: array
             optional: false
             description: Массив сценариев для синхронизации
+            description_en: Array of scenarios to sync
             items:
               type: object
               properties:
                 scenario_name:
                   type: string
                   description: Название сценария
+                  description_en: Scenario name
                 description:
                   type: string
                   optional: true
                   description: Описание сценария
+                  description_en: Scenario description
                 schedule:
                   type: string
                   optional: true
                   description: Cron выражение для scheduled сценариев (например, "0 9 * * *"). Опционально.
+                  description_en: Cron expression for scheduled scenarios (e.g. "0 9 * * *"). Optional.
                 trigger:
                   type: array
                   description: Массив триггеров сценария
+                  description_en: Array of scenario triggers
                 step:
                   type: array
                   description: Массив шагов сценария
+                  description_en: Array of scenario steps
     output:
       result:
         type: string
         description: Результат синхронизации (success/partial_success/error)
+        description_en: Sync result (success/partial_success/error)
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
 
   wait_for_action:
     description: "Ожидание завершения асинхронного действия по action_id. Возвращает результат основного действия AS IS (как будто оно выполнилось напрямую)"
+    description_en: "Wait for async action by action_id. Returns main action result AS IS"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -180,30 +216,38 @@ actions:
             optional: false
             min_length: 1
             description: "Уникальный ID асинхронного действия для ожидания"
+            description_en: "Unique async action ID to wait for"
           timeout:
             type: integer
             optional: true
             min: 0.0
             description: "Таймаут ожидания в секундах (опционально). При истечении таймаута wait_for_action возвращает ошибку timeout, но выполнение сценария продолжается. Основное асинхронное действие продолжает выполняться в фоне даже после таймаута."
+            description_en: "Wait timeout in seconds (optional). On timeout returns timeout error; scenario continues; async action keeps running in background."
     output:
       result:
         type: string
         description: "Результат зависит от основного действия: если основное действие завершилось успешно - возвращается его результат (success/error и т.д.), если ошибка ожидания (таймаут, Future не найден) - возвращается ошибка wait_for_action (timeout/error)"
+        description_en: "Result from main action on success, or wait error (timeout/error) on wait failure"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         description: "Данные ответа. Если основное действие завершилось успешно - возвращаются данные основного действия (полностью подменяются), если ошибка ожидания - отсутствует"
+        description_en: "Response data from main action on success; absent on wait error"

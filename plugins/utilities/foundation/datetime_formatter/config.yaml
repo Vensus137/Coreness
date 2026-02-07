@@ -1,5 +1,6 @@
 name: "datetime_formatter"
 description: "Утилита для работы с датами и временем в проекте"
+description_en: "Utility for date and time handling in the project"
 singleton: true
 
 dependencies:
@@ -11,241 +12,319 @@ settings:
     type: string
     default: "Europe/Moscow"
     description: "Временная зона по умолчанию"
+    description_en: "Default timezone"
   format:
     type: string
     default: "iso"
     description: "Формат по умолчанию для строк"
+    description_en: "Default format for strings"
 
 methods:
   now_utc:
     description: "Получить текущее время в UTC (naive datetime)"
+    description_en: "Get current time in UTC (naive datetime)"
     output:
       type: datetime
       description: "Текущее время UTC без timezone info"
+      description_en: "Current UTC time without timezone info"
   now_utc_tz:
     description: "Получить текущее время в UTC (timezone-aware datetime)"
+    description_en: "Get current time in UTC (timezone-aware datetime)"
     output:
       type: datetime
       description: "Текущее время UTC с timezone info"
+      description_en: "Current UTC time with timezone info"
   now_local:
     description: "Получить текущее время в локальной временной зоне (naive datetime)"
+    description_en: "Get current time in local timezone (naive datetime)"
     output:
       type: datetime
       description: "Текущее время в локальной зоне без timezone info"
+      description_en: "Current local time without timezone info"
   now_local_tz:
     description: "Получить текущее время в локальной временной зоне (timezone-aware datetime)"
+    description_en: "Get current time in local timezone (timezone-aware datetime)"
     output:
       type: datetime
       description: "Текущее время в локальной зоне с timezone info"
+      description_en: "Current local time with timezone info"
   to_utc:
     description: "Преобразовать datetime в UTC (naive)"
+    description_en: "Convert datetime to UTC (naive)"
     input:
       dt:
         type: datetime
         description: "Исходный datetime"
+        description_en: "Source datetime"
     output:
       type: datetime
       description: "Datetime в UTC без timezone info"
+      description_en: "Datetime in UTC without timezone info"
   to_utc_tz:
     description: "Преобразовать datetime в UTC (timezone-aware)"
+    description_en: "Convert datetime to UTC (timezone-aware)"
     input:
       dt:
         type: datetime
         description: "Исходный datetime"
+        description_en: "Source datetime"
     output:
       type: datetime
       description: "Datetime в UTC с timezone info"
+      description_en: "Datetime in UTC with timezone info"
   to_local:
     description: "Преобразовать datetime в локальную временную зону (naive)"
+    description_en: "Convert datetime to local timezone (naive)"
     input:
       dt:
         type: datetime
         description: "Исходный datetime"
+        description_en: "Source datetime"
     output:
       type: datetime
       description: "Datetime в локальной зоне без timezone info"
+      description_en: "Datetime in local zone without timezone info"
   to_local_tz:
     description: "Преобразовать datetime в локальную временную зону (timezone-aware)"
+    description_en: "Convert datetime to local timezone (timezone-aware)"
     input:
       dt:
         type: datetime
         description: "Исходный datetime"
+        description_en: "Source datetime"
     output:
       type: datetime
       description: "Datetime в локальной зоне с timezone info"
+      description_en: "Datetime in local zone with timezone info"
   format:
     description: "Форматировать datetime в строку по настройкам"
+    description_en: "Format datetime to string per settings"
     input:
       dt:
         type: datetime
         description: "Datetime для форматирования"
+        description_en: "Datetime to format"
     output:
       type: string
       description: "Отформатированная строка"
+      description_en: "Formatted string"
   to_string:
     description: "Форматировать datetime в строку по указанному формату"
+    description_en: "Format datetime to string by format"
     input:
       dt:
         type: datetime
         description: "Datetime для форматирования"
+        description_en: "Datetime to format"
       fmt:
         type: string
         description: "Формат (по умолчанию из настроек)"
+        description_en: "Format (default from settings)"
     output:
       type: string
       description: "Отформатированная строка"
+      description_en: "Formatted string"
   to_iso_string:
     description: "Преобразовать datetime в ISO строку в UTC"
+    description_en: "Convert datetime to ISO string in UTC"
     input:
       dt:
         type: datetime
         description: "Datetime для преобразования"
+        description_en: "Datetime to convert"
     output:
       type: string
       description: "ISO строка в UTC"
+      description_en: "ISO string in UTC"
   to_iso_local_string:
     description: "Преобразовать datetime в ISO строку в локальном часовом поясе"
+    description_en: "Convert datetime to ISO string in local timezone"
     input:
       dt:
         type: datetime
         description: "Datetime для преобразования"
+        description_en: "Datetime to convert"
     output:
       type: string
       description: "ISO строка в локальном часовом поясе (например, 2025-12-29T21:45:28+03:00)"
+      description_en: "ISO string in local timezone (e.g. 2025-12-29T21:45:28+03:00)"
   time_diff:
     description: "Вычислить разность между двумя datetime с учетом часовых поясов"
+    description_en: "Compute difference between two datetimes (timezone-aware)"
     input:
       dt1:
         type: [datetime, string]
         description: "Первый datetime (datetime или ISO строка)"
+        description_en: "First datetime (datetime or ISO string)"
       dt2:
         type: [datetime, string]
         description: "Второй datetime (datetime или ISO строка)"
+        description_en: "Second datetime (datetime or ISO string)"
     output:
       type: timedelta
       description: "Разность времени (dt2 - dt1)"
+      description_en: "Time difference (dt2 - dt1)"
   is_older_than:
     description: "Проверить, прошло ли больше указанного количества секунд с момента dt"
+    description_en: "Check if more than given seconds have passed since dt"
     input:
       dt:
         type: [datetime, string]
         description: "Datetime для проверки (datetime или ISO строка)"
+        description_en: "Datetime to check (datetime or ISO string)"
       seconds:
         type: integer
         description: "Количество секунд"
+        description_en: "Number of seconds"
     output:
       type: boolean
       description: "True если прошло больше указанного времени"
+      description_en: "True if more than given time has passed"
   is_newer_than:
     description: "Проверить, прошло ли меньше указанного количества секунд с момента dt"
+    description_en: "Check if less than given seconds have passed since dt"
     input:
       dt:
         type: [datetime, string]
         description: "Datetime для проверки (datetime или ISO строка)"
+        description_en: "Datetime to check (datetime or ISO string)"
       seconds:
         type: integer
         description: "Количество секунд"
+        description_en: "Number of seconds"
     output:
       type: boolean
       description: "True если прошло меньше указанного времени"
+      description_en: "True if less than given time has passed"
   to_datetime_string:
     description: "Преобразовать datetime или ISO-строку в формат ДДДД-ММ-ГГ ЧЧ:ММ:СС"
+    description_en: "Convert datetime or ISO string to YYYY-MM-DD HH:MM:SS"
     input:
       dt:
         type: "datetime|string"
         description: "Datetime или ISO строка"
+        description_en: "Datetime or ISO string"
     output:
       type: string
       description: "Строка в формате ДДДД-ММ-ГГ ЧЧ:ММ:СС"
+      description_en: "String in YYYY-MM-DD HH:MM:SS format"
   to_date_string:
     description: "Преобразовать datetime или ISO-строку в формат даты ДДДД-ММ-ГГ"
+    description_en: "Convert datetime or ISO string to date YYYY-MM-DD"
     input:
       dt:
         type: "datetime|string"
         description: "Datetime или ISO строка"
+        description_en: "Datetime or ISO string"
     output:
       type: string
       description: "Строка в формате ДДДД-ММ-ГГ"
+      description_en: "String in YYYY-MM-DD format"
   to_serializable:
     description: "Рекурсивно преобразовать все datetime в строки для JSON сериализации"
+    description_en: "Recursively convert all datetime to strings for JSON serialization"
     input:
       obj:
         type: "dict|list|datetime"
         description: "Объект для преобразования"
+        description_en: "Object to convert"
     output:
       type: "dict|list|string"
       description: "Объект с datetime преобразованными в строки"
+      description_en: "Object with datetime converted to strings"
   parse:
     description: "Парсить ISO строку в datetime"
+    description_en: "Parse ISO string to datetime"
     input:
       dt_str:
         type: string
         description: "ISO строка для парсинга"
+        description_en: "ISO string to parse"
     output:
       type: datetime
       description: "Datetime объект"
+      description_en: "Datetime object"
   parse_date_string:
     description: "Универсальный парсер дат из строк в различных форматах"
+    description_en: "Universal date parser from strings in various formats"
     input:
       date_str:
         type: string
         description: "Строка с датой для парсинга"
+        description_en: "Date string to parse"
     output:
       type: datetime
       description: "Datetime объект"
+      description_en: "Datetime object"
     notes: "Поддерживает форматы: ГГГГ-ММ-ДД, ГГГГ-ММ-ДД ЧЧ:ММ:СС, ISO формат"
   parse_to_utc:
     description: "Парсить строку с датой и возвращать datetime в UTC (naive)"
+    description_en: "Parse date string and return datetime in UTC (naive)"
     input:
       dt_str:
         type: string
         description: "Строка с датой для парсинга"
+        description_en: "Date string to parse"
     output:
       type: datetime
       description: "Datetime в UTC без timezone info"
+      description_en: "Datetime in UTC without timezone info"
     notes: "Поддерживает форматы: ГГГГ-ММ-ДД, ГГГГ-ММ-ДД ЧЧ:ММ:СС, ISO формат"
   parse_to_utc_tz:
     description: "Парсить строку с датой и возвращать datetime в UTC с timezone"
+    description_en: "Parse date string and return datetime in UTC with timezone"
     input:
       dt_str:
         type: string
         description: "Строка с датой для парсинга"
+        description_en: "Date string to parse"
     output:
       type: datetime
       description: "Datetime в UTC с timezone info"
+      description_en: "Datetime in UTC with timezone info"
     notes: "Поддерживает форматы: ГГГГ-ММ-ДД, ГГГГ-ММ-ДД ЧЧ:ММ:СС, ISO формат"
   parse_to_local:
     description: "Парсить строку с датой и возвращать datetime в локальном времени (naive)"
+    description_en: "Parse date string and return datetime in local time (naive)"
     input:
       dt_str:
         type: string
         description: "Строка с датой для парсинга"
+        description_en: "Date string to parse"
     output:
       type: datetime
       description: "Datetime в локальном времени без timezone info"
+      description_en: "Datetime in local time without timezone info"
     notes: "Поддерживает форматы: ГГГГ-ММ-ДД, ГГГГ-ММ-ДД ЧЧ:ММ:СС, ISO формат"
   parse_to_local_tz:
     description: "Парсить строку с датой и возвращать datetime в локальном времени с timezone"
+    description_en: "Parse date string and return datetime in local time with timezone"
     input:
       dt_str:
         type: string
         description: "Строка с датой для парсинга"
+        description_en: "Date string to parse"
     output:
       type: datetime
       description: "Datetime в локальном времени с timezone info"
+      description_en: "Datetime in local time with timezone info"
     notes: "Поддерживает форматы: ГГГГ-ММ-ДД, ГГГГ-ММ-ДД ЧЧ:ММ:СС, ISO формат"
   subtract_seconds:
     description: "Вычесть указанное количество секунд из datetime"
+    description_en: "Subtract given seconds from datetime"
     input:
       dt:
         type: [datetime, string]
         description: "Исходный datetime (datetime или ISO строка)"
+        description_en: "Source datetime (datetime or ISO string)"
       seconds:
         type: integer
         description: "Количество секунд для вычитания"
+        description_en: "Seconds to subtract"
     output:
       type: datetime
       description: "Datetime с вычтенными секундами"
+      description_en: "Datetime with seconds subtracted"
 
 features:
   - "Работа с временными зонами (UTC и локальная)"

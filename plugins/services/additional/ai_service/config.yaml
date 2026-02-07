@@ -1,5 +1,6 @@
 name: "ai_service"
 description: "Сервис для интеграции ИИ в сценарии"
+description_en: "Service for AI integration in scenarios"
 singleton: true
 dependencies:
   - "logger"
@@ -12,10 +13,12 @@ settings:
     type: boolean
     default: false
     description: "Разрешить использование дефолтного токена из ai_client"
+    description_en: "Allow using default token from ai_client"
   
 actions:
   completion:
     description: "AI completion через ИИ"
+    description_en: "AI completion via AI"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -26,32 +29,39 @@ actions:
             type: string
             optional: false
             description: "Текст запроса пользователя"
+            description_en: "User request text"
           system_prompt:
             type: string
             optional: true
             description: "Системный промпт для контекста"
+            description_en: "System prompt for context"
           model:
             type: string
             optional: true
             description: "Модель AI (по умолчанию из настроек)"
+            description_en: "AI model (default from settings)"
           max_tokens:
             type: integer
             optional: true
             description: "Максимальное количество токенов (по умолчанию из настроек)"
+            description_en: "Maximum tokens (default from settings)"
           temperature:
             type: float
             optional: true
             min: 0.0
             max: 2.0
             description: "Температура генерации (по умолчанию из настроек)"
+            description_en: "Generation temperature (default from settings)"
           context:
             type: string
             optional: true
             description: "Кастомный контекст (добавляется в финальное user сообщение в блок ДОП. КОНТЕКСТ вместе с other чанками из rag_chunks)"
+            description_en: "Custom context (added to final user message in ADDITIONAL CONTEXT block with other chunks from rag_chunks)"
           rag_chunks:
             type: array
             optional: true
             description: "Массив чанков из RAG поиска для автоматического формирования messages. Чанки группируются по типам: chat_history (диалог), knowledge (база знаний), other (другое - добавляется в ДОП. КОНТЕКСТ). Формат: [{content, document_type, role, processed_at, ...}]"
+            description_en: "Array of RAG search chunks for building messages. Types: chat_history, knowledge, other. Format: [{content, document_type, role, processed_at, ...}]"
             items:
               type: object
           json_mode:
@@ -59,86 +69,108 @@ actions:
             optional: true
             enum: ["json_object", "json_schema"]
             description: "Режим JSON для структурированного ответа: 'json_object' или 'json_schema'"
+            description_en: "JSON mode for structured response: 'json_object' or 'json_schema'"
           json_schema:
             type: object
             optional: true
             description: "JSON схема для режима json_schema (обязательна при json_mode='json_schema')"
+            description_en: "JSON schema for json_schema mode (required when json_mode='json_schema')"
           tools:
             type: array
             optional: true
             description: "Список доступных функций для вызова моделью (tool calling)"
+            description_en: "List of functions available for model to call (tool calling)"
           tool_choice:
             type: string
             optional: true
             description: "Управление выбором инструментов: 'none', 'auto', 'required' или объект с конкретной функцией"
+            description_en: "Tool selection: 'none', 'auto', 'required' or object with specific function"
           chunk_format:
             type: object
             optional: true
             description: "Формат отображения чанков в контексте. Шаблоны используют маркеры $ для подстановки значений: $content (обязательно) + любые поля из chunk_metadata. Поддерживается модификатор fallback: $field|fallback:значение. Маркеры работают только с данными чанка (content + chunk_metadata), не затрагивая общий контекст."
+            description_en: "Chunk display format in context. Templates use $ markers. $content + chunk_metadata. Fallback: $field|fallback:value. Markers apply only to chunk data."
             properties:
               chat_history:
                 type: string
                 optional: true
                 description: "Шаблон для chat_history чанков. Доступны: $content (обязательно) + любые поля из chunk_metadata"
+                description_en: "Template for chat_history chunks. Available: $content + chunk_metadata fields"
               knowledge:
                 type: string
                 optional: true
                 description: "Шаблон для knowledge чанков. Доступны: $content (обязательно) + любые поля из chunk_metadata"
+                description_en: "Template for knowledge chunks. Available: $content + chunk_metadata fields"
               other:
                 type: string
                 optional: true
                 description: "Шаблон для other чанков. Доступны: $content (обязательно) + любые поля из chunk_metadata"
+                description_en: "Template for other chunks. Available: $content + chunk_metadata fields"
           ai_token:
             type: string
             optional: false
             from_config: true
             description: "AI API ключ из конфига тенанта (_config.ai_token)"
+            description_en: "AI API key from tenant config (_config.ai_token)"
     output:
       result:
         type: string
         description: "Результат: success, error, timeout"
+        description_en: "Result: success, error, timeout"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки (например, ошибки валидации полей)"
+            description_en: "Error details (e.g. field validation errors)"
       response_data:
         type: object
         description: "Данные ответа"
+        description_en: "Response data"
         properties:
           response_completion:
             type: string
             description: "Completion ответ от ИИ"
+            description_en: "AI completion response"
           prompt_tokens:
             type: integer
             description: "Токены на вход (prompt + context)"
+            description_en: "Input tokens (prompt + context)"
           completion_tokens:
             type: integer
             description: "Токены на выход (сгенерированный ответ)"
+            description_en: "Output tokens (generated response)"
           total_tokens:
             type: integer
             description: "Общее количество токенов (prompt + completion)"
+            description_en: "Total tokens (prompt + completion)"
           model:
             type: string
             description: "Использованная модель"
+            description_en: "Model used"
           response_dict:
             type: object
             optional: true
             description: "Распарсенный словарь из JSON ответа (только при использовании json_mode)"
+            description_en: "Parsed dict from JSON response (when using json_mode)"
           tool_calls:
             type: array
             optional: true
             description: "Список вызовов функций, которые модель решила выполнить (только при использовании tools)"
+            description_en: "List of function calls the model decided to make (when using tools)"
     details: |
       **JSON режимы:**
       - `json_object`: модель возвращает валидный JSON (парсится в `response_dict`)
@@ -160,6 +192,7 @@ actions:
   
   embedding:
     description: "Генерация embedding для текста через ИИ"
+    description_en: "Generate text embedding via AI"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -170,56 +203,70 @@ actions:
             type: string
             optional: false
             description: "Текст для генерации embedding"
+            description_en: "Text for embedding generation"
           model:
             type: string
             optional: true
             description: "Модель для генерации embedding (по умолчанию из настроек ai_client.default_embedding_model)"
+            description_en: "Embedding model (default from ai_client.default_embedding_model)"
           dimensions:
             type: integer
             optional: true
             description: "Размерность embedding (по умолчанию из настроек ai_client.default_embedding_dimensions). Поддерживается только для OpenAI text-embedding-3-small и text-embedding-3-large"
+            description_en: "Embedding dimensions (default from ai_client). Supported for OpenAI text-embedding-3-* only"
           ai_token:
             type: string
             optional: false
             from_config: true
             description: "AI API ключ из конфига тенанта (_config.ai_token)"
+            description_en: "AI API key from tenant config (_config.ai_token)"
     output:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки (например, ошибки валидации полей)"
+            description_en: "Error details (e.g. field validation errors)"
       response_data:
         type: object
         description: "Данные ответа"
+        description_en: "Response data"
         properties:
           embedding:
             type: array
             description: "Вектор embedding (список чисел)"
+            description_en: "Embedding vector (list of numbers)"
             items:
               type: number
           model:
             type: string
             description: "Использованная модель"
+            description_en: "Model used"
           dimensions:
             type: integer
             description: "Размерность embedding"
+            description_en: "Embedding dimensions"
           total_tokens:
             type: integer
             description: "Общее количество токенов"
+            description_en: "Total tokens"
     details: |
       **Генерация векторных представлений текста (embeddings):**
       - Используется для RAG (Retrieval-Augmented Generation) и векторного поиска

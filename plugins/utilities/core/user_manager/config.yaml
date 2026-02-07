@@ -1,5 +1,6 @@
 name: "user_manager"
 description: "Управление данными пользователей с кэшированием"
+description_en: "User data management with caching"
 singleton: true
 
 dependencies:
@@ -14,10 +15,12 @@ settings:
     type: integer
     default: 600
     description: "Время жизни кэша в секундах (10 минут). Используется для явного указания TTL при сохранении в cache_manager"
+    description_en: "Cache TTL in seconds (10 min). Used when saving to cache_manager"
 
 methods:
   save_user_data:
     description: "Сохранение данных пользователя с кэшированием"
+    description_en: "Save user data with caching"
     input:
       user_data:
         type: object
@@ -25,92 +28,119 @@ methods:
           tenant_id:
             type: integer
             description: "ID тенанта"
+            description_en: "Tenant ID"
           user_id:
             type: integer
             description: "ID пользователя Telegram"
+            description_en: "Telegram user ID"
           username:
             type: string
             description: "Имя пользователя (опционально)"
+            description_en: "Username (optional)"
           first_name:
             type: string
             description: "Имя (опционально)"
+            description_en: "First name (optional)"
           last_name:
             type: string
             description: "Фамилия (опционально)"
+            description_en: "Last name (optional)"
           language_code:
             type: string
             description: "Код языка (опционально)"
+            description_en: "Language code (optional)"
           is_bot:
             type: boolean
             description: "Является ли ботом (опционально)"
+            description_en: "Is bot (optional)"
           is_premium:
             type: boolean
             description: "Премиум пользователь (опционально)"
+            description_en: "Premium user (optional)"
     output:
       type: boolean
       description: "True если данные сохранены успешно"
+      description_en: "True if data saved successfully"
 
   get_user_by_id:
     description: "Получение данных пользователя"
+    description_en: "Get user data"
     input:
       user_id:
         type: integer
         description: "ID пользователя Telegram"
+        description_en: "Telegram user ID"
       tenant_id:
         type: integer
         description: "ID тенанта"
+        description_en: "Tenant ID"
     output:
       type: object
       optional: true
       description: "Данные пользователя или None если не найден"
+      description_en: "User data or None if not found"
 
   set_user_state:
     description: "Установка состояния пользователя"
+    description_en: "Set user state"
     input:
       user_id:
         type: integer
         description: "ID пользователя Telegram"
+        description_en: "Telegram user ID"
       tenant_id:
         type: integer
         description: "ID тенанта"
+        description_en: "Tenant ID"
       state:
         type: string
         description: "Состояние пользователя (None или пустая строка для сброса)"
+        description_en: "User state (None or empty to clear)"
       expires_in_seconds:
         type: integer
         description: "Время истечения в секундах (None или 0 = навсегда, устанавливается 3000 год)"
+        description_en: "Expiry in seconds (None or 0 = forever)"
     output:
       type: object
       optional: true
       description: "Полные данные пользователя или None при ошибке"
+      description_en: "Full user data or None on error"
 
   get_user_state:
     description: "Получение состояния пользователя с проверкой истечения"
+    description_en: "Get user state with expiry check"
     input:
       user_id:
         type: integer
         description: "ID пользователя Telegram"
+        description_en: "Telegram user ID"
       tenant_id:
         type: integer
         description: "ID тенанта"
+        description_en: "Tenant ID"
     output:
       type: object
       optional: true
       description: "Словарь с user_state и user_state_expired_at или None при ошибке"
+      description_en: "Dict with user_state and user_state_expired_at or None on error"
 
   clear_user_state:
     description: "Очистка состояния пользователя (внутренний метод)"
+    description_en: "Clear user state (internal)"
     input:
       user_id:
         type: integer
         description: "ID пользователя Telegram"
+        description_en: "Telegram user ID"
       tenant_id:
         type: integer
         description: "ID тенанта"
+        description_en: "Tenant ID"
     output:
       type: object
       optional: true
       description: "Полные данные пользователя или None при ошибке"
+      description_en: "Full user data or None on error"
 
 features:
   - "Автоматическое сохранение данных пользователей при парсинге событий"

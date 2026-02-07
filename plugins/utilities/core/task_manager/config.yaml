@@ -1,5 +1,6 @@
 name: "task_manager"
 description: "Универсальная утилита для управления фоновыми задачами с очередями и приоритетами"
+description_en: "Universal utility for background task management with queues and priorities"
 singleton: true
 
 dependencies:
@@ -12,63 +13,71 @@ settings:
     type: string
     default: "common"
     description: "Дефолтная очередь для задач, если не указана очередь"
+    description_en: "Default queue for tasks when queue not specified"
   
   wait_interval:
     type: float
     default: 1.0
     description: "Интервал ожидания при переполненности очереди перед повторной попыткой выполнения задачи"
+    description_en: "Wait interval when queue is full before retry"
   
   # Queue settings
   queues:
-    type: object
-    common:
-      max_concurrent: 10000
-      timeout: 600.0
-      retry_count: 0
-      retry_delay: 0.1
-      description: "Общая очередь для фоновых задач"
-    action:
-      max_concurrent: 1000
-      timeout: 120.0
-      retry_count: 0
-      retry_delay: 0.1
-      description: "Очередь для действий из сценариев"
-    embedding:
-      max_concurrent: 10
-      timeout: 300.0
-      retry_count: 0
-      retry_delay: 0.1
-      description: "Очередь для параллельной генерации embeddings"
     description: "Настройки очередей для управления фоновыми задачами"
+    description_en: "Queue settings for background task management"
+    default:
+      common:
+        max_concurrent: 10000
+        timeout: 600.0
+        retry_count: 0
+        retry_delay: 0.1
+      action:
+        max_concurrent: 1000
+        timeout: 120.0
+        retry_count: 0
+        retry_delay: 0.1
+      embedding:
+        max_concurrent: 10
+        timeout: 300.0
+        retry_count: 0
+        retry_delay: 0.1
 
 methods:
   submit_task:
     description: "Отправляет задачу в соответствующую очередь для фонового выполнения"
+    description_en: "Submit task to queue for background execution"
     input:
       task_id:
         type: string
         description: "Уникальный идентификатор задачи"
+        description_en: "Unique task identifier"
       coro:
         type: callable
         description: "Корутина для выполнения"
+        description_en: "Coroutine to execute"
       queue_name:
         type: string
         optional: true
         description: "Название очереди (common, action, embedding). Если не указано - используется дефолтная очередь common"
+        description_en: "Queue name (common, action, embedding). Default: common"
       fire_and_forget:
         type: boolean
         optional: true
         default: false
         description: "Если true - задача добавляется в очередь без ожидания результата. Если false - возвращается Future для await"
+        description_en: "If true - enqueue without waiting. If false - returns Future for await"
     output:
       type: object
       description: "Dict с результатом выполнения: {'result': 'success'} или {'result': 'error', 'error': '...'}"
+      description_en: "Dict with result: {'result': 'success'} or {'result': 'error', 'error': '...'}"
   get_stats:
     description: "Возвращает статистику работы TaskManager"
+    description_en: "Return TaskManager statistics"
     input: {}
     output:
       type: object
       description: "Объект со статистикой: активные процессоры, размеры очередей, лимиты, счетчики задач"
+      description_en: "Object with stats: active processors, queue sizes, limits, task counters"
 
 features:
   - "Три очереди: common (общая для фоновых задач), action (для действий из сценариев) и embedding (для параллельной генерации embeddings)"

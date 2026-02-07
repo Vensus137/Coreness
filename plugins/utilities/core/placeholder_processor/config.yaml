@@ -1,5 +1,6 @@
 name: "placeholder_processor"
 description: "Высокопроизводительный процессор плейсхолдеров с оптимизациями для обработки шаблонов в действиях и поддержкой вложенных плейсхолдеров (включая параметры модификаторов)"
+description_en: "High-performance placeholder processor with optimizations for template processing in actions and nested placeholder support (including modifier parameters)"
 singleton: true
 dependencies:
   - "logger"
@@ -10,61 +11,78 @@ settings:
     type: boolean
     default: true
     description: "Включить быструю проверку наличия плейсхолдеров без regex"
+    description_en: "Enable fast placeholder check without regex"
   max_nesting_depth:
     type: integer
     default: 10
     description: "Максимальная глубина рекурсии при обработке вложенных плейсхолдеров (включая параметры модификаторов)"
+    description_en: "Max recursion depth for nested placeholders (including modifier params)"
 methods:
   process_placeholders:
     description: "Универсальный метод обработки плейсхолдеров с поддержкой вложенности и цепочек модификаторов"
+    description_en: "Universal placeholder processing with nesting and modifier chains"
     input:
       data_with_placeholders:
         type: dict
         description: "Словарь с плейсхолдерами для обработки"
+        description_en: "Dict with placeholders to process"
       values_dict:
         type: dict
         description: "Словарь с значениями для подстановки"
+        description_en: "Dict with values for substitution"
       max_depth:
         type: integer
         optional: true
         description: "Максимальная глубина вложенности (по умолчанию из настройки max_nesting_depth)"
+        description_en: "Max nesting depth (default from max_nesting_depth setting)"
     output:
       type: dict
       description: "Словарь с обработанными плейсхолдерами"
+      description_en: "Dict with processed placeholders"
 
   process_placeholders_full:
     description: "Обрабатывает плейсхолдеры и возвращает ПОЛНЫЙ объект с обработанными плейсхолдерами"
+    description_en: "Process placeholders and return full object with replaced placeholders"
     input:
       data_with_placeholders:
         type: dict
         description: "Словарь с плейсхолдерами для обработки"
+        description_en: "Dict with placeholders to process"
       values_dict:
         type: dict
         description: "Словарь с значениями для подстановки"
+        description_en: "Dict with values for substitution"
       max_depth:
         type: integer
         optional: true
         description: "Максимальная глубина вложенности (по умолчанию из настройки max_nesting_depth)"
+        description_en: "Max nesting depth (default from max_nesting_depth setting)"
     output:
       type: dict
       description: "Полный исходный объект с замененными плейсхолдерами (включая все служебные поля)"
+      description_en: "Full source object with replaced placeholders (including all internal fields)"
 
   process_text_placeholders:
     description: "Универсальный метод для обработки плейсхолдеров в строке"
+    description_en: "Universal method for placeholders in string"
     input:
       text:
         type: string
         description: "Строка с плейсхолдерами для обработки"
+        description_en: "String with placeholders to process"
       values_dict:
         type: dict
         description: "Словарь с значениями для подстановки"
+        description_en: "Dict with values for substitution"
       max_depth:
         type: integer
         optional: true
         description: "Максимальная глубина вложенности (по умолчанию из настройки max_nesting_depth)"
+        description_en: "Max nesting depth (default from max_nesting_depth setting)"
     output:
       type: string
       description: "Обработанная строка с замененными плейсхолдерами (поддерживает вложенные плейсхолдеры)"
+      description_en: "Processed string with replaced placeholders (supports nested placeholders)"
 
 details: |
   Синтаксис плейсхолдеров:

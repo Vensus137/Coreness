@@ -1,5 +1,6 @@
 name: validator
-description: Сервис для валидации условий в сценариях
+description: "Сервис для валидации условий в сценариях"
+description_en: "Service for validating conditions in scenarios"
 singleton: true
 type: service
 
@@ -12,6 +13,7 @@ dependencies:
 actions:
   validate:
     description: Валидация условия с возвратом результата
+    description_en: Validate condition and return result
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -23,25 +25,31 @@ actions:
             optional: false
             min_length: 1
             description: Условие для валидации (поддерживает все операторы condition_parser)
+            description_en: Condition to validate (supports all condition_parser operators)
     output:
       result:
         type: string
         description: "Результат: success, failed, error"
+        description_en: "Result: success, failed, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
     details: |
       Поддерживаемые операторы: `==`, `!=`, `>`, `<`, `>=`, `<=`, `in`, `not in`, `~`, `!~`, `regex`, `is_null`, `not is_null`
       

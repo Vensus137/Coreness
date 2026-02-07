@@ -1,5 +1,6 @@
 name: "ai_client"
 description: "Утилита для работы с AI API (Polza.ai, OpenRouter и др.)"
+description_en: "Utility for AI API (Polza.ai, OpenRouter, etc.)"
 singleton: true
 dependencies:
   - "logger"
@@ -11,173 +12,219 @@ settings:
     type: string
     default: "${AI_API_KEY}"
     description: "AI API ключ (Polza.ai, OpenRouter и др.)"
+    description_en: "AI API key (Polza.ai, OpenRouter, etc.)"
   base_url:
     type: string
     default: "https://api.polza.ai/v1"
     description: "Базовый URL AI API (по умолчанию Polza.ai)"
+    description_en: "Base URL for AI API (default Polza.ai)"
   default_model:
     type: string
     default: "google/gemini-2.5-flash"
     description: "Модель по умолчанию"
+    description_en: "Default model"
   max_tokens:
     type: integer
     default: 200
     description: "Максимальное количество токенов"
+    description_en: "Maximum tokens"
   temperature:
     type: float
     default: 0.7
     description: "Температура генерации"
+    description_en: "Generation temperature"
   default_embedding_model:
     type: string
     default: "text-embedding-3-small"
     description: "Модель по умолчанию для генерации embeddings"
+    description_en: "Default model for embeddings"
   default_embedding_dimensions:
     type: integer
     default: 1024
     description: "Размерность embedding по умолчанию (поддерживается только для OpenAI text-embedding-3-small и text-embedding-3-large)"
+    description_en: "Default embedding dimensions (OpenAI text-embedding-3-* only)"
     
 methods:
   completion:
     description: "AI completion через AI API (Polza.ai, OpenRouter и др.)"
+    description_en: "AI completion via AI API (Polza.ai, OpenRouter, etc.)"
     input:
       prompt:
         type: string
         description: "Текст запроса пользователя"
+        description_en: "User request text"
       system_prompt:
         type: string
         optional: true
         description: "Системный промпт для контекста"
+        description_en: "System prompt for context"
       model:
         type: string
         optional: true
         description: "Модель AI (по умолчанию из настроек)"
+        description_en: "AI model (default from settings)"
       max_tokens:
         type: integer
         optional: true
         description: "Максимальное количество токенов (по умолчанию из настроек)"
+        description_en: "Maximum tokens (default from settings)"
       temperature:
         type: float
         optional: true
         description: "Температура генерации (по умолчанию из настроек)"
+        description_en: "Generation temperature (default from settings)"
       context:
         type: string
         optional: true
         description: "Кастомный контекст (добавляется в финальное user сообщение вместе с knowledge и prompt чанками из rag_chunks)"
+        description_en: "Custom context (added to final user message with knowledge/prompt chunks)"
       json_mode:
         type: string
         optional: true
         description: "Режим JSON для структурированного ответа: 'json_object' или 'json_schema'"
+        description_en: "JSON mode: 'json_object' or 'json_schema'"
       json_schema:
         type: object
         optional: true
         description: "JSON схема для режима json_schema (обязательна при json_mode='json_schema')"
+        description_en: "JSON schema for json_schema mode (required when json_mode='json_schema')"
       tools:
         type: array
         optional: true
         description: "Список доступных функций для вызова моделью (tool calling)"
+        description_en: "List of functions for tool calling"
       tool_choice:
         type: string
         optional: true
         description: "Управление выбором инструментов: 'none', 'auto', 'required' или объект с конкретной функцией"
+        description_en: "Tool choice: 'none', 'auto', 'required' or specific function object"
       api_key:
         type: string
         optional: true
         description: "API ключ для переопределения (опционально, используется токен тенанта или дефолтный из настроек)"
+        description_en: "Override API key (optional; tenant token or default from settings)"
     output:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки (например, ошибки валидации полей)"
+            description_en: "Error details (e.g. field validation errors)"
       response_data:
         type: object
         description: "Данные ответа"
+        description_en: "Response data"
         properties:
           response_completion:
             type: string
             description: "Completion ответ от ИИ"
+            description_en: "AI completion response"
           prompt_tokens:
             type: integer
             description: "Токены на вход (prompt + context)"
+            description_en: "Input tokens (prompt + context)"
           completion_tokens:
             type: integer
             description: "Токены на выход (сгенерированный ответ)"
+            description_en: "Output tokens (generated response)"
           total_tokens:
             type: integer
             description: "Общее количество токенов (prompt + completion)"
+            description_en: "Total tokens (prompt + completion)"
           model:
             type: string
             description: "Использованная модель"
+            description_en: "Model used"
           response_dict:
             type: object
             optional: true
             description: "Распарсенный словарь из JSON ответа (только при использовании json_mode)"
+            description_en: "Parsed dict from JSON response (when using json_mode)"
           tool_calls:
             type: array
             optional: true
             description: "Список вызовов функций, которые модель решила выполнить (только при использовании tools)"
+            description_en: "List of function calls made by model (when using tools)"
   
   embedding:
     description: "Генерация embedding для текста через AI API (Polza.ai, OpenRouter и др.)"
+    description_en: "Generate text embedding via AI API (Polza.ai, OpenRouter, etc.)"
     input:
       text:
         type: string
         description: "Текст для генерации embedding"
+        description_en: "Text for embedding generation"
       model:
         type: string
         optional: true
         description: "Модель для генерации embedding (по умолчанию из настроек default_embedding_model)"
+        description_en: "Embedding model (default from default_embedding_model)"
       dimensions:
         type: integer
         optional: true
         description: "Размерность embedding (по умолчанию из настроек default_embedding_dimensions). Поддерживается только для OpenAI text-embedding-3-small и text-embedding-3-large. Для других моделей (Cohere, HuggingFace и др.) размерность фиксирована и параметр игнорируется"
+        description_en: "Embedding dimensions (default from settings). OpenAI text-embedding-3-* only; fixed for other models"
       api_key:
         type: string
         optional: true
         description: "API ключ для переопределения (опционально)"
+        description_en: "Override API key (optional)"
     output:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
       response_data:
         type: object
         description: "Данные ответа"
+        description_en: "Response data"
         properties:
           embedding:
             type: array
             description: "Вектор embedding (список чисел)"
+            description_en: "Embedding vector (list of numbers)"
             items:
               type: number
           model:
             type: string
             description: "Использованная модель"
+            description_en: "Model used"
           dimensions:
             type: integer
             description: "Размерность embedding"
+            description_en: "Embedding dimensions"
           total_tokens:
             type: integer
             description: "Общее количество токенов"
+            description_en: "Total tokens"

@@ -1,5 +1,6 @@
 name: "scenario_helper"
 description: "Вспомогательные утилиты для управления выполнением сценариев"
+description_en: "Helper utilities for scenario execution management"
 singleton: true
 
 dependencies:
@@ -13,10 +14,12 @@ settings:
     type: integer
     default: 600
     description: "Время жизни кэша для генератора ID в секундах (10 минут). Используется для явного указания TTL при сохранении в cache_manager"
+    description_en: "Cache TTL for ID generator in seconds (10 min). Used when saving to cache_manager"
 
 actions:
   sleep:
     description: "Задержка выполнения на указанное количество секунд"
+    description_en: "Delay execution for given seconds"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -28,28 +31,35 @@ actions:
             optional: false
             min: 0.0
             description: "Количество секунд задержки (можно использовать дробные значения, например 0.5 или 22.5)"
+            description_en: "Seconds to delay (float allowed, e.g. 0.5, 22.5)"
     output:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
 
   generate_int:
     description: "Генерация случайного целого числа в заданном диапазоне"
+    description_en: "Generate random integer in range"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -60,10 +70,12 @@ actions:
             type: integer
             optional: false
             description: "Минимальное значение (включительно)"
+            description_en: "Minimum value (inclusive)"
           max:
             type: integer
             optional: false
             description: "Максимальное значение (включительно)"
+            description_en: "Maximum value (inclusive)"
           seed:
             type: any
             optional: true
@@ -72,21 +84,26 @@ actions:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         properties:
@@ -94,6 +111,7 @@ actions:
             type: integer
             replaceable: true
             description: "Сгенерированное случайное число"
+            description_en: "Generated random number"
           random_seed:
             type: string
             optional: true
@@ -101,6 +119,7 @@ actions:
 
   generate_array:
     description: "Генерация массива случайных чисел в заданном диапазоне (по умолчанию без повторений)"
+    description_en: "Generate array of random numbers in range (default no repeats)"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -111,10 +130,12 @@ actions:
             type: integer
             optional: false
             description: "Минимальное значение (включительно)"
+            description_en: "Minimum value (inclusive)"
           max:
             type: integer
             optional: false
             description: "Максимальное значение (включительно)"
+            description_en: "Maximum value (inclusive)"
           count:
             type: integer
             optional: false
@@ -132,21 +153,26 @@ actions:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         properties:
@@ -163,6 +189,7 @@ actions:
 
   choose_from_array:
     description: "Выбор случайных элементов из массива без повторений"
+    description_en: "Pick random items from array without repeats"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -186,21 +213,26 @@ actions:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         properties:
@@ -215,6 +247,7 @@ actions:
 
   modify_array:
     description: "Модификация массива: добавление, удаление элементов или очистка"
+    description_en: "Modify array: add, remove items or clear"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -246,17 +279,21 @@ actions:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         properties:
@@ -267,6 +304,7 @@ actions:
 
   check_value_in_array:
     description: "Проверка наличия значения в массиве"
+    description_en: "Check if value exists in array"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -289,17 +327,21 @@ actions:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         properties:
@@ -310,6 +352,7 @@ actions:
 
   generate_unique_id:
     description: "Генерация уникального ID через автоинкремент в БД (детерминированная генерация - при одинаковых seed возвращает тот же ID). Если seed не указан, генерируется случайный UUID"
+    description_en: "Generate unique ID via DB autoincrement (deterministic; same seed = same ID). If no seed, random UUID"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -325,21 +368,26 @@ actions:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         properties:
@@ -350,6 +398,7 @@ actions:
 
   set_cache:
     description: "Установка временных данных в кэш сценария. Все переданные параметры возвращаются в response_data и автоматически попадают в плоский _cache по умолчанию."
+    description_en: "Set temporary data in scenario cache. All params returned in response_data and go to flat _cache by default."
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -364,21 +413,26 @@ actions:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         description: "Все переданные параметры из объекта cache возвращаются в response_data и автоматически попадают в плоский _cache по умолчанию."
@@ -421,6 +475,7 @@ actions:
 
   format_data_to_text:
     description: "Форматирование структурированных данных (JSON/YAML) в текстовый формат для промптов и сообщений"
+    description_en: "Format structured data (JSON/YAML) to text for prompts and messages"
     access_rules: ["data_integrity"]
     public: true
     input:
@@ -449,21 +504,26 @@ actions:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
       response_data:
         type: object
         properties:

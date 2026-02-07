@@ -8,19 +8,6 @@ keywords: coreness events, placeholders, event fields, telegram events, user_id,
 
 Complete description of all fields available in events after parsing through EventParser.
 
-## 📋 Table of Contents
-
-- [Event Types](#event-types) — description of all system event types
-- [Common Fields](#common-fields) — fields available in all events
-- [Scheduled Scenario Fields](#scheduled-scenario-fields) — additional fields for scheduled scenarios
-- [Message Fields](#message-fields) — additional fields for `message` type events
-- [Callback Fields](#callback-fields) — additional fields for `callback` type events
-- [Payment Events](#payment-events) — fields for payment events via Telegram
-- [Member Events](#member-events) — fields for member join/leave events
-- [Inline Keyboard](#inline-keyboard) — inline keyboard structure in messages
-- [Attachment Fields](#attachment-fields) — attachment structure in messages
-- [Usage Examples](#usage-examples) — how to use fields in scenarios
-
 ## Event Types
 
 System supports following event types:
