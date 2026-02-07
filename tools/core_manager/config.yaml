@@ -48,7 +48,7 @@ system_update:
     - requests
     - gitpython
   repository:
-    url: "https://github.com/Vensus137/Project-Beta"
+    url: "https://github.com/Vensus137/Coreness"
     branch: "main"
   token_env: "GITHUB_TOKEN"
   settings:
