@@ -1,5 +1,6 @@
 name: "condition_parser"
 description: "Универсальный парсер условий для сценариев с поддержкой всех операторов и AST компиляции"
+description_en: "Universal condition parser for scenarios with full operator support and AST compilation"
 singleton: true
 dependencies:
   - "logger"
@@ -7,48 +8,62 @@ dependencies:
 methods:
   parse_condition_string:
     description: "Парсинг строки условий с извлечением всех условий с == для дерева поиска"
+    description_en: "Parse condition string and extract all == conditions for search tree"
     input:
       condition_string:
         type: string
         description: "Строка с условиями для парсинга"
+        description_en: "Condition string to parse"
     output:
       type: dict
       description: "Словарь с результатами парсинга"
+      description_en: "Dict with parse results"
 
   add_to_tree:
     description: "Добавление элемента в дерево поиска"
+    description_en: "Add item to search tree"
     input:
       search_tree:
         type: dict
         description: "Дерево поиска для обновления"
+        description_en: "Search tree to update"
       parsed_condition:
         type: dict
         description: "Результат парсинга условий"
+        description_en: "Parsed condition result"
       item_name:
         type: string
         description: "Название элемента (например, 'scenario_id')"
+        description_en: "Item name (e.g. 'scenario_id')"
       item_value:
         type: any
         description: "Значение элемента (например, 10)"
+        description_en: "Item value (e.g. 10)"
     output:
       type: boolean
       description: "True если успешно добавлено"
+      description_en: "True if added successfully"
 
   check_match:
     description: "Универсальная проверка соответствия данных условию"
+    description_en: "Check if data matches condition"
     input:
       condition:
         type: any
         description: "Строка условий или распарсенное условие"
+        description_en: "Condition string or parsed condition"
       data:
         type: dict
         description: "Данные для проверки (например, event)"
+        description_en: "Data to check (e.g. event)"
     output:
       type: boolean
       description: "True если данные соответствуют условию"
+      description_en: "True if data matches condition"
 
   build_condition:
     description: "Сборка условия из массива структур с простыми полями и кастомными условиями"
+    description_en: "Build condition from array of structures with simple fields and custom conditions"
     input:
       configs:
         type: list
@@ -59,21 +74,27 @@ methods:
           - Поле 'condition' - кастомное условие, добавляется как есть
           Все поля внутри структуры склеиваются через AND.
           Структуры между собой склеиваются через OR.
+        description_en: "Array of structures to convert to condition. Simple fields -> field == 'value'; 'condition' field added as-is. AND within structure, OR between structures."
     output:
       type: string
       description: |
         Единая строка условий.
         Пример: "(event_type == 'message' and user_state == 'admin') or (event_type == 'callback' and condition_field)"
+      description_en: "Single condition string. Example: (event_type == 'message' and user_state == 'admin') or (...)"
         
   search_in_tree:
     description: "Поиск значений в дереве по данным события"
+    description_en: "Search tree for values by event data"
     input:
       search_tree:
         type: dict
         description: "Дерево поиска для поиска значений"
+        description_en: "Search tree to search in"
       data:
         type: dict
         description: "Данные события для поиска"
+        description_en: "Event data for search"
     output:
       type: list
       description: "Список найденных значений (например, scenario_id)"
+      description_en: "List of found values (e.g. scenario_id)"

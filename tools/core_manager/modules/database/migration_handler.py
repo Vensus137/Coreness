@@ -73,7 +73,7 @@ class MigrationHandler:
                 return False
 
             print()
-            if not run_backup(self.project_root, self.config, self.translator):
+            if not run_backup(self.project_root, config, self.translator):
                 print(Colors.error(f"\n✗ {self.translator.get('database.backup_failed_skip_migration')}"))
                 db_connection.cleanup()
                 return False
@@ -91,7 +91,7 @@ class MigrationHandler:
             import traceback
             traceback.print_exc()
             print()
-            if not run_restore_latest(self.project_root, self.config, self.translator):
+            if not run_restore_latest(self.project_root, config, self.translator):
                 print(Colors.error(self.translator.get("database.restore_failed_manual")))
             return False
         finally:

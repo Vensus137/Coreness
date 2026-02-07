@@ -1,5 +1,6 @@
 name: "action_validator"
 description: "Утилита для валидации входных данных действий по схемам из config.yaml"
+description_en: "Utility for validating action input data against config.yaml schemas"
 singleton: true
 
 dependencies:
@@ -9,39 +10,49 @@ dependencies:
 methods:
   validate_action_input:
     description: "Валидация входных данных действия по схеме из config.yaml"
+    description_en: "Validate action input against config.yaml schema"
     input:
       service_name:
         type: string
         description: "Имя сервиса (например, 'ai_service')"
+        description_en: "Service name (e.g. 'ai_service')"
       action_name:
         type: string
         description: "Имя действия (например, 'completion')"
+        description_en: "Action name (e.g. 'completion')"
       data:
         type: object
         description: "Данные для валидации"
+        description_en: "Data to validate"
     output:
       result:
         type: string
         description: "Результат: success или error"
+        description_en: "Result: success or error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки (например, ошибки валидации полей)"
+            description_en: "Error details (e.g. field validation errors)"
       validated_data:
         type: object
         optional: true
         description: "Валидированные и преобразованные данные (только при result=success). Содержит исходные данные с преобразованными типами для полей из схемы"
+        description_en: "Validated and coerced data (when result=success). Original data with schema type coercion"
     details: |
       **Поддерживаемые параметры в схемах валидации (input.data.properties):**
       
@@ -69,16 +80,20 @@ methods:
   
   invalidate_cache:
     description: "Инвалидация кэша моделей валидации"
+    description_en: "Invalidate validation schema cache"
     input:
       service_name:
         type: string
         optional: true
         description: "Имя сервиса (опционально, если не указано - очищается весь кэш)"
+        description_en: "Service name (optional; if not set - clear full cache)"
       action_name:
         type: string
         optional: true
         description: "Имя действия (опционально, требуется вместе с service_name)"
+        description_en: "Action name (optional; required together with service_name)"
     output:
       type: void
       description: "Нет возвращаемого значения"
+      description_en: "No return value"
 

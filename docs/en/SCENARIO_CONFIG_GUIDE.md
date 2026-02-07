@@ -8,27 +8,6 @@ keywords: telegram bot scenarios, YAML configuration, triggers, placeholders, sc
 
 > **📖 Complete guide** to creating and configuring scenarios for Telegram bots with support for placeholders, transitions, and dynamic logic.
 
-## 📑 Table of Contents
-
-- [Scenario Structure](#-scenario-structure)
-- [Triggers (trigger)](#-triggers-trigger)
-- [Scheduled Scenarios (Cron Execution)](#-scheduled-scenarios-cron-execution)
-- [Actions (step)](#-actions-step)
-  - [Data Caching in Scenarios](#data-caching-in-scenarios)
-  - [Saving Context Between Scenarios](#saving-context-between-scenarios)
-- [Transitions (transition)](#-transitions-transition)
-- [Placeholders](#-placeholders)
-  - [Placeholder Syntax](#placeholder-syntax)
-  - [Available Data](#available-data)
-  - [Accessing Nested Elements](#accessing-nested-elements)
-  - [Getting File Information](#getting-file-information)
-  - [Modifiers](#modifiers)
-  - [Usage Examples](#usage-examples)
-  - [Practical Examples](#practical-examples)
-- [Async Actions](#-async-actions-async-actions)
-
----
-
 ## 📋 Scenario Structure
 
 ### Scenario Organization
@@ -1121,7 +1100,10 @@ params:
 > **Universal data access!** Support for dot notation for objects and indexes for arrays.
 
 <table>
+<thead>
 <tr><th>Syntax</th><th>Description</th><th>Example</th><th>Result</th></tr>
+</thead>
+<tbody>
 <tr><td colspan="4"><strong>Objects</strong></td></tr>
 <tr><td><code>object.field</code></td><td>Access object field</td><td><code>{message.text}</code></td><td><code>Hello world</code></td></tr>
 <tr><td><code>object.field.subfield</code></td><td>Nested fields</td><td><code>{user.profile.name}</code></td><td><code>John Doe</code></td></tr>
@@ -1132,6 +1114,7 @@ params:
 <tr><td><code>array[index][index]</code></td><td>Nested arrays</td><td><code>{matrix[0][1]}</code></td><td><code>2</code> (matrix element)</td></tr>
 <tr><td colspan="4"><strong>Combined</strong></td></tr>
 <tr><td><code>object.array[index].field</code></td><td>Mixed access</td><td><code>{event.attachment[0].file_id}</code></td><td><code>file_1</code></td></tr>
+</tbody>
 </table>
 
 **Usage Examples:**
@@ -1189,7 +1172,10 @@ file_info:
 ### Modifiers:
 
 <table>
+<thead>
 <tr><th>Modifier</th><th>Description</th><th>Example</th><th>Result</th></tr>
+</thead>
+<tbody>
 <tr><td colspan="4"><strong>Arithmetic Operations</strong></td></tr>
 <tr><td><code>+value</code></td><td>Addition</td><td><code>{price|+100}</code></td><td><code>1500</code> (if price=1400)</td></tr>
 <tr><td><code>-value</code></td><td>Subtraction</td><td><code>{price|-50}</code></td><td><code>1350</code> (if price=1400)</td></tr>
@@ -1248,6 +1234,7 @@ file_info:
 <tr><td colspan="4"><strong>Async Actions</strong></td></tr>
 <tr><td><code>ready</code></td><td>Check async action readiness</td><td><code>{_async_action.ai_req_1|ready}</code></td><td><code>true</code> if completed, <code>false</code> if executing</td></tr>
 <tr><td><code>not_ready</code></td><td>Check action still executing</td><td><code>{_async_action.ai_req_1|not_ready}</code></td><td><code>true</code> if executing, <code>false</code> if ready</td></tr>
+</tbody>
 </table>
 
 ### Usage Examples:

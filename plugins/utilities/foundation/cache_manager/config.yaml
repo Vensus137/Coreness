@@ -1,5 +1,6 @@
 name: "cache_manager"
 description: "Единая утилита для глобального кэширования данных"
+description_en: "Unified utility for global data caching"
 singleton: true
 
 dependencies:
@@ -15,84 +16,107 @@ settings:
     type: integer
     default: 3600
     description: "TTL по умолчанию для ключей без явно указанного TTL и без настройки в ttl (1 час, для защиты от утечки памяти)"
+    description_en: "Default TTL for keys without explicit TTL (1 hour, memory leak protection)"
   
   cleanup_interval:
     type: integer
     default: 60
     description: "Интервал периодической очистки истекших элементов кэша в секундах (1 минута)"
+    description_en: "Interval for periodic cleanup of expired cache items (seconds)"
   
   cleanup_sample_size:
     type: integer
     default: 50
     description: "Размер случайной выборки для проверки истекших элементов (как в Redis)"
+    description_en: "Sample size for expired item check (Redis-style)"
   
   cleanup_expired_threshold:
     type: float
     default: 0.25
     description: "Порог процента истекших элементов в выборке для полной очистки (25% как в Redis)"
+    description_en: "Threshold of expired items in sample to trigger full cleanup (25% Redis-style)"
 
 methods:
   get:
     description: "Получение значения из кэша по ключу"
+    description_en: "Get value from cache by key"
     input:
       key:
         type: string
         description: "Ключ кэша (формат: 'group:id', например 'bot:123', 'user:456')"
+        description_en: "Cache key (format: 'group:id', e.g. 'bot:123', 'user:456')"
     output:
       type: any
       description: "Значение из кэша или None если не найдено"
+      description_en: "Value from cache or None if not found"
   
   set:
     description: "Установка значения в кэш"
+    description_en: "Set value in cache"
     input:
       key:
         type: string
         description: "Ключ кэша (формат: 'group:id', например 'bot:123', 'user:456')"
+        description_en: "Cache key (format: 'group:id')"
       value:
         type: any
         description: "Значение для кэширования"
+        description_en: "Value to cache"
       ttl:
         type: integer
         optional: true
         description: "TTL в секундах (если не указан, используется default_ttl из настроек)"
+        description_en: "TTL in seconds (default_ttl from settings if not set)"
     output:
       type: boolean
       description: "Успешно ли установлено значение"
+      description_en: "Whether value was set"
   
   delete:
     description: "Удаление значения из кэша"
+    description_en: "Delete value from cache"
     input:
       key:
         type: string
         description: "Ключ кэша (формат: 'group:id')"
+        description_en: "Cache key (format: 'group:id')"
     output:
       type: boolean
       description: "Успешно ли удалено значение"
+      description_en: "Whether value was deleted"
   
   exists:
     description: "Проверка существования ключа в кэше"
+    description_en: "Check if key exists in cache"
     input:
       key:
         type: string
         description: "Ключ кэша (формат: 'group:id')"
+        description_en: "Cache key (format: 'group:id')"
     output:
       type: boolean
       description: "Существует ли ключ в кэше"
+      description_en: "Whether key exists in cache"
   
   invalidate_pattern:
     description: "Инвалидация ключей по паттерну"
+    description_en: "Invalidate keys by pattern"
     input:
       pattern:
         type: string
         description: "Паттерн для поиска ключей (например, 'bot:*' для всех ключей группы bot, 'tenant:123:*' для конкретного тенанта)"
+        description_en: "Pattern for key match (e.g. 'bot:*', 'tenant:123:*')"
     output:
       type: integer
       description: "Количество удаленных ключей"
+      description_en: "Number of keys deleted"
   
   clear:
     description: "Очистка всего кэша"
+    description_en: "Clear entire cache"
     input: {}
     output:
       type: boolean
       description: "Успешно ли очищен кэш"
+      description_en: "Whether cache was cleared"
 

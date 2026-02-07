@@ -1,5 +1,6 @@
 name: "event_processor"
 description: "Сервис для обработки событий от пулинга"
+description_en: "Service for processing polling events"
 singleton: true
 
 dependencies:
@@ -18,46 +19,56 @@ settings:
     type: float
     default: 0.5
     description: "Таймаут ожидания медиагрупп в секундах"
+    description_en: "Media group wait timeout in seconds"
   
   # Event time filtering settings
   enable_time_comparison:
     type: boolean
     default: false
     description: "Включить/выключить сравнение времени события при пуллинге. Если false, все события обрабатываются без проверки времени"
+    description_en: "Enable/disable event time comparison when polling. If false, all events processed without time check"
   
   startup_time_offset:
     type: integer
     default: 0
     description: "Смещение времени события в секундах. Положительное = игнорировать события старше N секунд. Отрицательное = игнорировать события младше N секунд. 0 = обрабатывать события строго с момента запуска"
+    description_en: "Event time offset in seconds. Positive = ignore events older than N sec. Negative = ignore newer. 0 = process from startup only"
 
 actions:
   process_event:
     description: "Обработка события от пулинга"
+    description_en: "Process polling event"
     access_rules: ["no_access"]
     input:
       data:
         type: object
         optional: false
         description: "Сырое событие от пулинга"
+        description_en: "Raw event from polling"
     output:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки"
+            description_en: "Error details"
 
 features:
   - "Парсинг raw событий в стандартный формат"

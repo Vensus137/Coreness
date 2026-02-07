@@ -1,5 +1,5 @@
 ---
-title: System Actions Guide
+title: Actions Guide
 description: Complete reference of all available actions in Coreness. Sending messages, AI operations, HTTP requests, validation, payments and more.
 keywords: coreness actions, send_message, completion, validate, telegram api, AI actions
 ---
@@ -67,20 +67,20 @@ Complete description of all available actions with their parameters and results.
 
 ## ai_rag_service
 
-**Description:** RAG-расширение для AI Service (векторный поиск и управление embeddings)
+**Description:** RAG extension for AI Service (vector search and embeddings management)
 
 <a id="delete_embedding"></a>
 ### ⭐ delete_embedding
 
-**Description:** Удаление данных из vector_storage по document_id или по дате processed_at
+**Description:** Delete data from vector_storage by document_id or processed_at date
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта (обязательно)
-- **`document_id`** (`string`, optional) — ID документа для удаления (удаляет все чанки документа). Если указан, остальные параметры игнорируются
-- **`until_date`** (`string`, optional) — Удалить чанки с processed_at <= until_date включительно (формат: 'YYYY-MM-DD' или 'YYYY-MM-DD HH:MM:SS'). Можно использовать вместе с since_date
-- **`since_date`** (`string`, optional) — Удалить чанки с processed_at >= since_date включительно (формат: 'YYYY-MM-DD' или 'YYYY-MM-DD HH:MM:SS'). Можно использовать вместе с until_date
-- **`metadata_filter`** (`object`, optional) — Фильтр по метаданным (JSON объект): например, {'chat_id': 123, 'username': 'user1'}. Используется для фильтрации чанков по сохраненным метаданным. Можно использовать вместе с until_date/since_date
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID (required)
+- **`document_id`** (`string`, optional) — Document ID to delete (all chunks); if set, other params ignored
+- **`until_date`** (`string`, optional) — Delete chunks with processed_at <= until_date (YYYY-MM-DD)
+- **`since_date`** (`string`, optional) — Delete chunks with processed_at >= since_date (YYYY-MM-DD)
+- **`metadata_filter`** (`object`, optional) — Metadata filter (JSON); e.g. chat_id, username
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -91,12 +91,12 @@ Complete description of all available actions with their parameters and results.
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Информация об ошибке
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-- **`response_data`** (`object`) — Данные ответа
-  - **`deleted_chunks_count`** (`integer`) — Количество удаленных чанков
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error info
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+- **`response_data`** (`object`) — Response data
+  - **`deleted_chunks_count`** (`integer`) — Number of deleted chunks
 
 **Usage Example:**
 
@@ -153,18 +153,18 @@ data:
 <a id="get_recent_chunks"></a>
 ### ⭐ get_recent_chunks
 
-**Description:** Получение последних N чанков по дате created_at (не векторный поиск, просто выборка по дате, сортировка по created_at для правильного порядка истории)
+**Description:** Get last N chunks by created_at (date-based, not vector search; sorted by created_at)
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта (обязательно)
-- **`limit_chunks`** (`integer`, optional, range: 1-200) — Количество чанков (по умолчанию 10 из настроек search_limit_chunks). Работает вместе с limit_chars - сначала выбирается limit_chunks чанков, затем фильтруются по limit_chars
-- **`limit_chars`** (`integer`, optional, min: 1) — Лимит по символам (опционально, без ограничения по умолчанию). Работает поверх limit_chunks - после получения limit_chunks чанков они отбираются по порядку (от новых к старым), пока сумма символов не превысит limit_chars. Возвращается столько чанков, сколько влезает в лимит
-- **`document_type`** (`string|array`, optional) — Фильтр по типу документа. Строка для одного типа или массив для нескольких типов (например, ['message', 'document'])
-- **`document_id`** (`string|array`, optional) — Фильтр по document_id. Строка для одного документа или массив для нескольких (например, ['doc_123', 'doc_456'])
-- **`until_date`** (`string`, optional) — Фильтр: искать только чанки с processed_at <= until_date включительно (формат: 'YYYY-MM-DD' или 'YYYY-MM-DD HH:MM:SS'). Можно использовать вместе с since_date
-- **`since_date`** (`string`, optional) — Фильтр: искать только чанки с processed_at >= since_date включительно (формат: 'YYYY-MM-DD' или 'YYYY-MM-DD HH:MM:SS'). Можно использовать вместе с until_date
-- **`metadata_filter`** (`object`, optional) — Фильтр по метаданным (JSON объект): например, {'chat_id': 123, 'username': 'user1'}. Используется для фильтрации чанков по сохраненным метаданным. Можно комбинировать с другими фильтрами
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID (required)
+- **`limit_chunks`** (`integer`, optional, range: 1-200) — Number of chunks (default from search_limit_chunks); works with limit_chars
+- **`limit_chars`** (`integer`, optional, min: 1) — Character limit (applied after limit_chunks)
+- **`document_type`** (`string|array`, optional) — Filter by document type (string or array)
+- **`document_id`** (`string|array`, optional) — Filter by document_id (string or array)
+- **`until_date`** (`string`, optional) — Filter: chunks with processed_at <= until_date
+- **`since_date`** (`string`, optional) — Filter: chunks with processed_at >= since_date
+- **`metadata_filter`** (`object`, optional) — Metadata filter (JSON)
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -175,13 +175,13 @@ data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Информация об ошибке
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-- **`response_data`** (`object`) — Данные ответа
-  - **`chunks`** (`array`) — Массив найденных чанков (отсортированы по created_at DESC - новые первыми)
-  - **`chunks_count`** (`integer`) — Количество найденных чанков
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error info
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+- **`response_data`** (`object`) — Response data
+  - **`chunks`** (`array`) — Array of chunks (sorted by created_at DESC)
+  - **`chunks_count`** (`integer`) — Number of chunks found
 
 **Usage Example:**
 
@@ -244,24 +244,24 @@ data:
 <a id="save_embedding"></a>
 ### ⭐ save_embedding
 
-**Description:** Сохранение текста в vector_storage с автоматическим разбиением на чанки и генерацией embeddings. Поддерживает сохранение только текста без эмбеддинга через параметр generate_embedding=false
+**Description:** Save text to vector_storage with chunking and embeddings; supports text-only via generate_embedding=false
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта (обязательно)
-- **`text`** (`string`) — Текст для сохранения (будет очищен и разбит на чанки)
-- **`document_id`** (`string`, optional) — Уникальный ID документа. Если не указан - будет сгенерирован автоматически через IdSequence (детерминированный по seed)
-- **`document_type`** (`string`, required, values: [`knowledge`, `chat_history`, `other`]) — Тип документа: knowledge (база знаний), chat_history (история диалога), other (другое - добавляется в ДОП. КОНТЕКСТ)
-- **`role`** (`string`, optional, values: [`system`, `user`, `assistant`]) — Роль для OpenAI messages (по умолчанию 'user'). Используется при формировании контекста в completion
-- **`chunk_metadata`** (`object`, optional) — Метаданные чанка (JSON объект): chat_id, username и др. Сохраняется в chunk_metadata и используется для фильтрации при поиске и удалении. Может быть использовано в chunk_format для отображения в контексте AI
-- **`model`** (`string`, optional) — Модель для генерации embedding (по умолчанию из настроек ai_client.default_embedding_model)
-- **`dimensions`** (`integer`, optional) — Размерность embedding (по умолчанию 1024)
-- **`chunk_size`** (`integer`, optional, range: 100-8000) — Размер чанка в символах (по умолчанию 512)
-- **`chunk_overlap`** (`integer`, optional, range: 0-500) — Перекрытие между чанками в символах (по умолчанию 100, ~20% от chunk_size). Сохраняет контекст на границах чанков для лучшего поиска
-- **`replace_existing`** (`boolean`, optional) — Заменить существующий документ (по умолчанию false - добавить). Если документ существует и replace_existing=false - вернется ошибка ALREADY_EXISTS
-- **`generate_embedding`** (`boolean`, optional) — Генерировать ли embedding для чанков (по умолчанию true). Если false - сохраняется только текст без эмбеддинга (полезно для истории без векторного поиска)
-- **`created_at`** (`string`, optional) — Реальная дата создания (для правильной сортировки истории). Поддерживает форматы: ISO, YYYY-MM-DD, YYYY-MM-DD HH:MM:SS. Если не указано - используется текущее локальное время
-- 🔑 **`ai_token`** (`string`) — AI API ключ из конфига тенанта (_config.ai_token). Требуется только если generate_embedding=true
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID (required)
+- **`text`** (`string`) — Text to save (cleaned and chunked)
+- **`document_id`** (`string`, optional) — Unique document ID; auto-generated if omitted
+- **`document_type`** (`string`, required, values: [`knowledge`, `chat_history`, `other`]) — Document type: knowledge, chat_history, other
+- **`role`** (`string`, optional, values: [`system`, `user`, `assistant`]) — OpenAI message role (default user)
+- **`chunk_metadata`** (`object`, optional) — Chunk metadata (JSON): chat_id, username etc.; used for filtering and in context
+- **`model`** (`string`, optional) — Embedding model (default from ai_client)
+- **`dimensions`** (`integer`, optional) — Embedding dimensions (default 1024)
+- **`chunk_size`** (`integer`, optional, range: 100-8000) — Chunk size in characters (default 512)
+- **`chunk_overlap`** (`integer`, optional, range: 0-500) — Chunk overlap in characters (~20% of chunk_size)
+- **`replace_existing`** (`boolean`, optional) — Replace existing document (default false; ALREADY_EXISTS if exists)
+- **`generate_embedding`** (`boolean`, optional) — Generate embeddings for chunks (default true); false = text only
+- **`created_at`** (`string`, optional) — Creation date (ISO/YYYY-MM-DD); default current time
+- 🔑 **`ai_token`** (`string`) — AI API key from tenant config; required if generate_embedding=true
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -272,19 +272,19 @@ data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки: ALREADY_EXISTS (документ существует), INTERNAL_ERROR, VALIDATION_ERROR
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`document_id`** (`string`) — ID сохраненного документа (переданный или сгенерированный)
-  - **`document_type`** (`string`) — Тип документа
-  - **`chunks_count`** (`integer`) — Количество созданных чанков
-  - **`model`** (`string`) (optional) — Использованная модель embedding (только если generate_embedding=true)
-  - **`dimensions`** (`integer`) (optional) — Размерность embedding (только если generate_embedding=true)
-  - **`total_tokens`** (`integer`) (optional) — Общее количество токенов во всех чанках (только если generate_embedding=true)
-  - **`text_length`** (`integer`) — Длина исходного текста (после очистки)
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code: ALREADY_EXISTS, INTERNAL_ERROR, VALIDATION_ERROR
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
+- **`response_data`** (`object`) — Response data
+  - **`document_id`** (`string`) — Saved document ID (provided or generated)
+  - **`document_type`** (`string`) — Document type
+  - **`chunks_count`** (`integer`) — Number of chunks created
+  - **`model`** (`string`) (optional) — Embedding model used (if generate_embedding=true)
+  - **`dimensions`** (`integer`) (optional) — Embedding dimensions (if generate_embedding=true)
+  - **`total_tokens`** (`integer`) (optional) — Total tokens in chunks (if generate_embedding=true)
+  - **`text_length`** (`integer`) — Source text length (after cleaning)
 
 **Note:**
 - 🔑 — field that is automatically taken from tenant configuration (_config) and does not require explicit passing in params
@@ -361,24 +361,24 @@ response_data:
 <a id="search_embedding"></a>
 ### ⭐ search_embedding
 
-**Description:** Поиск похожих чанков по тексту или вектору (semantic search) через cosine similarity
+**Description:** Search similar chunks by text or vector (cosine similarity)
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта (обязательно)
-- **`query_text`** (`string`, optional) — Текст запроса для поиска (будет преобразован в embedding). Необходимо указать либо query_text, либо query_vector
-- **`query_vector`** (`array`, optional) — Готовый вектор для поиска (массив чисел). Размерность должна совпадать с сохраненными embeddings. Необходимо указать либо query_text, либо query_vector
-- **`limit_chunks`** (`integer`, optional, range: 1-200) — Количество результатов (top-k, по умолчанию 10). Работает вместе с limit_chars - сначала выбирается limit_chunks чанков, затем фильтруются по limit_chars
-- **`limit_chars`** (`integer`, optional, min: 1) — Лимит по символам (опционально, без ограничения по умолчанию). Работает поверх limit_chunks - после получения limit_chunks чанков они отбираются по порядку (от большего similarity), пока сумма символов не превысит limit_chars. Возвращается столько чанков, сколько влезает в лимит
-- **`min_similarity`** (`number`, optional, range: 0.0-1.0) — Минимальный порог схожести (cosine similarity, по умолчанию из настроек search_min_similarity)
-- **`document_id`** (`string|array`, optional) — Фильтр по document_id. Строка для одного документа или массив для нескольких (например, ['doc_123', 'doc_456'])
-- **`document_type`** (`string|array`, optional) — Фильтр по типу документа. Строка для одного типа или массив для нескольких типов (например, ['message', 'document'])
-- **`until_date`** (`string`, optional) — Фильтр: искать только чанки с processed_at <= until_date включительно (формат: 'YYYY-MM-DD' или 'YYYY-MM-DD HH:MM:SS'). Можно использовать вместе с since_date
-- **`since_date`** (`string`, optional) — Фильтр: искать только чанки с processed_at >= since_date включительно (формат: 'YYYY-MM-DD' или 'YYYY-MM-DD HH:MM:SS'). Можно использовать вместе с until_date
-- **`metadata_filter`** (`object`, optional) — Фильтр по метаданным (JSON объект): например, {'chat_id': 123, 'username': 'user1'}. Используется для фильтрации чанков по сохраненным метаданным. Можно комбинировать с другими фильтрами
-- **`model`** (`string`, optional) — Модель для генерации embedding (используется только если указан query_text, по умолчанию из настроек ai_client.default_embedding_model)
-- **`dimensions`** (`integer`, optional) — Размерность embedding (используется только если указан query_text, по умолчанию 1024)
-- 🔑 **`ai_token`** (`string`) — AI API ключ из конфига тенанта (_config.ai_token). Требуется только если указан query_text
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID (required)
+- **`query_text`** (`string`, optional) — Query text (converted to embedding); use query_text or query_vector
+- **`query_vector`** (`array`, optional) — Precomputed vector (array); use query_text or query_vector
+- **`limit_chunks`** (`integer`, optional, range: 1-200) — Number of results (top-k); works with limit_chars
+- **`limit_chars`** (`integer`, optional, min: 1) — Character limit (applied after limit_chunks)
+- **`min_similarity`** (`number`, optional, range: 0.0-1.0) — Min similarity threshold (cosine)
+- **`document_id`** (`string|array`, optional) — Filter by document_id (string or array)
+- **`document_type`** (`string|array`, optional) — Filter by document type (string or array)
+- **`until_date`** (`string`, optional) — Filter: chunks with processed_at <= until_date
+- **`since_date`** (`string`, optional) — Filter: chunks with processed_at >= since_date
+- **`metadata_filter`** (`object`, optional) — Metadata filter (JSON)
+- **`model`** (`string`, optional) — Embedding model (if query_text)
+- **`dimensions`** (`integer`, optional) — Embedding dimensions (if query_text)
+- 🔑 **`ai_token`** (`string`) — AI API key; required if query_text set
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -389,13 +389,13 @@ response_data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Информация об ошибке
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-- **`response_data`** (`object`) — Данные ответа
-  - **`chunks`** (`array`) — Массив найденных чанков
-  - **`chunks_count`** (`integer`) — Количество найденных чанков
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error info
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+- **`response_data`** (`object`) — Response data
+  - **`chunks`** (`array`) — Array of found chunks
+  - **`chunks_count`** (`integer`) — Number of chunks found
 
 **Note:**
 - 🔑 — field that is automatically taken from tenant configuration (_config) and does not require explicit passing in params
@@ -471,28 +471,28 @@ data:
 
 ## ai_service
 
-**Description:** Сервис для интеграции ИИ в сценарии
+**Description:** Service for AI integration in scenarios
 
 <a id="completion"></a>
 ### completion
 
-**Description:** AI completion через ИИ
+**Description:** AI completion via AI
 
 **Input Parameters:**
 
-- **`prompt`** (`string`) — Текст запроса пользователя
-- **`system_prompt`** (`string`, optional) — Системный промпт для контекста
-- **`model`** (`string`, optional) — Модель AI (по умолчанию из настроек)
-- **`max_tokens`** (`integer`, optional) — Максимальное количество токенов (по умолчанию из настроек)
-- **`temperature`** (`float`, optional, range: 0.0-2.0) — Температура генерации (по умолчанию из настроек)
-- **`context`** (`string`, optional) — Кастомный контекст (добавляется в финальное user сообщение в блок ДОП. КОНТЕКСТ вместе с other чанками из rag_chunks)
-- **`rag_chunks`** (`array`, optional) — Массив чанков из RAG поиска для автоматического формирования messages. Чанки группируются по типам: chat_history (диалог), knowledge (база знаний), other (другое - добавляется в ДОП. КОНТЕКСТ). Формат: [{content, document_type, role, processed_at, ...}]
-- **`json_mode`** (`string`, optional, values: [`json_object`, `json_schema`]) — Режим JSON для структурированного ответа: 'json_object' или 'json_schema'
-- **`json_schema`** (`object`, optional) — JSON схема для режима json_schema (обязательна при json_mode='json_schema')
-- **`tools`** (`array`, optional) — Список доступных функций для вызова моделью (tool calling)
-- **`tool_choice`** (`string`, optional) — Управление выбором инструментов: 'none', 'auto', 'required' или объект с конкретной функцией
-- **`chunk_format`** (`object`, optional) — Формат отображения чанков в контексте. Шаблоны используют маркеры $ для подстановки значений: $content (обязательно) + любые поля из chunk_metadata. Поддерживается модификатор fallback: $field|fallback:значение. Маркеры работают только с данными чанка (content + chunk_metadata), не затрагивая общий контекст.
-- 🔑 **`ai_token`** (`string`) — AI API ключ из конфига тенанта (_config.ai_token)
+- **`prompt`** (`string`) — User request text
+- **`system_prompt`** (`string`, optional) — System prompt for context
+- **`model`** (`string`, optional) — AI model (default from settings)
+- **`max_tokens`** (`integer`, optional) — Maximum tokens (default from settings)
+- **`temperature`** (`float`, optional, range: 0.0-2.0) — Generation temperature (default from settings)
+- **`context`** (`string`, optional) — Custom context (added to final user message in ADDITIONAL CONTEXT block with other chunks from rag_chunks)
+- **`rag_chunks`** (`array`, optional) — Array of RAG search chunks for building messages. Types: chat_history, knowledge, other. Format: [{content, document_type, role, processed_at, ...}]
+- **`json_mode`** (`string`, optional, values: [`json_object`, `json_schema`]) — JSON mode for structured response: 'json_object' or 'json_schema'
+- **`json_schema`** (`object`, optional) — JSON schema for json_schema mode (required when json_mode='json_schema')
+- **`tools`** (`array`, optional) — List of functions available for model to call (tool calling)
+- **`tool_choice`** (`string`, optional) — Tool selection: 'none', 'auto', 'required' or object with specific function
+- **`chunk_format`** (`object`, optional) — Chunk display format in context. Templates use $ markers. $content + chunk_metadata. Fallback: $field|fallback:value. Markers apply only to chunk data.
+- 🔑 **`ai_token`** (`string`) — AI API key from tenant config (_config.ai_token)
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -503,19 +503,19 @@ data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error, timeout
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`response_completion`** (`string`) — Completion ответ от ИИ
-  - **`prompt_tokens`** (`integer`) — Токены на вход (prompt + context)
-  - **`completion_tokens`** (`integer`) — Токены на выход (сгенерированный ответ)
-  - **`total_tokens`** (`integer`) — Общее количество токенов (prompt + completion)
-  - **`model`** (`string`) — Использованная модель
-  - **`response_dict`** (`object`) (optional) — Распарсенный словарь из JSON ответа (только при использовании json_mode)
-  - **`tool_calls`** (`array`) (optional) — Список вызовов функций, которые модель решила выполнить (только при использовании tools)
+- **`result`** (`string`) — Result: success, error, timeout
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
+- **`response_data`** (`object`) — Response data
+  - **`response_completion`** (`string`) — AI completion response
+  - **`prompt_tokens`** (`integer`) — Input tokens (prompt + context)
+  - **`completion_tokens`** (`integer`) — Output tokens (generated response)
+  - **`total_tokens`** (`integer`) — Total tokens (prompt + completion)
+  - **`model`** (`string`) — Model used
+  - **`response_dict`** (`object`) (optional) — Parsed dict from JSON response (when using json_mode)
+  - **`tool_calls`** (`array`) (optional) — List of function calls the model decided to make (when using tools)
 
 **Note:**
 - 🔑 — field that is automatically taken from tenant configuration (_config) and does not require explicit passing in params
@@ -568,14 +568,14 @@ data:
 <a id="embedding"></a>
 ### embedding
 
-**Description:** Генерация embedding для текста через ИИ
+**Description:** Generate text embedding via AI
 
 **Input Parameters:**
 
-- **`text`** (`string`) — Текст для генерации embedding
-- **`model`** (`string`, optional) — Модель для генерации embedding (по умолчанию из настроек ai_client.default_embedding_model)
-- **`dimensions`** (`integer`, optional) — Размерность embedding (по умолчанию из настроек ai_client.default_embedding_dimensions). Поддерживается только для OpenAI text-embedding-3-small и text-embedding-3-large
-- 🔑 **`ai_token`** (`string`) — AI API ключ из конфига тенанта (_config.ai_token)
+- **`text`** (`string`) — Text for embedding generation
+- **`model`** (`string`, optional) — Embedding model (default from ai_client.default_embedding_model)
+- **`dimensions`** (`integer`, optional) — Embedding dimensions (default from ai_client). Supported for OpenAI text-embedding-3-* only
+- 🔑 **`ai_token`** (`string`) — AI API key from tenant config (_config.ai_token)
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -586,16 +586,16 @@ data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`embedding`** (`array`) — Вектор embedding (список чисел)
-  - **`model`** (`string`) — Использованная модель
-  - **`dimensions`** (`integer`) — Размерность embedding
-  - **`total_tokens`** (`integer`) — Общее количество токенов
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
+- **`response_data`** (`object`) — Response data
+  - **`embedding`** (`array`) — Embedding vector (list of numbers)
+  - **`model`** (`string`) — Model used
+  - **`dimensions`** (`integer`) — Embedding dimensions
+  - **`total_tokens`** (`integer`) — Total tokens
 
 **Note:**
 - 🔑 — field that is automatically taken from tenant configuration (_config) and does not require explicit passing in params
@@ -643,28 +643,28 @@ response_data:
 
 ## bot_hub
 
-**Description:** Центральный сервис для управления всеми ботами
+**Description:** Central service for managing all bots
 
 <a id="answer_callback_query"></a>
 ### answer_callback_query
 
-**Description:** Ответ на callback query (всплывающее уведомление или простое уведомление при нажатии на inline-кнопку)
+**Description:** Answer callback query (popup or toast when inline button pressed)
 
 **Input Parameters:**
 
-- **`bot_id`** (`integer`, required, min: 1) — ID бота
-- **`callback_query_id`** (`string`, required, min length: 1) — ID callback query (можно использовать плейсхолдер {callback_id} из события)
-- **`text`** (`string`, optional, max length: 200) — Текст уведомления (до 200 символов). Если не указан, показывается простое уведомление без текста
-- **`show_alert`** (`boolean`, optional) — Показать всплывающее окно (alert). По умолчанию false - простое уведомление вверху экрана. true - модальное окно с текстом
-- **`cache_time`** (`integer`, optional, range: 0-3600) — Время кэширования ответа в секундах (0-3600). По умолчанию 0
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+- **`callback_query_id`** (`string`, required, min length: 1) — Callback query ID (use placeholder {callback_id} from event)
+- **`text`** (`string`, optional, max length: 200) — Notification text (up to 200 chars). If not set, simple notification without text
+- **`show_alert`** (`boolean`, optional) — Show popup (alert). Default false = toast; true = modal with text
+- **`cache_time`** (`integer`, optional, range: 0-3600) — Cache time for answer in seconds (0-3600). Default 0
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
 
 **Usage Example:**
 
@@ -683,15 +683,15 @@ response_data:
 <a id="build_keyboard"></a>
 ### build_keyboard
 
-**Description:** Построение клавиатуры из массива ID с использованием шаблонов
+**Description:** Build keyboard from ID array using templates
 
 **Input Parameters:**
 
-- **`items`** (`array`) — Массив ID для генерации кнопок (например, [1, 2, 3] или tenant_ids из get_tenants_list)
-- **`keyboard_type`** (`string`, required, values: [`inline`, `reply`]) — Тип клавиатуры: 'inline' или 'reply'
-- **`text_template`** (`string`, required, min length: 1) — Шаблон текста кнопки с плейсхолдером $value$ (например, 'Tenant $value$' или 'Пользователь #$value$'). Используется синтаксис $value$ вместо {value} чтобы избежать конфликта с системой плейсхолдеров
-- **`callback_template`** (`string`, optional, min length: 1) — Шаблон callback_data для inline клавиатуры с плейсхолдером $value$ (обязателен для inline, например, 'select_tenant_$value$'). Используется синтаксис $value$ вместо {value} чтобы избежать конфликта с системой плейсхолдеров
-- **`buttons_per_row`** (`integer`, optional, range: 1-8) — Количество кнопок в строке (по умолчанию 1, например, 2 для двух кнопок в ряд)
+- **`items`** (`array`) — Array of IDs for buttons (e.g. [1,2,3] or tenant_ids from get_tenants_list)
+- **`keyboard_type`** (`string`, required, values: [`inline`, `reply`]) — Keyboard type: 'inline' or 'reply'
+- **`text_template`** (`string`, required, min length: 1) — Button text template with $value$ placeholder. Use $value$ to avoid conflict with placeholders
+- **`callback_template`** (`string`, optional, min length: 1) — Callback data template with $value$ (required for inline, e.g. 'select_tenant_$value$')
+- **`buttons_per_row`** (`integer`, optional, range: 1-8) — Buttons per row (default 1)
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -702,16 +702,16 @@ response_data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`keyboard`** (`array`) — Готовая клавиатура в формате массива строк (можно использовать напрямую в параметре inline или reply действия send_message)
-  - **`keyboard_type`** (`string`) — Тип клавиатуры: 'inline' или 'reply'
-  - **`rows_count`** (`integer`) — Количество строк в клавиатуре
-  - **`buttons_count`** (`integer`) — Общее количество кнопок в клавиатуре
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
+- **`response_data`** (`object`) — Response data
+  - **`keyboard`** (`array`) — Ready keyboard as array of rows (use in send_message inline/reply)
+  - **`keyboard_type`** (`string`) — Keyboard type: 'inline' or 'reply'
+  - **`rows_count`** (`integer`) — Number of rows in keyboard
+  - **`buttons_count`** (`integer`) — Total number of buttons
 
 **Usage Example:**
 
@@ -730,20 +730,20 @@ response_data:
 <a id="delete_message"></a>
 ### delete_message
 
-**Description:** Удаление сообщения ботом
+**Description:** Delete message by bot
 
 **Input Parameters:**
 
-- **`bot_id`** (`integer`, required, min: 1) — ID бота
-- **`delete_message_id`** (`integer`, optional, min: 1) — ID сообщения для удаления. Если не указан, используется message_id из контекста события. Chat ID по умолчанию берется из события (chat_id), если не указан явно
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+- **`delete_message_id`** (`integer`, optional, min: 1) — Message ID to delete. If not set, uses event message_id. Chat from event by default
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
 
 **Usage Example:**
 
@@ -759,19 +759,19 @@ response_data:
 <a id="send_message"></a>
 ### send_message
 
-**Description:** Отправка сообщения ботом
+**Description:** Send message by bot
 
 **Input Parameters:**
 
-- **`bot_id`** (`integer`, required, min: 1) — ID бота
-- **`target_chat_id`** (`integer|array|string`, optional) — ID чата или массив ID чатов для отправки (по умолчанию берется chat_id из события)
-- **`text`** (`string`, optional) — Текст сообщения (может быть пустым, если есть вложение)
-- **`parse_mode`** (`string`, optional, values: [`HTML`, `Markdown`, `MarkdownV2`]) — Режим парсинга (HTML, Markdown, MarkdownV2)
-- **`message_edit`** (`integer|boolean|string`, optional) — Редактирование сообщения: integer (ID сообщения) или true/false. При редактировании работа происходит только с первым чатом из списка (по умолчанию редактирует текущее сообщение из события)
-- **`message_reply`** (`integer`, optional, min: 1) — ID сообщения для ответа
-- **`inline`** (`array`, optional) — Inline клавиатура (массив строк с кнопками). Можно указать только одну клавиатуру (inline или reply) - это ограничение Telegram API. Если указаны обе клавиатуры, используется inline (имеет приоритет)
-- **`reply`** (`array`, optional) — Reply клавиатура (массив строк с кнопками). Можно указать только одну клавиатуру (inline или reply) - это ограничение Telegram API. Если указаны обе клавиатуры, используется inline (имеет приоритет)
-- **`attachment`** (`array`, optional) — Вложения (файлы, фото, видео и т.д.)
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+- **`target_chat_id`** (`integer|array|string`, optional) — Chat ID or array of chat IDs (default from event chat_id)
+- **`text`** (`string`, optional) — Message text (can be empty if attachment)
+- **`parse_mode`** (`string`, optional, values: [`HTML`, `Markdown`, `MarkdownV2`]) — Parse mode (HTML, Markdown, MarkdownV2)
+- **`message_edit`** (`integer|boolean|string`, optional) — Edit message: integer (message ID) or true/false. Only first chat when editing
+- **`message_reply`** (`integer`, optional, min: 1) — Message ID to reply to
+- **`inline`** (`array`, optional) — Inline keyboard (array of button rows). Only one of inline/reply (Telegram limit)
+- **`reply`** (`array`, optional) — Reply keyboard (array of button rows). Only one of inline/reply (Telegram limit)
+- **`attachment`** (`array`, optional) — Attachments (files, photo, video, etc.)
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -784,13 +784,13 @@ response_data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - 🔀 **`last_message_id`** (`integer`) — ID последнего отправленного сообщения (при отправке в несколько чатов возвращается ID первого отправленного)
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
+- **`response_data`** (`object`) — Response data
+  - 🔀 **`last_message_id`** (`integer`) — Last sent message ID (first when sending to multiple chats)
 
 **Note:**
 - 🔀 — field that can be renamed via `_response_key` parameter for convenient data access
@@ -815,24 +815,24 @@ response_data:
 
 ## invoice_service
 
-**Description:** Сервис для работы с инвойсами (создание, управление, обработка платежей)
+**Description:** Service for invoices (create, manage, process payments)
 
 <a id="cancel_invoice"></a>
 ### cancel_invoice
 
-**Description:** Отмена инвойса (установка флага is_cancelled)
+**Description:** Cancel invoice (set is_cancelled flag)
 
 **Input Parameters:**
 
-- **`invoice_id`** (`integer`, required, min: 1) — ID инвойса (обязательно)
+- **`invoice_id`** (`integer`, required, min: 1) — Invoice ID (required)
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -847,23 +847,23 @@ response_data:
 <a id="confirm_payment"></a>
 ### confirm_payment
 
-**Description:** Подтверждение платежа (ответ на pre_checkout_query с подтверждением)
+**Description:** Confirm payment (answer pre_checkout_query with confirm)
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
-- **`bot_id`** (`integer`, required, min: 1) — ID бота
-- **`pre_checkout_query_id`** (`string`, required, min length: 1) — ID запроса на подтверждение (обязательно)
-- **`invoice_payload`** (`string`, optional, min length: 1) — ID инвойса из payload (опционально, для проверки статуса инвойса перед подтверждением)
-- **`error_message`** (`string`, optional) — Сообщение об ошибке при отклонении платежа (опционально, используется если инвойс отменен или уже оплачен)
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+- **`pre_checkout_query_id`** (`string`, required, min length: 1) — Pre-checkout query ID (required)
+- **`invoice_payload`** (`string`, optional, min length: 1) — Invoice ID from payload (optional, to check status before confirm)
+- **`error_message`** (`string`, optional) — Error message when rejecting payment (optional; when invoice cancelled or already paid)
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success (платеж подтвержден), failed (платеж отклонен по бизнес-логике), error (техническая ошибка)
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки. Возможные значения: INVOICE_CANCELLED (при result=failed - инвойс отменен), INVOICE_ALREADY_PAID (при result=failed - инвойс уже оплачен)
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success (payment confirmed), failed (rejected by business logic), error (technical error)
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code: INVOICE_CANCELLED, INVOICE_ALREADY_PAID (when result=failed)
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -882,19 +882,19 @@ response_data:
 <a id="create_invoice"></a>
 ### create_invoice
 
-**Description:** Создание инвойса в БД и отправка/создание ссылки
+**Description:** Create invoice in DB and send/create link
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
-- **`bot_id`** (`integer`, required, min: 1) — ID бота
-- **`target_user_id`** (`integer`, optional, min: 1) — ID пользователя для создания инвойса (опционально, по умолчанию user_id из события)
-- **`chat_id`** (`integer`, optional) — ID чата для отправки (обязательно для отправки, не нужен для ссылки)
-- **`title`** (`string`, required, min length: 1) — Название товара/услуги (обязательно)
-- **`description`** (`string`, optional) — Описание товара/услуги
-- **`amount`** (`integer`, required, min: 1) — Количество звезд (обязательно, целое число)
-- **`currency`** (`string`, optional) — Валюта (по умолчанию XTR для звезд)
-- **`as_link`** (`boolean`, optional) — Создать как ссылку вместо отправки (по умолчанию false - отправка)
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+- **`target_user_id`** (`integer`, optional, min: 1) — User ID for invoice (optional, default from event user_id)
+- **`chat_id`** (`integer`, optional) — Chat ID for sending (required for send, not for link)
+- **`title`** (`string`, required, min length: 1) — Product/service title (required)
+- **`description`** (`string`) — Product/service description
+- **`amount`** (`integer`, required, min: 1) — Star amount (required, integer)
+- **`currency`** (`string`, optional) — Currency (default XTR for stars)
+- **`as_link`** (`boolean`, optional) — Create as link instead of send (default false)
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -905,15 +905,15 @@ response_data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
-- **`response_data`** (`object`) — Данные ответа
-  - **`invoice_id`** (`integer`) — ID созданного инвойса
-  - **`invoice_message_id`** (`integer`) (optional) — ID отправленного сообщения с инвойсом (если as_link=false)
-  - **`invoice_link`** (`string`) (optional) — Ссылка на инвойс (если as_link=true)
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Response data
+  - **`invoice_id`** (`integer`) — Created invoice ID
+  - **`invoice_message_id`** (`integer`) (optional) — Sent message ID with invoice (when as_link=false)
+  - **`invoice_link`** (`string`) (optional) — Invoice link (when as_link=true)
 
 **Usage Example:**
 
@@ -926,7 +926,7 @@ response_data:
     # target_user_id: integer (optional)
     # chat_id: integer (optional)
     title: "example"
-    # description: string (optional)
+    description: "example"
     amount: 123
     # currency: string (optional)
     # as_link: boolean (optional)
@@ -936,11 +936,11 @@ response_data:
 <a id="get_invoice"></a>
 ### get_invoice
 
-**Description:** Получение информации об инвойсе
+**Description:** Get invoice info
 
 **Input Parameters:**
 
-- **`invoice_id`** (`integer`, required, min: 1) — ID инвойса (обязательно)
+- **`invoice_id`** (`integer`, required, min: 1) — Invoice ID (required)
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -951,13 +951,13 @@ response_data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
-- **`response_data`** (`object`) — Данные ответа
-  - **`invoice`** (`object`) — Данные инвойса
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Response data
+  - **`invoice`** (`object`) — Invoice data
 
 **Usage Example:**
 
@@ -972,12 +972,12 @@ response_data:
 <a id="get_user_invoices"></a>
 ### get_user_invoices
 
-**Description:** Получение всех инвойсов пользователя
+**Description:** Get all user invoices
 
 **Input Parameters:**
 
-- **`target_user_id`** (`integer`, optional, min: 1) — ID пользователя для получения инвойсов (опционально, по умолчанию user_id из события)
-- **`include_cancelled`** (`boolean`, optional) — Включать отмененные инвойсы (по умолчанию false)
+- **`target_user_id`** (`integer`, optional, min: 1) — User ID for invoices (optional; default from event user_id)
+- **`include_cancelled`** (`boolean`, optional) — Include cancelled invoices (default false)
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -988,13 +988,13 @@ response_data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
-- **`response_data`** (`object`) — Данные ответа
-  - **`invoices`** (`array`) — Массив инвойсов пользователя
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Response data
+  - **`invoices`** (`array`) — Array of user invoices
 
 **Usage Example:**
 
@@ -1010,7 +1010,7 @@ response_data:
 <a id="mark_invoice_as_paid"></a>
 ### mark_invoice_as_paid
 
-**Description:** Отметить инвойс как оплаченный (обработка события payment_successful)
+**Description:** Mark invoice as paid (payment_successful event handler)
 
 **Input Parameters:**
 
@@ -1020,11 +1020,11 @@ response_data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -1041,22 +1041,22 @@ response_data:
 <a id="reject_payment"></a>
 ### reject_payment
 
-**Description:** Отклонение платежа (ответ на pre_checkout_query с отклонением)
+**Description:** Reject payment (answer pre_checkout_query with reject)
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
-- **`bot_id`** (`integer`, required, min: 1) — ID бота
-- **`pre_checkout_query_id`** (`string`, required, min length: 1) — ID запроса на подтверждение (обязательно)
-- **`error_message`** (`string`, optional) — Сообщение об ошибке (опционально)
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+- **`pre_checkout_query_id`** (`string`, required, min length: 1) — Pre-checkout query ID (required)
+- **`error_message`** (`string`, optional) — Error message (optional)
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -1073,12 +1073,12 @@ response_data:
 
 ## scenario_helper
 
-**Description:** Вспомогательные утилиты для управления выполнением сценариев
+**Description:** Helper utilities for scenario execution management
 
 <a id="check_value_in_array"></a>
 ### check_value_in_array
 
-**Description:** Проверка наличия значения в массиве
+**Description:** Check if value exists in array
 
 **Input Parameters:**
 
@@ -1097,10 +1097,10 @@ response_data:
 **Output Parameters:**
 
 - **`result`** (`string`) — Результат: success (найдено), not_found (не найдено), error (ошибка)
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
   - 🔀 **`response_index`** (`integer`) — Порядковый номер (индекс) первого вхождения значения в массиве (только при result: success)
 
@@ -1121,7 +1121,7 @@ response_data:
 <a id="choose_from_array"></a>
 ### choose_from_array
 
-**Description:** Выбор случайных элементов из массива без повторений
+**Description:** Pick random items from array without repeats
 
 **Input Parameters:**
 
@@ -1140,11 +1140,11 @@ response_data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
   - 🔀 **`random_list`** (`array`) — Массив выбранных элементов (без повторений)
   - **`random_seed`** (`string`) (optional) — Использованный seed (если был передан, сохраняется как есть)
@@ -1167,7 +1167,7 @@ response_data:
 <a id="format_data_to_text"></a>
 ### format_data_to_text
 
-**Description:** Форматирование структурированных данных (JSON/YAML) в текстовый формат для промптов и сообщений
+**Description:** Format structured data (JSON/YAML) to text for prompts and messages
 
 **Input Parameters:**
 
@@ -1187,11 +1187,11 @@ response_data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
   - 🔀 **`formatted_text`** (`string`) — Отформатированный текст
 
@@ -1256,12 +1256,12 @@ response_data:
 <a id="generate_array"></a>
 ### generate_array
 
-**Description:** Генерация массива случайных чисел в заданном диапазоне (по умолчанию без повторений)
+**Description:** Generate array of random numbers in range (default no repeats)
 
 **Input Parameters:**
 
-- **`min`** (`integer`) — Минимальное значение (включительно)
-- **`max`** (`integer`) — Максимальное значение (включительно)
+- **`min`** (`integer`) — Minimum value (inclusive)
+- **`max`** (`integer`) — Maximum value (inclusive)
 - **`count`** (`integer`, required, min: 1) — Количество чисел для генерации
 - **`seed`** (`any`, optional) — Seed для детерминированной генерации (опционально, может быть числом, строкой или другим типом)
 - **`allow_duplicates`** (`boolean`, optional) — Разрешить повторения в массиве (по умолчанию false - без повторений)
@@ -1277,11 +1277,11 @@ response_data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
   - 🔀 **`random_list`** (`array`) — Массив сгенерированных чисел
   - **`random_seed`** (`string`) (optional) — Использованный seed (если был передан, сохраняется как есть)
@@ -1306,12 +1306,12 @@ response_data:
 <a id="generate_int"></a>
 ### generate_int
 
-**Description:** Генерация случайного целого числа в заданном диапазоне
+**Description:** Generate random integer in range
 
 **Input Parameters:**
 
-- **`min`** (`integer`) — Минимальное значение (включительно)
-- **`max`** (`integer`) — Максимальное значение (включительно)
+- **`min`** (`integer`) — Minimum value (inclusive)
+- **`max`** (`integer`) — Maximum value (inclusive)
 - **`seed`** (`any`, optional) — Seed для детерминированной генерации (опционально, может быть числом, строкой или другим типом)
 
 <details>
@@ -1325,13 +1325,13 @@ response_data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - 🔀 **`random_value`** (`integer`) — Сгенерированное случайное число
+  - 🔀 **`random_value`** (`integer`) — Generated random number
   - **`random_seed`** (`string`) (optional) — Использованный seed (если был передан, сохраняется как есть)
 
 **Note:**
@@ -1352,7 +1352,7 @@ response_data:
 <a id="generate_unique_id"></a>
 ### generate_unique_id
 
-**Description:** Генерация уникального ID через автоинкремент в БД (детерминированная генерация - при одинаковых seed возвращает тот же ID). Если seed не указан, генерируется случайный UUID
+**Description:** Generate unique ID via DB autoincrement (deterministic; same seed = same ID). If no seed, random UUID
 
 **Input Parameters:**
 
@@ -1369,11 +1369,11 @@ response_data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
   - 🔀 **`unique_id`** (`integer`) — Уникальный ID (гарантированно уникальный, при одинаковых входных данных возвращается тот же ID)
 
@@ -1393,7 +1393,7 @@ response_data:
 <a id="modify_array"></a>
 ### modify_array
 
-**Description:** Модификация массива: добавление, удаление элементов или очистка
+**Description:** Modify array: add, remove items or clear
 
 **Input Parameters:**
 
@@ -1414,10 +1414,10 @@ response_data:
 **Output Parameters:**
 
 - **`result`** (`string`) — Результат: success (успешно), not_found (элемент не найден при операции remove), error (ошибка)
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
   - 🔀 **`modified_array`** (`array`) — Модифицированный массив
 
@@ -1440,7 +1440,7 @@ response_data:
 <a id="set_cache"></a>
 ### set_cache
 
-**Description:** Установка временных данных в кэш сценария. Все переданные параметры возвращаются в response_data и автоматически попадают в плоский _cache по умолчанию.
+**Description:** Set temporary data in scenario cache. All params returned in response_data and go to flat _cache by default.
 
 **Input Parameters:**
 
@@ -1455,11 +1455,11 @@ response_data:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — Все переданные параметры из объекта cache возвращаются в response_data и автоматически попадают в плоский _cache по умолчанию.
   - **`*`** (`any`) — Динамические ключи из переданного объекта cache. Все ключи доступны через {_cache.имя_ключа} (плоский доступ по умолчанию)
 
@@ -1513,19 +1513,19 @@ step:
 <a id="sleep"></a>
 ### sleep
 
-**Description:** Задержка выполнения на указанное количество секунд
+**Description:** Delay execution for given seconds
 
 **Input Parameters:**
 
-- **`seconds`** (`float`, required, min: 0.0) — Количество секунд задержки (можно использовать дробные значения, например 0.5 или 22.5)
+- **`seconds`** (`float`, required, min: 0.0) — Seconds to delay (float allowed, e.g. 0.5, 22.5)
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -1539,18 +1539,18 @@ step:
 
 ## scenario_processor
 
-**Description:** Сервис для обработки событий по сценариям
+**Description:** Service for processing events by scenarios
 
 <a id="execute_scenario"></a>
 ### execute_scenario
 
-**Description:** Выполнение сценария или массива сценариев по имени
+**Description:** Execute scenario or array of scenarios by name
 
 **Input Parameters:**
 
-- **`scenario`** (`string|array`) — Название сценария (строка) или массив названий сценариев
-- **`tenant_id`** (`integer`, required, min: 1) — ID tenant'а (передается автоматически из контекста)
-- **`return_cache`** (`boolean`, optional) — Возвращать ли _cache из выполненного сценария (по умолчанию true). ВАЖНО: работает только для одиночных сценариев (строка), для массива сценариев игнорируется и кэш не возвращается
+- **`scenario`** (`string|array`) — Scenario name (string) or array of scenario names
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID (passed from context)
+- **`return_cache`** (`boolean`, optional) — Return _cache from executed scenario (default true). Only for single scenario (string), ignored for array
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -1561,14 +1561,14 @@ step:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
-- **`response_data`** (`object`) — Данные ответа с результатом выполнения сценария
-  - **`scenario_result`** (`string`) — Результат выполнения сценария: success, error, abort, break, stop
-  - **`_cache`** (`object`) (optional) — Кэш из выполненного сценария, возвращается только для одиночных сценариев (не для массива), если return_cache=true и в сценарии был установлен _cache через set_cache. Данные попадают в _cache[action_name] автоматически
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Response data with scenario execution result
+  - **`scenario_result`** (`string`) — Scenario result: success, error, abort, break, stop
+  - **`_cache`** (`object`) (optional) — Cache from executed scenario (single scenario only, when return_cache=true). Data in _cache[action_name]
 
 **Usage Example:**
 
@@ -1585,12 +1585,12 @@ step:
 <a id="wait_for_action"></a>
 ### wait_for_action
 
-**Description:** Ожидание завершения асинхронного действия по action_id. Возвращает результат основного действия AS IS (как будто оно выполнилось напрямую)
+**Description:** Wait for async action by action_id. Returns main action result AS IS
 
 **Input Parameters:**
 
-- **`action_id`** (`string`, required, min length: 1) — Уникальный ID асинхронного действия для ожидания
-- **`timeout`** (`integer`, optional, min: 0.0) — Таймаут ожидания в секундах (опционально). При истечении таймаута wait_for_action возвращает ошибку timeout, но выполнение сценария продолжается. Основное асинхронное действие продолжает выполняться в фоне даже после таймаута.
+- **`action_id`** (`string`, required, min length: 1) — Unique async action ID to wait for
+- **`timeout`** (`integer`, optional, min: 0.0) — Wait timeout in seconds (optional). On timeout returns timeout error; scenario continues; async action keeps running in background.
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -1601,12 +1601,12 @@ step:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат зависит от основного действия: если основное действие завершилось успешно - возвращается его результат (success/error и т.д.), если ошибка ожидания (таймаут, Future не найден) - возвращается ошибка wait_for_action (timeout/error)
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
-- **`response_data`** (`object`) — Данные ответа. Если основное действие завершилось успешно - возвращаются данные основного действия (полностью подменяются), если ошибка ожидания - отсутствует
+- **`result`** (`string`) — Result from main action on success, or wait error (timeout/error) on wait failure
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Response data from main action on success; absent on wait error
 
 **Usage Example:**
 
@@ -1621,28 +1621,28 @@ step:
 
 ## tenant_hub
 
-**Description:** Сервис для управления конфигурациями тенантов - координатор загрузки данных
+**Description:** Service for managing tenant configurations - data loading coordinator
 
 <a id="delete_storage"></a>
 ### delete_storage
 
-**Description:** Удаление значений или групп из storage. Если указан key или key_pattern - удаляется значение, иначе удаляется группа
+**Description:** Delete values or groups from storage. If key or key_pattern set - delete value, else delete group
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта (обязательно)
-- **`group_key`** (`string`, optional) — Ключ группы (точное совпадение, приоритет над group_key_pattern)
-- **`group_key_pattern`** (`string`, optional, min length: 1) — Паттерн для поиска группы (ILIKE, используется если group_key не указан)
-- **`key`** (`string`, optional) — Ключ атрибута (точное совпадение, приоритет над key_pattern). Если указан - удаляется значение, иначе удаляется группа
-- **`key_pattern`** (`string`, optional, min length: 1) — Паттерн для поиска ключа (ILIKE, используется если key не указан). Если указан - удаляется значение, иначе удаляется группа
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID (required)
+- **`group_key`** (`string`, optional) — Group key (exact match, takes priority over group_key_pattern)
+- **`group_key_pattern`** (`string`, optional, min length: 1) — Pattern for group search (ILIKE, used when group_key not specified)
+- **`key`** (`string`, optional) — Attribute key (exact match). If set - delete value, else delete group
+- **`key_pattern`** (`string`, optional, min length: 1) — Pattern for key (ILIKE). If set - delete value, else delete group
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error, not_found
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error, not_found
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -1661,16 +1661,16 @@ step:
 <a id="get_storage"></a>
 ### get_storage
 
-**Description:** Получение значений storage для тенанта. Поддерживает получение всех значений, группы, конкретного значения, а также поиск по паттернам
+**Description:** Get storage values for tenant. Supports full values, group, single value, and pattern search
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта (обязательно)
-- **`group_key`** (`string`, optional) — Ключ группы (точное совпадение, приоритет над group_key_pattern)
-- **`group_key_pattern`** (`string`, optional, min length: 1) — Паттерн для поиска группы (ILIKE, используется если group_key не указан)
-- **`key`** (`string`, optional) — Ключ атрибута (точное совпадение, приоритет над key_pattern). Используется только если указан group_key или group_key_pattern
-- **`key_pattern`** (`string`, optional, min length: 1) — Паттерн для поиска ключа (ILIKE, используется если key не указан). Используется только если указан group_key или group_key_pattern
-- **`format`** (`boolean`, optional) — Если true, возвращает дополнительное поле formatted_text с данными в формате YAML
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID (required)
+- **`group_key`** (`string`, optional) — Group key (exact match, takes priority over group_key_pattern)
+- **`group_key_pattern`** (`string`, optional, min length: 1) — Pattern for group search (ILIKE, used when group_key not specified)
+- **`key`** (`string`, optional) — Attribute key (exact match, priority over key_pattern). Only when group_key or group_key_pattern specified
+- **`key_pattern`** (`string`, optional, min length: 1) — Pattern for key search (ILIKE, used when key not specified). Only when group_key or group_key_pattern specified
+- **`format`** (`boolean`, optional) — If true, returns additional formatted_text field with YAML data
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -1683,14 +1683,14 @@ step:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error, not_found
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error, not_found
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - 🔀 **`storage_values`** (`any`) — Запрошенные данные. Если указаны group_key и key - возвращается прямое значение (примитив или объект как есть). Если указан только group_key - возвращается структура группы {key: value}. Если ничего не указано - возвращается полная структура {group_key: {key: value}}
-  - **`formatted_text`** (`string`) (optional) — Отформатированный текст в формате YAML (возвращается только если format=true)
+  - 🔀 **`storage_values`** (`any`) — Requested data. If group_key and key set - raw value. If only group_key - group structure {key: value}. If none - full structure {group_key: {key: value}}
+  - **`formatted_text`** (`string`) (optional) — Formatted text in YAML (returned only when format=true)
 
 **Note:**
 - 🔀 — field that can be renamed via `_response_key` parameter for convenient data access
@@ -1713,11 +1713,11 @@ step:
 <a id="get_storage_groups"></a>
 ### get_storage_groups
 
-**Description:** Получение списка уникальных ключей групп для тенанта. Возвращает только список group_key без значений (с ограничением на количество групп)
+**Description:** Get list of unique group keys for tenant. Returns group_key list only (limited by storage_groups_max_limit)
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта (обязательно)
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID (required)
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -1730,14 +1730,14 @@ step:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - 🔀 **`group_keys`** (`array`) — Список уникальных ключей групп (ограничен настройкой storage_groups_max_limit)
-  - **`is_truncated`** (`boolean`) (optional) — Флаг, указывающий что список был обрезан (true если групп больше лимита, иначе поле отсутствует)
+  - 🔀 **`group_keys`** (`array`) — List of unique group keys (limited by storage_groups_max_limit)
+  - **`is_truncated`** (`boolean`) (optional) — Flag that list was truncated (true if more groups than limit)
 
 **Note:**
 - 🔀 — field that can be renamed via `_response_key` parameter for convenient data access
@@ -1755,16 +1755,16 @@ step:
 <a id="set_storage"></a>
 ### set_storage
 
-**Description:** Установка значений storage для тенанта. Поддерживает смешанный подход: полная структура через values или частичная через group_key/key/value
+**Description:** Set storage values for tenant. Supports full structure via values or partial via group_key/key/value
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта (обязательно)
-- **`group_key`** (`string`, optional) — Ключ группы (с поддержкой плейсхолдеров). Если указан, используется смешанный подход
-- **`key`** (`string`, optional) — Ключ значения (с поддержкой плейсхолдеров). Используется вместе с group_key
-- **`value`** (`any`, optional) — Значение для установки. Используется вместе с group_key и key
-- **`values`** (`object`, optional) — Структура для установки. Если указан group_key - структура для группы {key: value}, иначе полная структура {group_key: {key: value}}
-- **`format`** (`boolean`, optional) — Если true, возвращает дополнительное поле formatted_text с данными в формате YAML
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID (required)
+- **`group_key`** (`string`, optional) — Group key (placeholder support). If set, mixed approach is used
+- **`key`** (`string`, optional) — Value key (placeholder support). Used with group_key
+- **`value`** (`any`, optional) — Value to set. Used with group_key and key
+- **`values`** (`object`, optional) — Structure to set. If group_key set - group {key: value}, else full {group_key: {key: value}}
+- **`format`** (`boolean`, optional) — If true, returns additional formatted_text field with YAML data
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -1777,14 +1777,14 @@ step:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - 🔀 **`storage_values`** (`any`) — Установленные данные. Если установлено одно значение (group_key + key + value) - возвращается прямое значение (примитив или объект как есть). Если установлена группа (group_key + values) - возвращается структура группы {key: value}. Если установлена полная структура (values) - возвращается полная структура {group_key: {key: value}}
-  - **`formatted_text`** (`string`) (optional) — Отформатированный текст в формате YAML (возвращается только если format=true)
+  - 🔀 **`storage_values`** (`any`) — Set data. Single value returns raw value; group returns {key: value}; full returns {group_key: {key: value}}
+  - **`formatted_text`** (`string`) (optional) — Formatted text in YAML (returned only when format=true)
 
 **Note:**
 - 🔀 — field that can be renamed via `_response_key` parameter for convenient data access
@@ -1806,25 +1806,25 @@ step:
 
 ## user_hub
 
-**Description:** Центральный сервис для управления состояниями пользователей
+**Description:** Central service for managing user states
 
 <a id="clear_user_state"></a>
 ### clear_user_state
 
-**Description:** Очистка состояния пользователя
+**Description:** Clear user state
 
 **Input Parameters:**
 
-- **`user_id`** (`integer`, required, min: 1) — ID пользователя Telegram
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
+- **`user_id`** (`integer`, required, min: 1) — Telegram user ID
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 
@@ -1840,22 +1840,22 @@ step:
 <a id="delete_user_storage"></a>
 ### delete_user_storage
 
-**Description:** Удаление значений из storage пользователя
+**Description:** Delete values from user storage
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
-- **`user_id`** (`integer`, required, min: 1) — ID пользователя Telegram
-- **`key`** (`string`, optional) — Ключ для удаления конкретного значения (точное совпадение, приоритет над key_pattern). Если не указаны key и key_pattern - удаляются все записи пользователя
-- **`key_pattern`** (`string`, optional, min length: 1) — Паттерн для поиска ключей для удаления (ILIKE, используется если key не указан). Если не указаны key и key_pattern - удаляются все записи пользователя
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`user_id`** (`integer`, required, min: 1) — Telegram user ID
+- **`key`** (`string`, optional) — Key to delete (exact). If key and key_pattern both unset - delete all user records
+- **`key_pattern`** (`string`, optional, min length: 1) — Pattern for keys to delete (ILIKE). If both unset - delete all
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error, not_found
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки (например, ошибки валидации полей)
+- **`result`** (`string`) — Result: success, error, not_found
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
 
 **Usage Example:**
 
@@ -1873,11 +1873,11 @@ step:
 <a id="get_tenant_users"></a>
 ### get_tenant_users
 
-**Description:** Получение списка всех user_id для указанного тенанта
+**Description:** Get list of all user_id for tenant
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`) — ID тенанта
+- **`tenant_id`** (`integer`) — Tenant ID
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -1890,14 +1890,14 @@ step:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - 🔀 **`user_ids`** (`array`) — Массив ID пользователей Telegram
-  - **`user_count`** (`integer`) — Количество пользователей
+  - 🔀 **`user_ids`** (`array`) — Array of Telegram user IDs
+  - **`user_count`** (`integer`) — Number of users
 
 **Note:**
 - 🔀 — field that can be renamed via `_response_key` parameter for convenient data access
@@ -1915,12 +1915,12 @@ step:
 <a id="get_user_state"></a>
 ### get_user_state
 
-**Description:** Получение состояния пользователя с проверкой истечения
+**Description:** Get user state with expiry check
 
 **Input Parameters:**
 
-- **`user_id`** (`integer`, required, min: 1) — ID пользователя Telegram
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
+- **`user_id`** (`integer`, required, min: 1) — Telegram user ID
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -1933,14 +1933,14 @@ step:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
-- **`response_data`** (`object`) — Данные ответа
-  - 🔀 **`user_state`** (`string`) (optional) — Состояние пользователя или None если истекло/не установлено
-  - **`user_state_expired_at`** (`string`) (optional) — Время истечения состояния (ISO) или None если не установлено
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Response data
+  - 🔀 **`user_state`** (`string`) (optional) — User state or None if expired/not set
+  - **`user_state_expired_at`** (`string`) (optional) — State expiry time (ISO) or None if not set
 
 **Note:**
 - 🔀 — field that can be renamed via `_response_key` parameter for convenient data access
@@ -1959,15 +1959,15 @@ step:
 <a id="get_user_storage"></a>
 ### get_user_storage
 
-**Description:** Получение значений storage для пользователя. Поддерживает получение всех значений, конкретного значения (key) или поиск по паттерну (key_pattern)
+**Description:** Get user storage values. Supports full values, single key, or key_pattern search
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
-- **`user_id`** (`integer`, required, min: 1) — ID пользователя Telegram
-- **`key`** (`string`, optional) — Ключ для получения конкретного значения (точное совпадение, приоритет над key_pattern)
-- **`key_pattern`** (`string`, optional, min length: 1) — Паттерн для поиска ключей (ILIKE, используется если key не указан)
-- **`format`** (`boolean`, optional) — Если true, возвращает дополнительное поле formatted_text с данными в формате YAML
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`user_id`** (`integer`, required, min: 1) — Telegram user ID
+- **`key`** (`string`, optional) — Key for single value (exact match, priority over key_pattern)
+- **`key_pattern`** (`string`, optional, min length: 1) — Pattern for key search (ILIKE, used when key not set)
+- **`format`** (`boolean`, optional) — If true, returns formatted_text with YAML data
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -1980,14 +1980,14 @@ step:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error, not_found
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error, not_found
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - 🔀 **`user_storage_values`** (`any`) — Запрошенные данные. Если указан key - возвращается прямое значение (примитив или объект как есть). Если ничего не указано - возвращается полная структура {key: value}
-  - **`formatted_text`** (`string`) (optional) — Отформатированный текст в формате YAML (возвращается только если format=true)
+  - 🔀 **`user_storage_values`** (`any`) — Requested data. If key set - raw value. If none - full {key: value}
+  - **`formatted_text`** (`string`) (optional) — Formatted YAML text (only when format=true)
 
 **Note:**
 - 🔀 — field that can be renamed via `_response_key` parameter for convenient data access
@@ -2009,13 +2009,13 @@ step:
 <a id="get_users_by_storage_value"></a>
 ### get_users_by_storage_value
 
-**Description:** Поиск пользователей по ключу и значению в storage. Позволяет найти всех пользователей, у которых в storage есть определенный ключ с определенным значением (например, найти всех пользователей с подключенной подпиской)
+**Description:** Find users by storage key and value (e.g. users with subscription)
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
-- **`key`** (`string`, required, min length: 1) — Ключ для поиска в storage
-- **`value`** (`string|integer|float|boolean|array|object`) — Значение для поиска (может быть простым типом или JSON объектом)
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`key`** (`string`, required, min length: 1) — Storage key to search
+- **`value`** (`string|integer|float|boolean|array|object`) — Value to search (primitive or JSON object)
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -2028,14 +2028,14 @@ step:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - 🔀 **`user_ids`** (`array`) — Массив ID пользователей Telegram, у которых storage[key] == value
-  - **`user_count`** (`integer`) — Количество найденных пользователей
+  - 🔀 **`user_ids`** (`array`) — Array of Telegram user IDs where storage[key] == value
+  - **`user_count`** (`integer`) — Number of users found
 
 **Note:**
 - 🔀 — field that can be renamed via `_response_key` parameter for convenient data access
@@ -2055,14 +2055,14 @@ step:
 <a id="set_user_state"></a>
 ### set_user_state
 
-**Description:** Установка состояния пользователя
+**Description:** Set user state
 
 **Input Parameters:**
 
-- **`user_id`** (`integer`, required, min: 1) — ID пользователя Telegram
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
-- **`state`** (`string`, optional) — Состояние пользователя (None или пустая строка для сброса)
-- **`expires_in_seconds`** (`integer`, optional, min: 0) — Время истечения в секундах (None или 0 = навсегда, устанавливается 3000 год)
+- **`user_id`** (`integer`, required, min: 1) — Telegram user ID
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`state`** (`string`, optional) — User state (None or empty to clear)
+- **`expires_in_seconds`** (`integer`, optional, min: 0) — Expiry in seconds (None or 0 = forever)
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -2073,14 +2073,14 @@ step:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
-- **`response_data`** (`object`) — Данные ответа
-  - **`user_state`** (`string`) (optional) — Состояние пользователя или None если истекло/не установлено
-  - **`user_state_expired_at`** (`string`) (optional) — Время истечения состояния (ISO) или None если не установлено
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Response data
+  - **`user_state`** (`string`) (optional) — User state or None if expired/not set
+  - **`user_state_expired_at`** (`string`) (optional) — State expiry time (ISO) or None if not set
 
 **Usage Example:**
 
@@ -2098,16 +2098,16 @@ step:
 <a id="set_user_storage"></a>
 ### set_user_storage
 
-**Description:** Установка значений storage для пользователя. Поддерживает смешанный подход: полная структура через values или частичная через key/value
+**Description:** Set user storage. Full structure via values or partial via key/value
 
 **Input Parameters:**
 
-- **`tenant_id`** (`integer`, required, min: 1) — ID тенанта
-- **`user_id`** (`integer`, required, min: 1) — ID пользователя Telegram
-- **`key`** (`string`, optional) — Ключ значения (с поддержкой плейсхолдеров). Если указан, используется смешанный подход
-- **`value`** (`any`, optional) — Значение для установки. Используется вместе с key
-- **`values`** (`object`, optional) — Полная структура для установки {key: value}. Используется только если не указан key
-- **`format`** (`boolean`, optional) — Если true, возвращает дополнительное поле formatted_text с данными в формате YAML
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`user_id`** (`integer`, required, min: 1) — Telegram user ID
+- **`key`** (`string`, optional) — Value key (placeholder support). If set, mixed approach
+- **`value`** (`any`, optional) — Value to set. Used with key
+- **`values`** (`object`, optional) — Full structure to set {key: value}. Only when key not set
+- **`format`** (`boolean`, optional) — If true, returns formatted_text with YAML data
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -2120,14 +2120,14 @@ step:
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - 🔀 **`user_storage_values`** (`any`) — Установленные данные. Если установлено одно значение (key + value) - возвращается прямое значение (примитив или объект как есть). Если установлена структура (values без key) - возвращается структура {key: value}
-  - **`formatted_text`** (`string`) (optional) — Отформатированный текст в формате YAML (возвращается только если format=true)
+  - 🔀 **`user_storage_values`** (`any`) — Set data. Single value or full {key: value} structure
+  - **`formatted_text`** (`string`) (optional) — Formatted YAML text (only when format=true)
 
 **Note:**
 - 🔀 — field that can be renamed via `_response_key` parameter for convenient data access
@@ -2149,24 +2149,24 @@ step:
 
 ## validator
 
-**Description:** Сервис для валидации условий в сценариях
+**Description:** Service for validating conditions in scenarios
 
 <a id="validate"></a>
 ### validate
 
-**Description:** Валидация условия с возвратом результата
+**Description:** Validate condition and return result
 
 **Input Parameters:**
 
-- **`condition`** (`string`, required, min length: 1) — Условие для валидации (поддерживает все операторы condition_parser)
+- **`condition`** (`string`, required, min length: 1) — Condition to validate (supports all condition_parser operators)
 
 **Output Parameters:**
 
-- **`result`** (`string`) — Результат: success, failed, error
-- **`error`** (`object`) (optional) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (optional) — Детали ошибки
+- **`result`** (`string`) — Result: success, failed, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
 
 **Usage Example:**
 

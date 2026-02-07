@@ -8,19 +8,6 @@ keywords: coreness storage, key-value storage, tenant storage, user storage, ten
 
 > **📖 Complete guide** to creating and configuring data storage for flexible management of settings, limits, features, and user data.
 
-## 📑 Table of Contents
-
-- [Purpose](#-purpose)
-- [Storage Types](#-storage-types)
-- [Tenant Storage](#-tenant-storage)
-  - [Database Synchronization](#database-synchronization)
-- [User Storage](#-user-storage)
-- [Value Types](#-value-types)
-- [Usage in Scenarios](#-usage-in-scenarios)
-- [YAML Formatting](#-yaml-formatting)
-
----
-
 ## 🎯 Purpose
 
 **Storage** — flexible key-value data storage system that allows:

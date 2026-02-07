@@ -8,32 +8,6 @@ keywords: telegram bot examples, coreness quick start, RAG examples, bot payment
 
 > **📖 Collection of practical examples** — from quick start to advanced scenarios with payments, RAG storage, and complex logic.
 
-## 📑 Table of Contents
-
-- [🚀 Quick Start](#-quick-start)
-  - [Basic Concepts](#basic-concepts)
-  - [Creating First Scenario (System Tenant)](#creating-first-scenario-system-tenant)
-  - [Applying Changes (System Tenant)](#applying-changes-system-tenant)
-  - [Public Tenants (Optional)](#public-tenants-optional)
-- [💳 Advanced Examples](#-advanced-examples)
-  - [Working with Payments (Invoices)](#working-with-payments-invoices)
-    - [Payment Mechanism Overview](#payment-mechanism-overview)
-    - [Creating Invoice](#creating-invoice)
-    - [Handling pre_checkout_query](#handling-pre_checkout_query)
-    - [Handling payment_successful](#handling-payment_successful)
-    - [Complete Example: Payment Flow](#complete-example-payment-flow)
-    - [Recommendations and Best Practices](#recommendations-and-best-practices)
-  - [Working with RAG Storage](#working-with-rag-storage)
-    - [RAG System Overview](#rag-system-overview)
-    - [Saving Data to Vector Storage](#saving-data-to-vector-storage)
-    - [Semantic Search](#semantic-search)
-    - [Getting Recent Chunks](#getting-recent-chunks)
-    - [Using RAG in AI Completion](#using-rag-in-ai-completion)
-    - [Complete Example: RAG Flow](#complete-example-rag-flow)
-    - [Recommendations and Best Practices](#recommendations-and-best-practices-1)
-
----
-
 ## 🚀 Quick Start
 
 Welcome to Coreness! This section will help you quickly create your first bot and configure your first scenario.

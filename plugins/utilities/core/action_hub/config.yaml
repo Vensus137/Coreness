@@ -1,5 +1,6 @@
 name: "action_hub"
 description: "Центральный хаб действий для маршрутизации к сервисам"
+description_en: "Central action hub for routing to services"
 singleton: true
 dependencies:
   - "logger"
@@ -34,138 +35,174 @@ methods:
   # Service registry
   register:
     description: "Регистрация сервиса"
+    description_en: "Register service"
     input:
       service_name:
         type: string
         description: "Имя сервиса (tenant_hub, api_service, etc.)"
+        description_en: "Service name (tenant_hub, api_service, etc.)"
       service_instance:
         type: object
         description: "Экземпляр сервиса"
+        description_en: "Service instance"
     output:
       type: boolean
       description: "True если регистрация успешна"
+      description_en: "True if registration successful"
 
   get_action_config:
     description: "Получение полной конфигурации действия"
+    description_en: "Get full action configuration"
     input:
       action_name:
         type: string
         description: "Имя действия для получения конфигурации"
+        description_en: "Action name to get config for"
     output:
       type: object
       optional: true
       description: "Полная конфигурация действия из маппинга или None если действие не найдено"
+      description_en: "Full action config from mapping or None if not found"
 
   # Universal actions
   execute_action:
     description: "Выполнение действия через соответствующий сервис"
+    description_en: "Execute action via corresponding service"
     input:
       action_name:
         type: string
         description: "Имя действия (tenant_reload, etc.)"
+        description_en: "Action name (tenant_reload, etc.)"
       data:
         type: object
         description: "Параметры действия (словарь с данными)"
+        description_en: "Action parameters (dict)"
       queue_name:
         type: string
         optional: true
         description: "Очередь для выполнения (common, action). По умолчанию: common"
+        description_en: "Queue (common, action). Default: common"
       fire_and_forget:
         type: boolean
         optional: true
         default: false
         description: "Если true - задача выполнится в фоне без ожидания результата. Возвращает {'result': 'success'}"
+        description_en: "If true - run in background, returns {'result': 'success'}"
     output:
       result:
         type: string
         description: "Результат: success, error, timeout, not_found"
+        description_en: "Result: success, error, timeout, not_found"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки (например, ошибки валидации полей)"
+            description_en: "Error details (e.g. field validation errors)"
       response_data:
         type: object
         description: "Данные ответа (если есть)"
+        description_en: "Response data (if any)"
 
   execute_action_secure:
     description: "Безопасное выполнение действия с проверкой tenant_access (для сценариев)"
+    description_en: "Execute action with tenant_access check (for scenarios)"
     input:
       action_name:
         type: string
         description: "Имя действия (tenant_reload, etc.)"
+        description_en: "Action name (tenant_reload, etc.)"
       data:
         type: object
         description: "Параметры действия (словарь с данными)"
+        description_en: "Action parameters (dict)"
       queue_name:
         type: string
         optional: true
         description: "Очередь для выполнения (common, action). По умолчанию: action"
+        description_en: "Queue (common, action). Default: action"
       fire_and_forget:
         type: boolean
         optional: true
         default: false
         description: "Если true - задача выполнится в фоне без ожидания результата. Возвращает {'result': 'success'}"
+        description_en: "If true - run in background, returns {'result': 'success'}"
     output:
       result:
         type: string
         description: "Результат: success, error, timeout, not_found"
+        description_en: "Result: success, error, timeout, not_found"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки (например, ошибки валидации полей)"
+            description_en: "Error details (e.g. field validation errors)"
       response_data:
         type: object
         description: "Данные ответа (если есть)"
+        description_en: "Response data (if any)"
 
 actions:
   # Special ActionHub actions
   get_available_actions:
     description: "Получение всех доступных действий с их метаданными"
+    description_en: "Get all available actions with metadata"
     input: {}
     output:
       result:
         type: string
         description: "Результат: success, error"
+        description_en: "Result: success, error"
       error:
         type: object
         optional: true
         description: "Структура ошибки"
+        description_en: "Error structure"
         properties:
           code:
             type: string
             description: "Код ошибки"
+            description_en: "Error code"
           message:
             type: string
             description: "Сообщение об ошибке"
+            description_en: "Error message"
           details:
             type: array
             optional: true
             description: "Детали ошибки (например, ошибки валидации полей)"
+            description_en: "Error details (e.g. field validation errors)"
       response_data:
         type: object
         description: "Словарь всех доступных действий с метаданными"
+        description_en: "Dict of all available actions with metadata"
 
 features:
   - "Маршрутизация действий к соответствующим сервисам"

@@ -1,5 +1,6 @@
 name: "logger"
 description: "Системный логгер для проекта. Используется для централизованного логирования событий и ошибок."
+description_en: "System logger for the project. Used for centralized logging of events and errors."
 singleton: true
 
 settings:
@@ -7,59 +8,73 @@ settings:
     type: string
     default: DEBUG
     description: "Уровень логирования для файла и консоли (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
+    description_en: "Log level for file and console (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
 
   file_enabled:
     type: boolean
     default: true
     description: "Писать логи в файл"
+    description_en: "Write logs to file"
 
   console_enabled:
     type: boolean
     default: true
     description: "Писать логи в консоль"
+    description_en: "Write logs to console"
 
   file_path:
     type: string
     default: "logs/core.log"
     description: "Путь к файлу логов"
+    description_en: "Path to log file"
 
   max_file_size_mb:
     type: integer
     default: 10
     description: "Максимальный размер одного файла лога (МБ)"
+    description_en: "Maximum size of a single log file (MB)"
 
   backup_count:
     type: integer
     default: 3
     description: "Количество файлов ротации - уменьшено для экономии места"
+    description_en: "Number of rotation files"
 
   buffer_size:
     type: integer
     default: 8192
     description: "Размер буфера для файлового логирования (байт). 0 = без буферизации"
+    description_en: "Buffer size for file logging (bytes). 0 = no buffering"
 
   timezone:
     type: string
     default: "Europe/Moscow"
     description: "Временная зона для отображения времени в логах (например, Europe/Moscow, UTC)"
+    description_en: "Timezone for log timestamps (e.g. Europe/Moscow, UTC)"
 
 methods:
   setup_logger:
     description: "Настроить и вернуть основной логгер для проекта"
+    description_en: "Configure and return main project logger"
     input:
       name:
         type: string
         description: "Имя логгера (обычно имя модуля)"
+        description_en: "Logger name (usually module name)"
     output:
       type: Logger
       description: "Объект логгера, готовый к использованию"
+      description_en: "Logger instance ready to use"
       
   get_logger:
     description: "Получить логгер по имени (или создать, если не существует)"
+    description_en: "Get logger by name (or create if not exists)"
     input:
       name:
         type: string
         description: "Имя логгер (обычно имя модуля)"
+        description_en: "Logger name (usually module name)"
     output:
       type: Logger
-      description: "Объект логгера" 
+      description: "Объект логгера"
+      description_en: "Logger instance" 

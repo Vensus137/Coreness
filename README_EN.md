@@ -14,6 +14,8 @@
 
 > **Note on language:** The project supports English (docs, code, tooling). You may still run into occasional inaccuracies or mixed-language bits.
 
+> 🌐 **Website:** [coreness.tech](https://coreness.tech/) · **Documentation:** [docs.coreness.tech](https://docs.coreness.tech/en/)
+
 `Coreness` is an **event-driven** platform for building automated **workflows** through configuration files. You describe the logic in YAML, and the platform handles execution, data storage, and integrations.
 
 **Key Use Cases:**
@@ -101,7 +103,9 @@ Automation based on cron expressions:
 
 ## 📖 Documentation
 
-Complete documentation is available in the **[`docs/`](docs/)** folder → **[Documentation Navigation](docs/en/README.md)**
+**Online:** [docs.coreness.tech](https://docs.coreness.tech/en/) — full documentation in the browser.
+
+**In repo:** complete documentation is also in the **[`docs/`](docs/)** folder → **[Documentation Navigation](docs/en/README.md)**
 
 ### Quick Start
 - 🚀 **[Practical Examples](docs/en/EXAMPLES_GUIDE.md)** — from simple bot to AI agent with RAG
@@ -159,6 +163,9 @@ coreness/
 ---
 
 ## 📞 Contacts
+
+**Project website:** [coreness.tech](https://coreness.tech/)  
+Current contacts and info
 
 **Project Telegram Channel:** [t.me/coreness](https://t.me/coreness)  
 News, updates, and discussions

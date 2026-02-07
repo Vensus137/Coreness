@@ -9,23 +9,6 @@ keywords: AI models, OpenAI, Anthropic, Google Gemini, DeepSeek, completion, tem
 **Data Source:** OpenRouter  
 **Last Updated:** 2026-01-20
 
-## 📋 Table of Contents
-
-- [Legend](#legend)
-- [Models](#models)
-  - [OpenAI](#openai)
-  - [Google](#google)
-  - [Anthropic](#anthropic)
-  - [DeepSeek](#deepseek)
-  - [Perplexity](#perplexity)
-  - [Qwen](#qwen)
-  - [Mistral AI](#mistral-ai)
-  - [Meta (Llama)](#meta-llama)
-  - [Microsoft](#microsoft)
-  - [xAI](#xai)
-  - [Other Providers](#other-providers)
-- [Parameter Descriptions](#parameter-descriptions)
-
 ## Legend
 
 ### Model Parameters

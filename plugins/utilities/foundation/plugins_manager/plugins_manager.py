@@ -116,6 +116,7 @@ class PluginsManager:
             plugin_info = {
                 'name': config.get('name', plugin_name),
                 'description': config.get('description', ''),
+                'description_en': config.get('description_en', ''),
                 'type': plugin_type,
                 'path': plugin_path,
                 'config_path': config_path,
