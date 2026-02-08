@@ -24,6 +24,45 @@ settings:
     description_en: "TTL for scenario cache (10 years in seconds). Long-lived cache, invalidated explicitly"
 
 actions:
+  sync_tenant_scenarios:
+    description: "Синхронизация сценариев для тенанта: парсинг scenarios/*.yaml + синхронизация с БД"
+    description_en: "Sync tenant scenarios: parse scenarios/*.yaml + sync to database"
+    access_rules: ["system_access"]
+    input:
+      data:
+        type: object
+        properties:
+          tenant_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID тенанта"
+            description_en: "Tenant ID"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+        description_en: "Result: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        description_en: "Error structure"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+            description_en: "Error code"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+            description_en: "Error message"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+            description_en: "Error details"
+
   process_scenario_event:
     description: Обработка события по сценариям
     description_en: Process event by scenarios

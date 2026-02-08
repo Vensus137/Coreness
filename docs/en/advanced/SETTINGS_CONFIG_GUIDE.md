@@ -10,8 +10,6 @@ keywords: system settings, settings.yaml, coreness configuration, database setti
 - **settings.yaml** — global settings for all services, centralized parameter overrides (e.g., processing_interval, batch_size, etc.). Recommended to change only when necessary as it affects all services.
 - **Plugin Management** — centralized system for enabling/disabling plugins via `plugin_management` in `settings.yaml`
 
----
-
 ## 🔌 Plugin Management
 
 **Purpose:** Centralized system for enabling/disabling plugins (utilities and services) via core configuration.

@@ -1,0 +1,311 @@
+name: "telegram_bot_api"
+description: "Сервис для выполнения действий через Telegram Bot API"
+description_en: "Service for executing actions via Telegram Bot API"
+singleton: true
+type: service
+
+dependencies:
+  - "logger"
+  - "settings_manager"
+  - "action_hub"
+  - "telegram_api"
+
+settings:
+  default_buttons_per_row:
+    type: integer
+    default: 2
+    description: "Количество кнопок в строке по умолчанию для действия build_keyboard"
+    description_en: "Default buttons per row for build_keyboard action"
+
+actions:
+  send_message:
+    description: "Отправка сообщения ботом"
+    description_en: "Send message by bot"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+            description_en: "Bot ID"
+          target_chat_id:
+            type: integer|array|string
+            optional: true
+            description: "ID чата или массив ID чатов"
+            description_en: "Chat ID or array of chat IDs"
+          text:
+            type: string
+            optional: true
+            description: "Текст сообщения"
+            description_en: "Message text"
+          parse_mode:
+            type: string
+            optional: true
+            enum: ["HTML", "Markdown", "MarkdownV2"]
+            description: "Режим разбора (HTML, Markdown, MarkdownV2)"
+            description_en: "Parse mode (HTML, Markdown, MarkdownV2)"
+          message_edit:
+            type: integer|boolean|string
+            optional: true
+            description: "ID сообщения для редактирования или флаг"
+            description_en: "Message ID to edit or flag"
+          message_reply:
+            type: integer
+            optional: true
+            min: 1
+            description: "ID сообщения для ответа"
+            description_en: "Message ID to reply to"
+          inline:
+            type: array
+            optional: true
+            description: "Inline-клавиатура"
+            description_en: "Inline keyboard"
+          reply:
+            type: array
+            optional: true
+            description: "Reply-клавиатура"
+            description_en: "Reply keyboard"
+          attachment:
+            type: array
+            optional: true
+            description: "Вложения"
+            description_en: "Attachments"
+    output:
+      result:
+        type: string
+        description: "Результат отправки"
+        description_en: "Send result"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        description_en: "Error structure"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+            description_en: "Error code"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+            description_en: "Error message"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+            description_en: "Error details"
+      response_data:
+        type: object
+        description: "Данные ответа"
+        description_en: "Response data"
+        properties:
+          last_message_id:
+            type: integer
+            description: "ID отправленного сообщения"
+            description_en: "Sent message ID"
+
+  delete_message:
+    description: "Удаление сообщения ботом"
+    description_en: "Delete message by bot"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+            description_en: "Bot ID"
+          delete_message_id:
+            type: integer
+            optional: true
+            min: 1
+            description: "ID сообщения для удаления"
+            description_en: "Message ID to delete"
+    output:
+      result:
+        type: string
+        description: "Результат удаления"
+        description_en: "Delete result"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        description_en: "Error structure"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+            description_en: "Error code"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+            description_en: "Error message"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+            description_en: "Error details"
+
+  build_keyboard:
+    description: "Построение клавиатуры из массива ID с использованием шаблонов"
+    description_en: "Build keyboard from ID array using templates"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          items:
+            type: array
+            optional: false
+            description: "Массив ID для генерации кнопок"
+            description_en: "Array of IDs for button generation"
+          keyboard_type:
+            type: string
+            optional: false
+            enum: ["inline", "reply"]
+            description: "Тип клавиатуры (inline или reply)"
+            description_en: "Keyboard type (inline or reply)"
+          text_template:
+            type: string
+            optional: false
+            min_length: 1
+            description: "Шаблон текста с плейсхолдером $value$"
+            description_en: "Text template with $value$ placeholder"
+          callback_template:
+            type: string
+            optional: true
+            min_length: 1
+            description: "Шаблон callback_data для inline (обязателен для inline)"
+            description_en: "Callback data template for inline (required for inline)"
+          buttons_per_row:
+            type: integer
+            optional: true
+            min: 1
+            max: 8
+            description: "Количество кнопок в строке"
+            description_en: "Buttons per row"
+    output:
+      result:
+        type: string
+        description: "Результат построения"
+        description_en: "Build result"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        description_en: "Error structure"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+            description_en: "Error code"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+            description_en: "Error message"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+            description_en: "Error details"
+      response_data:
+        type: object
+        description: "Данные клавиатуры"
+        description_en: "Keyboard data"
+        properties:
+          keyboard:
+            type: array
+            description: "Массив рядов кнопок"
+            description_en: "Array of button rows"
+          keyboard_type:
+            type: string
+            description: "Тип клавиатуры"
+            description_en: "Keyboard type"
+          rows_count:
+            type: integer
+            description: "Количество рядов"
+            description_en: "Number of rows"
+          buttons_count:
+            type: integer
+            description: "Количество кнопок"
+            description_en: "Number of buttons"
+
+  answer_callback_query:
+    description: "Ответ на callback query (всплывающее уведомление)"
+    description_en: "Answer callback query (popup notification)"
+    access_rules: ["data_integrity"]
+    public: true
+    input:
+      data:
+        type: object
+        properties:
+          bot_id:
+            type: integer
+            optional: false
+            min: 1
+            description: "ID бота"
+            description_en: "Bot ID"
+          callback_query_id:
+            type: string
+            optional: false
+            min_length: 1
+            description: "ID callback query от Telegram"
+            description_en: "Callback query ID from Telegram"
+          text:
+            type: string
+            optional: true
+            max_length: 200
+            description: "Текст уведомления"
+            description_en: "Notification text"
+          show_alert:
+            type: boolean
+            optional: true
+            description: "Показать как alert вместо уведомления"
+            description_en: "Show as alert instead of notification"
+          cache_time:
+            type: integer
+            optional: true
+            min: 0
+            max: 3600
+            description: "Время кэширования ответа (секунды)"
+            description_en: "Answer cache time (seconds)"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+        description_en: "Result: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        description_en: "Error structure"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+            description_en: "Error code"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+            description_en: "Error message"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+            description_en: "Error details"
+
+features:
+  - "Отправка и удаление сообщений"
+  - "Построение inline/reply клавиатур"
+  - "Ответы на callback queries"
+  - "Независимость от telegram_bot_manager (слабая связь через ActionHub)"

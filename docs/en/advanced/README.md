@@ -1,33 +1,28 @@
 ---
 title: Advanced Documentation
-description: Advanced Coreness documentation for experienced users. Architecture, deployment, plugin development and system settings.
-keywords: coreness architecture, deployment, plugins, system settings
+description: Advanced Coreness documentation for experienced users. Architecture, plugin development and system settings.
+keywords: coreness architecture, plugins, system settings
 ---
 
 # 📚 Coreness Extended Documentation
 
 Advanced guides for deep understanding of the platform, plugin development, and infrastructure management.
 
-> 📖 **Main Documentation:** [Scenario and Configuration Guides](../README.md) — for building bots and working with the platform
-
----
+> 📖 **Main Documentation:** [Scenario and Configuration Guides](../README) — for building bots and working with the platform
 
 ## ⚡ Documentation Table of Contents
 
-- [Platform Architecture](ARCHITECTURE.md)
-- [Deployment and Operations](DEPLOYMENT.md)
-- [Plugin Development](PLUGINS_GUIDE.md)
-- [Plugin Configuration](PLUGIN_CONFIG_GUIDE.md)
-- [System Actions](SYSTEM_ACTION_GUIDE.md)
-- [System Settings](SETTINGS_CONFIG_GUIDE.md)
-- [Logging](LOGGING_GUIDE.md)
-- [Testing](TESTING_GUIDE.md)
-
----
+- [Platform Architecture](ARCHITECTURE)
+- [Plugin Development](PLUGINS_GUIDE)
+- [Plugin Configuration](PLUGIN_CONFIG_GUIDE)
+- [System Actions](SYSTEM_ACTION_GUIDE)
+- [System Settings](SETTINGS_CONFIG_GUIDE)
+- [Logging](LOGGING_GUIDE)
+- [Testing](TESTING_GUIDE)
 
 ## 📖 Complete Documentation Index
 
-### [🏗️ Platform Architecture](ARCHITECTURE.md)
+### [🏗️ Platform Architecture](ARCHITECTURE)
 
 **What it is:** Detailed description of platform architecture, patterns, and operational principles.
 
@@ -45,27 +40,7 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ---
 
-### [🚀 Deployment and Operations](DEPLOYMENT.md)
-
-**What it is:** Complete guide for platform installation and updates.
-
-**Why you need it:** From initial setup to automated deployment via GitHub Actions and version management.
-
-**What's inside:**
-- Server installation (Linux, Docker)
-- Environment setup (test + prod)
-- PostgreSQL and pgvector configuration
-- Database migrations
-- Automated deployment via GitHub Actions
-- Update and rollback system
-- Backup and recovery
-- Monitoring and logging
-
-**When to use:** When deploying the platform in production, setting up CI/CD, or updating versions.
-
----
-
-### [🔌 Plugin Development](PLUGINS_GUIDE.md)
+### [🔌 Plugin Development](PLUGINS_GUIDE)
 
 **What it is:** Guide for creating custom services and utilities.
 
@@ -83,7 +58,7 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ---
 
-### [⚙️ Plugin Configuration](PLUGIN_CONFIG_GUIDE.md)
+### [⚙️ Plugin Configuration](PLUGIN_CONFIG_GUIDE)
 
 **What it is:** Detailed description of config.yaml structure for plugins.
 
@@ -100,7 +75,7 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ---
 
-### [🎯 System Actions](SYSTEM_ACTION_GUIDE.md)
+### [🎯 System Actions](SYSTEM_ACTION_GUIDE)
 
 **What it is:** Complete reference of platform internal actions.
 
@@ -117,7 +92,7 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ---
 
-### [⚙️ System Settings](SETTINGS_CONFIG_GUIDE.md)
+### [⚙️ System Settings](SETTINGS_CONFIG_GUIDE)
 
 **What it is:** Global platform parameters.
 
@@ -134,7 +109,7 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ---
 
-### [📝 Logging](LOGGING_GUIDE.md)
+### [📝 Logging](LOGGING_GUIDE)
 
 **What it is:** Working with logs and debugging.
 
@@ -152,7 +127,7 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 ---
 
-### [🧪 Testing](TESTING_GUIDE.md)
+### [🧪 Testing](TESTING_GUIDE)
 
 **What it is:** Platform testing approaches.
 
@@ -168,29 +143,24 @@ Advanced guides for deep understanding of the platform, plugin development, and 
 
 **When to use:** When developing scenarios, creating plugins, or setting up CI/CD.
 
----
-
 ## 🎯 Recommended Learning Path
 
 For platform developers:
 
-1. **[Architecture](ARCHITECTURE.md)** — understand the platform structure
-2. **[Plugin Development](PLUGINS_GUIDE.md)** — learn to create plugins
-3. **[Plugin Configuration](PLUGIN_CONFIG_GUIDE.md)** — study config.yaml
-4. **[System Actions](SYSTEM_ACTION_GUIDE.md)** — deep dive into actions
-5. **[Logging](LOGGING_GUIDE.md)** — configure debugging
-6. **[Testing](TESTING_GUIDE.md)** — organize testing
+1. **[Architecture](ARCHITECTURE)** — understand the platform structure
+2. **[Plugin Development](PLUGINS_GUIDE)** — learn to create plugins
+3. **[Plugin Configuration](PLUGIN_CONFIG_GUIDE)** — study config.yaml
+4. **[System Actions](SYSTEM_ACTION_GUIDE)** — deep dive into actions
+5. **[Logging](LOGGING_GUIDE)** — configure debugging
+6. **[Testing](TESTING_GUIDE)** — organize testing
 
 For platform administrators:
 
-1. **[Deployment](DEPLOYMENT.md)** — deploy the platform
-2. **[System Settings](SETTINGS_CONFIG_GUIDE.md)** — optimize configuration
-
----
+1. **[System Settings](SETTINGS_CONFIG_GUIDE)** — optimize configuration
 
 ## 🔙 Back to Main Documentation
 
-- [📚 Main Documentation](../README.md)
-- [🚀 Practical Examples](../EXAMPLES_GUIDE.md)
-- [📋 Scenario Guide](../SCENARIO_CONFIG_GUIDE.md)
-- [🎯 Action Guide](../ACTION_GUIDE.md)
+- [📚 Main Documentation](../README)
+- [🚀 Getting Started](../getting-started/README)
+- [📋 Scenario Guide](../guides/SCENARIO_CONFIG_GUIDE)
+- [🎯 Action Guide](../reference/ACTION_GUIDE)

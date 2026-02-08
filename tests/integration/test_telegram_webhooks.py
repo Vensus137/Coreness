@@ -1,9 +1,9 @@
 """
-Integration tests for Telegram webhooks
-Test full flow from webhook setup to receiving and processing updates
+Integration tests for Telegram webhooks.
+Test full flow from webhook setup to receiving and processing updates.
 
-Note: these tests require HTTP server to be running.
-If port is busy or server is disabled, tests will be skipped.
+Requires: use_webhooks=True for telegram_bot_manager and http_server loaded
+(integration conftest enables webhooks for telegram_bot_manager).
 """
 import asyncio
 import json
@@ -16,10 +16,9 @@ from aiohttp import web
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_webhook_endpoint_registered(initialized_di_container):
-    """Test that Telegram webhook endpoint is registered"""
+    """Test that Telegram webhook endpoint is registered (when use_webhooks is enabled)"""
     http_server = initialized_di_container.get_utility('http_server')
-    
-    # Verify that endpoint is registered
+
     endpoint_found = False
     for route in http_server.app.router.routes():
         if hasattr(route, 'resource') and route.resource:
@@ -27,8 +26,11 @@ async def test_webhook_endpoint_registered(initialized_di_container):
             if canonical == '/webhooks/telegram':
                 endpoint_found = True
                 break
-    
-    assert endpoint_found, "Endpoint /webhooks/telegram is not registered"
+
+    assert endpoint_found, (
+        "Endpoint /webhooks/telegram is not registered. "
+        "Enable use_webhooks in telegram_bot_manager settings and ensure http_server is loaded."
+    )
 
 
 @pytest.mark.integration
@@ -36,13 +38,11 @@ async def test_webhook_endpoint_registered(initialized_di_container):
 async def test_webhook_handler_missing_secret_token(initialized_di_container):
     """Test webhook handling without secret_token"""
     http_server = initialized_di_container.get_utility('http_server')
-    
-    # Start server if not running
+
     if not http_server.is_running:
         success = await http_server.start()
         assert success is True
-    
-    # Get handler
+
     handler = None
     for route in http_server.app.router.routes():
         if hasattr(route, 'resource') and route.resource:
@@ -50,9 +50,12 @@ async def test_webhook_handler_missing_secret_token(initialized_di_container):
             if canonical == '/webhooks/telegram':
                 handler = route.handler
                 break
-    
-    assert handler is not None, "Handler for /webhooks/telegram not found"
-    
+
+    assert handler is not None, (
+        "Handler for /webhooks/telegram not found. "
+        "Enable use_webhooks in telegram_bot_manager settings."
+    )
+
     # Create request without secret_token
     request = Mock(spec=web.Request)
     request.read = AsyncMock(return_value=b'{}')
@@ -69,12 +72,11 @@ async def test_webhook_handler_missing_secret_token(initialized_di_container):
 async def test_webhook_handler_invalid_secret_token(initialized_di_container):
     """Test webhook handling with invalid secret_token"""
     http_server = initialized_di_container.get_utility('http_server')
-    
+
     if not http_server.is_running:
         success = await http_server.start()
         assert success is True
-    
-    # Get handler
+
     handler = None
     for route in http_server.app.router.routes():
         if hasattr(route, 'resource') and route.resource:
@@ -82,9 +84,12 @@ async def test_webhook_handler_invalid_secret_token(initialized_di_container):
             if canonical == '/webhooks/telegram':
                 handler = route.handler
                 break
-    
-    assert handler is not None, "Handler for /webhooks/telegram not found"
-    
+
+    assert handler is not None, (
+        "Handler for /webhooks/telegram not found. "
+        "Enable use_webhooks in telegram_bot_manager settings."
+    )
+
     # Create request with invalid secret_token
     request = Mock(spec=web.Request)
     request.read = AsyncMock(return_value=b'{}')
@@ -100,15 +105,34 @@ async def test_webhook_handler_invalid_secret_token(initialized_di_container):
 @pytest.mark.asyncio
 async def test_webhook_full_flow(initialized_di_container):
     """Test full flow: webhook setup → receiving update → processing"""
-    bot_hub = initialized_di_container.get_service('bot_hub')
+    bot_manager = initialized_di_container.get_service('telegram_bot_manager')
     http_server = initialized_di_container.get_utility('http_server')
     action_hub = initialized_di_container.get_utility('action_hub')
     cache_manager = initialized_di_container.get_utility('cache_manager')
-    
+
+    assert bot_manager is not None, "telegram_bot_manager service must be loaded"
+    assert bot_manager.webhook_manager is not None, (
+        "webhook_manager not available (enable use_webhooks and ensure http_server is loaded)"
+    )
+
+    handler = None
+    for route in http_server.app.router.routes():
+        if hasattr(route, 'resource') and route.resource:
+            canonical = getattr(route.resource, 'canonical', None)
+            if canonical == '/webhooks/telegram':
+                handler = route.handler
+                break
+    assert handler is not None, (
+        "Endpoint /webhooks/telegram not registered. "
+        "Enable use_webhooks in telegram_bot_manager settings."
+    )
+
+    webhook_manager = bot_manager.webhook_manager
+
     # Mock execute_action to avoid real processing
     original_execute_action = action_hub.execute_action
     action_called = []
-    
+
     async def mock_execute_action(action_name, data, **kwargs):
         action_called.append({
             'action': action_name,
@@ -116,22 +140,18 @@ async def test_webhook_full_flow(initialized_di_container):
             'kwargs': kwargs
         })
         return {'result': 'success'}
-    
+
     action_hub.execute_action = AsyncMock(side_effect=mock_execute_action)
-    
+
     try:
         # Start server if not running
         if not http_server.is_running:
             success = await http_server.start()
             assert success is True
-        
+
         # Test data
         test_bot_id = 999999
         test_bot_token = "123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
-        
-        # 1. Set webhook through WebhookManager
-        # Get webhook_manager from bot_hub (it's private but accessible through attribute)
-        webhook_manager = bot_hub.webhook_manager
         
         # Mock successful response from Telegram API
         mock_response = Mock()
@@ -160,7 +180,7 @@ async def test_webhook_full_flow(initialized_di_container):
         bot_id_from_cache = await webhook_manager.get_bot_id_by_secret_token(secret_token)
         assert bot_id_from_cache == test_bot_id
         
-        # 3. Get handler
+        # 3. Get handler (already found at start of test)
         handler = None
         for route in http_server.app.router.routes():
             if hasattr(route, 'resource') and route.resource:
@@ -168,8 +188,7 @@ async def test_webhook_full_flow(initialized_di_container):
                 if canonical == '/webhooks/telegram':
                     handler = route.handler
                     break
-        
-        assert handler is not None, "Handler for /webhooks/telegram not found"
+        assert handler is not None
         
         # 4. Create test payload from Telegram
         payload_data = {

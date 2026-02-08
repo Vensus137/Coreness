@@ -64,10 +64,10 @@ def override_http_server_port_for_tests(settings_manager, http_server_free_port)
             settings = settings.copy()
             settings['use_webhooks'] = True  # Enable webhooks for tests
             settings['github_webhook_secret'] = TEST_WEBHOOK_SECRET  # Fixed secret
-        elif plugin_name == 'bot_hub':
-            # Override webhook settings for Telegram tests
+        elif plugin_name == 'telegram_bot_manager':
+            # Override webhook settings for Telegram webhook integration tests
             settings = settings.copy()
-            settings['use_webhooks'] = True  # Enable webhooks for tests
+            settings['use_webhooks'] = True  # Enable webhooks so /webhooks/telegram is registered
         return settings
     
     def patched_get_global_settings():
