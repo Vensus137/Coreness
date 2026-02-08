@@ -82,9 +82,14 @@ class BotLifecycle:
                 new_is_active=new_is_active
             )
             
-            # Restart if needed
+            # Restart if needed: use token from config, or from DB when config has no token (security: token only in DB / set via master bot)
             if should_restart:
-                await self._restart_bot(bot_id, new_bot_token, new_is_active)
+                effective_token = new_bot_token
+                if effective_token is None:
+                    bot_info = await self.repository.get_bot_info(bot_id)
+                    if bot_info.get('result') == 'success':
+                        effective_token = bot_info['response_data'].get('bot_token')
+                await self._restart_bot(bot_id, effective_token, new_is_active)
             
             return {
                 "result": "success",
