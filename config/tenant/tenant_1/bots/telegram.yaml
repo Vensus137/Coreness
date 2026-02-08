@@ -1,5 +1,4 @@
-# Telegram Bot configuration for Master tenant (system management)
-
+# Telegram Bot Configuration for Master Tenant (system management)
 is_active: true
 
 # Bot commands (for BotCommand table)

@@ -91,13 +91,15 @@ methods:
       tools:
         type: array
         optional: true
-        description: "Список доступных функций для вызова моделью (tool calling)"
-        description_en: "List of functions for tool calling"
+        description: "Массив объектов-инструментов (tool calling). Каждый элемент — объект: type 'function', function: { name, description, parameters }. parameters — JSON Schema объекта аргументов вызова (OpenAI-совместимый формат)."
+        description_en: "Array of tool objects (tool calling). Each item is an object: type 'function', function: { name, description, parameters }. parameters is JSON Schema for the call arguments (OpenAI-compatible format)."
+        items:
+          type: object
       tool_choice:
         type: string
         optional: true
-        description: "Управление выбором инструментов: 'none', 'auto', 'required' или объект с конкретной функцией"
-        description_en: "Tool choice: 'none', 'auto', 'required' or specific function object"
+        description: "Управление выбором инструментов. Строка: 'none', 'auto', 'required'. Объект: принудительный вызов одной функции — {\"type\": \"function\", \"function\": {\"name\": \"имя_функции\"}}."
+        description_en: "Tool selection. String: 'none', 'auto', 'required'. Object: force one function — {\"type\": \"function\", \"function\": {\"name\": \"function_name\"}}."
       api_key:
         type: string
         optional: true
@@ -160,8 +162,10 @@ methods:
           tool_calls:
             type: array
             optional: true
-            description: "Список вызовов функций, которые модель решила выполнить (только при использовании tools)"
-            description_en: "List of function calls made by model (when using tools)"
+            description: "При использовании tools — массив объектов вызовов. Каждый элемент: id, type, function: { name, arguments }. arguments — JSON-строка с параметрами вызова (разный набор полей у каждой функции)."
+            description_en: "When using tools — array of call objects. Each item: id, type, function: { name, arguments }. arguments is a JSON string with call parameters (different keys per function)."
+            items:
+              type: object
   
   embedding:
     description: "Генерация embedding для текста через AI API (Polza.ai, OpenRouter и др.)"

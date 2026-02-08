@@ -20,11 +20,6 @@ Complete description of all available actions with their parameters and results.
 - [ai_service](#ai_service) (2 actions)
   - [completion](#completion)
   - [embedding](#embedding)
-- [bot_hub](#bot_hub) (4 actions)
-  - [answer_callback_query](#answer_callback_query)
-  - [build_keyboard](#build_keyboard)
-  - [delete_message](#delete_message)
-  - [send_message](#send_message)
 - [invoice_service](#invoice_service) (7 actions)
   - [cancel_invoice](#cancel_invoice)
   - [confirm_payment](#confirm_payment)
@@ -46,11 +41,16 @@ Complete description of all available actions with their parameters and results.
 - [scenario_processor](#scenario_processor) (2 actions)
   - [execute_scenario](#execute_scenario)
   - [wait_for_action](#wait_for_action)
-- [tenant_hub](#tenant_hub) (4 actions)
+- [storage_hub](#storage_hub) (4 actions)
   - [delete_storage](#delete_storage)
   - [get_storage](#get_storage)
   - [get_storage_groups](#get_storage_groups)
   - [set_storage](#set_storage)
+- [telegram_bot_api](#telegram_bot_api) (4 actions)
+  - [answer_callback_query](#answer_callback_query)
+  - [build_keyboard](#build_keyboard)
+  - [delete_message](#delete_message)
+  - [send_message](#send_message)
 - [user_hub](#user_hub) (8 actions)
   - [clear_user_state](#clear_user_state)
   - [delete_user_storage](#delete_user_storage)
@@ -65,6 +65,7 @@ Complete description of all available actions with their parameters and results.
 
 <sup>⭐ — extension (additional plugin). For more information contact the [developer](https://t.me/vensus137).</sup>
 
+<a id="ai_rag_service"></a>
 ## ai_rag_service
 
 **Description:** RAG extension for AI Service (vector search and embeddings management)
@@ -180,7 +181,7 @@ data:
   - **`code`** (`string`) — Error code
   - **`message`** (`string`) — Error message
 - **`response_data`** (`object`) — Response data
-  - **`chunks`** (`array`) — Array of chunks (sorted by created_at DESC)
+  - **`chunks`** (`array (of object)`) — Array of chunks (sorted by created_at DESC)
   - **`chunks_count`** (`integer`) — Number of chunks found
 
 **Usage Example:**
@@ -394,7 +395,7 @@ response_data:
   - **`code`** (`string`) — Error code
   - **`message`** (`string`) — Error message
 - **`response_data`** (`object`) — Response data
-  - **`chunks`** (`array`) — Array of found chunks
+  - **`chunks`** (`array (of object)`) — Array of found chunks
   - **`chunks_count`** (`integer`) — Number of chunks found
 
 **Note:**
@@ -469,6 +470,7 @@ data:
 </details>
 
 
+<a id="ai_service"></a>
 ## ai_service
 
 **Description:** Service for AI integration in scenarios
@@ -486,11 +488,11 @@ data:
 - **`max_tokens`** (`integer`, optional) — Maximum tokens (default from settings)
 - **`temperature`** (`float`, optional, range: 0.0-2.0) — Generation temperature (default from settings)
 - **`context`** (`string`, optional) — Custom context (added to final user message in ADDITIONAL CONTEXT block with other chunks from rag_chunks)
-- **`rag_chunks`** (`array`, optional) — Array of RAG search chunks for building messages. Types: chat_history, knowledge, other. Format: [{content, document_type, role, processed_at, ...}]
+- **`rag_chunks`** (`array (of object)`, optional) — Array of RAG search chunks for building messages. Types: chat_history, knowledge, other. Format: [{content, document_type, role, processed_at, ...}]
 - **`json_mode`** (`string`, optional, values: [`json_object`, `json_schema`]) — JSON mode for structured response: 'json_object' or 'json_schema'
 - **`json_schema`** (`object`, optional) — JSON schema for json_schema mode (required when json_mode='json_schema')
-- **`tools`** (`array`, optional) — List of functions available for model to call (tool calling)
-- **`tool_choice`** (`string`, optional) — Tool selection: 'none', 'auto', 'required' or object with specific function
+- **`tools`** (`array (of object)`, optional) — Array of tool objects (tool calling). Each item is an object: type 'function', function: { name, description, parameters }. parameters is JSON Schema for the call arguments (OpenAI-compatible format).
+- **`tool_choice`** (`string`, optional) — Tool selection. String: 'none' (do not call), 'auto' (default when tools present), 'required' (must call at least one). Object: force one function — {"type": "function", "function": {"name": "function_name"}}.
 - **`chunk_format`** (`object`, optional) — Chunk display format in context. Templates use $ markers. $content + chunk_metadata. Fallback: $field|fallback:value. Markers apply only to chunk data.
 - 🔑 **`ai_token`** (`string`) — AI API key from tenant config (_config.ai_token)
 
@@ -515,7 +517,7 @@ data:
   - **`total_tokens`** (`integer`) — Total tokens (prompt + completion)
   - **`model`** (`string`) — Model used
   - **`response_dict`** (`object`) (optional) — Parsed dict from JSON response (when using json_mode)
-  - **`tool_calls`** (`array`) (optional) — List of function calls the model decided to make (when using tools)
+  - **`tool_calls`** (`array (of object)`) (optional) — When using tools — array of call objects. Each item: id, type, function: { name, arguments }. arguments is a JSON string with call parameters (different keys per function); parse in scenario if needed.
 
 **Note:**
 - 🔑 — field that is automatically taken from tenant configuration (_config) and does not require explicit passing in params
@@ -549,10 +551,10 @@ data:
 - `json_schema`: строгая JSON схема (требуется `json_schema` параметр)
 
 **Tool Calling:**
-- Параметр `tools` позволяет модели вызывать функции
-- Модель решает, какие функции вызвать и с какими параметрами
-- Результаты вызовов в `response_data.tool_calls`
-- `tool_choice`: управление выбором ('none', 'auto', 'required', или конкретная функция)
+- `tools` — массив объектов (каждый: type, function.name, function.description, function.parameters по JSON Schema)
+- Модель решает, какие функции вызвать и с какими параметрами; вызовы возвращаются в `response_data.tool_calls`
+- `tool_calls` — массив объектов: id, type, function.name, function.arguments (JSON-строка); обработка и циклы — в сценарии
+- `tool_choice`: строка 'none'|'auto'|'required' или объект для принудительного вызова одной функции
 
 **Формат чанков (chunk_format):**
 - Настройка отображения чанков из RAG через шаблоны с маркерами `$`
@@ -592,7 +594,7 @@ data:
   - **`message`** (`string`) — Error message
   - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
 - **`response_data`** (`object`) — Response data
-  - **`embedding`** (`array`) — Embedding vector (list of numbers)
+  - **`embedding`** (`array (of number)`) — Embedding vector (list of numbers)
   - **`model`** (`string`) — Model used
   - **`dimensions`** (`integer`) — Embedding dimensions
   - **`total_tokens`** (`integer`) — Total tokens
@@ -641,178 +643,7 @@ response_data:
 </details>
 
 
-## bot_hub
-
-**Description:** Central service for managing all bots
-
-<a id="answer_callback_query"></a>
-### answer_callback_query
-
-**Description:** Answer callback query (popup or toast when inline button pressed)
-
-**Input Parameters:**
-
-- **`bot_id`** (`integer`, required, min: 1) — Bot ID
-- **`callback_query_id`** (`string`, required, min length: 1) — Callback query ID (use placeholder {callback_id} from event)
-- **`text`** (`string`, optional, max length: 200) — Notification text (up to 200 chars). If not set, simple notification without text
-- **`show_alert`** (`boolean`, optional) — Show popup (alert). Default false = toast; true = modal with text
-- **`cache_time`** (`integer`, optional, range: 0-3600) — Cache time for answer in seconds (0-3600). Default 0
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "answer_callback_query"
-  params:
-    bot_id: 123
-    callback_query_id: "example"
-    # text: string (optional)
-    # show_alert: boolean (optional)
-    # cache_time: integer (optional)
-```
-
-
-<a id="build_keyboard"></a>
-### build_keyboard
-
-**Description:** Build keyboard from ID array using templates
-
-**Input Parameters:**
-
-- **`items`** (`array`) — Array of IDs for buttons (e.g. [1,2,3] or tenant_ids from get_tenants_list)
-- **`keyboard_type`** (`string`, required, values: [`inline`, `reply`]) — Keyboard type: 'inline' or 'reply'
-- **`text_template`** (`string`, required, min length: 1) — Button text template with $value$ placeholder. Use $value$ to avoid conflict with placeholders
-- **`callback_template`** (`string`, optional, min length: 1) — Callback data template with $value$ (required for inline, e.g. 'select_tenant_$value$')
-- **`buttons_per_row`** (`integer`, optional, range: 1-8) — Buttons per row (default 1)
-
-<details>
-<summary>⚙️ Additional Parameters</summary>
-
-- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
-
-</details>
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-- **`response_data`** (`object`) — Response data
-  - **`keyboard`** (`array`) — Ready keyboard as array of rows (use in send_message inline/reply)
-  - **`keyboard_type`** (`string`) — Keyboard type: 'inline' or 'reply'
-  - **`rows_count`** (`integer`) — Number of rows in keyboard
-  - **`buttons_count`** (`integer`) — Total number of buttons
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "build_keyboard"
-  params:
-    items: []
-    keyboard_type: "example"
-    text_template: "example"
-    # callback_template: string (optional)
-    # buttons_per_row: integer (optional)
-```
-
-
-<a id="delete_message"></a>
-### delete_message
-
-**Description:** Delete message by bot
-
-**Input Parameters:**
-
-- **`bot_id`** (`integer`, required, min: 1) — Bot ID
-- **`delete_message_id`** (`integer`, optional, min: 1) — Message ID to delete. If not set, uses event message_id. Chat from event by default
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "delete_message"
-  params:
-    bot_id: 123
-    # delete_message_id: integer (optional)
-```
-
-
-<a id="send_message"></a>
-### send_message
-
-**Description:** Send message by bot
-
-**Input Parameters:**
-
-- **`bot_id`** (`integer`, required, min: 1) — Bot ID
-- **`target_chat_id`** (`integer|array|string`, optional) — Chat ID or array of chat IDs (default from event chat_id)
-- **`text`** (`string`, optional) — Message text (can be empty if attachment)
-- **`parse_mode`** (`string`, optional, values: [`HTML`, `Markdown`, `MarkdownV2`]) — Parse mode (HTML, Markdown, MarkdownV2)
-- **`message_edit`** (`integer|boolean|string`, optional) — Edit message: integer (message ID) or true/false. Only first chat when editing
-- **`message_reply`** (`integer`, optional, min: 1) — Message ID to reply to
-- **`inline`** (`array`, optional) — Inline keyboard (array of button rows). Only one of inline/reply (Telegram limit)
-- **`reply`** (`array`, optional) — Reply keyboard (array of button rows). Only one of inline/reply (Telegram limit)
-- **`attachment`** (`array`, optional) — Attachments (files, photo, video, etc.)
-
-<details>
-<summary>⚙️ Additional Parameters</summary>
-
-- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
-
-- **`_response_key`** (`string`) (optional) — Custom name for main result field (marked 🔀). If specified, main field will be saved in `_cache` under specified name instead of standard. Access via `{_cache.{_response_key}}`. Works only for actions that support renaming main field.
-
-</details>
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-- **`response_data`** (`object`) — Response data
-  - 🔀 **`last_message_id`** (`integer`) — Last sent message ID (first when sending to multiple chats)
-
-**Note:**
-- 🔀 — field that can be renamed via `_response_key` parameter for convenient data access
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "send_message"
-  params:
-    bot_id: 123
-    # target_chat_id: integer|array|string (optional)
-    # text: string (optional)
-    # parse_mode: string (optional)
-    # message_edit: integer|boolean|string (optional)
-    # message_reply: integer (optional)
-    # inline: array (optional)
-    # reply: array (optional)
-    # attachment: array (optional)
-```
-
-
+<a id="invoice_service"></a>
 ## invoice_service
 
 **Description:** Service for invoices (create, manage, process payments)
@@ -994,7 +825,7 @@ response_data:
   - **`message`** (`string`) — Error message
   - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — Response data
-  - **`invoices`** (`array`) — Array of user invoices
+  - **`invoices`** (`array (of object)`) — Array of user invoices
 
 **Usage Example:**
 
@@ -1071,6 +902,7 @@ response_data:
 ```
 
 
+<a id="scenario_helper"></a>
 ## scenario_helper
 
 **Description:** Helper utilities for scenario execution management
@@ -1283,7 +1115,7 @@ response_data:
   - **`message`** (`string`) — Error message
   - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - 🔀 **`random_list`** (`array`) — Массив сгенерированных чисел
+  - 🔀 **`random_list`** (`array (of integer)`) — Массив сгенерированных чисел
   - **`random_seed`** (`string`) (optional) — Использованный seed (если был передан, сохраняется как есть)
 
 **Note:**
@@ -1537,6 +1369,7 @@ step:
 ```
 
 
+<a id="scenario_processor"></a>
 ## scenario_processor
 
 **Description:** Service for processing events by scenarios
@@ -1619,9 +1452,10 @@ step:
 ```
 
 
-## tenant_hub
+<a id="storage_hub"></a>
+## storage_hub
 
-**Description:** Service for managing tenant configurations - data loading coordinator
+**Description:** Service for managing tenant storage
 
 <a id="delete_storage"></a>
 ### delete_storage
@@ -1736,7 +1570,7 @@ step:
   - **`message`** (`string`) — Error message
   - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - 🔀 **`group_keys`** (`array`) — List of unique group keys (limited by storage_groups_max_limit)
+  - 🔀 **`group_keys`** (`array (of string)`) — List of unique group keys (limited by storage_groups_max_limit)
   - **`is_truncated`** (`boolean`) (optional) — Flag that list was truncated (true if more groups than limit)
 
 **Note:**
@@ -1804,6 +1638,175 @@ step:
 ```
 
 
+<a id="telegram_bot_api"></a>
+## telegram_bot_api
+
+**Description:** Service for executing actions via Telegram Bot API
+
+<a id="answer_callback_query"></a>
+### answer_callback_query
+
+**Description:** Answer callback query (popup notification)
+
+**Input Parameters:**
+
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+- **`callback_query_id`** (`string`, required, min length: 1) — Callback query ID from Telegram
+- **`text`** (`string`, optional, max length: 200) — Notification text
+- **`show_alert`** (`boolean`, optional) — Show as alert instead of notification
+- **`cache_time`** (`integer`, optional, range: 0-3600) — Answer cache time (seconds)
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "answer_callback_query"
+  params:
+    bot_id: 123
+    callback_query_id: "example"
+    # text: string (optional)
+    # show_alert: boolean (optional)
+    # cache_time: integer (optional)
+```
+
+
+<a id="build_keyboard"></a>
+### build_keyboard
+
+**Description:** Build keyboard from ID array using templates
+
+**Input Parameters:**
+
+- **`items`** (`array`) — Array of IDs for button generation
+- **`keyboard_type`** (`string`, required, values: [`inline`, `reply`]) — Keyboard type (inline or reply)
+- **`text_template`** (`string`, required, min length: 1) — Text template with $value$ placeholder
+- **`callback_template`** (`string`, optional, min length: 1) — Callback data template for inline (required for inline)
+- **`buttons_per_row`** (`integer`, optional, range: 1-8) — Buttons per row
+
+<details>
+<summary>⚙️ Additional Parameters</summary>
+
+- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
+
+</details>
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Build result
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Keyboard data
+  - **`keyboard`** (`array`) — Array of button rows
+  - **`keyboard_type`** (`string`) — Keyboard type
+  - **`rows_count`** (`integer`) — Number of rows
+  - **`buttons_count`** (`integer`) — Number of buttons
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "build_keyboard"
+  params:
+    items: []
+    keyboard_type: "example"
+    text_template: "example"
+    # callback_template: string (optional)
+    # buttons_per_row: integer (optional)
+```
+
+
+<a id="delete_message"></a>
+### delete_message
+
+**Description:** Delete message by bot
+
+**Input Parameters:**
+
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+- **`delete_message_id`** (`integer`, optional, min: 1) — Message ID to delete
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Delete result
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "delete_message"
+  params:
+    bot_id: 123
+    # delete_message_id: integer (optional)
+```
+
+
+<a id="send_message"></a>
+### send_message
+
+**Description:** Send message by bot
+
+**Input Parameters:**
+
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+- **`target_chat_id`** (`integer|array|string`, optional) — Chat ID or array of chat IDs
+- **`text`** (`string`, optional) — Message text
+- **`parse_mode`** (`string`, optional, values: [`HTML`, `Markdown`, `MarkdownV2`]) — Parse mode (HTML, Markdown, MarkdownV2)
+- **`message_edit`** (`integer|boolean|string`, optional) — Message ID to edit or flag
+- **`message_reply`** (`integer`, optional, min: 1) — Message ID to reply to
+- **`inline`** (`array`, optional) — Inline keyboard
+- **`reply`** (`array`, optional) — Reply keyboard
+- **`attachment`** (`array`, optional) — Attachments
+
+<details>
+<summary>⚙️ Additional Parameters</summary>
+
+- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
+
+</details>
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Send result
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Response data
+  - **`last_message_id`** (`integer`) — Sent message ID
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "send_message"
+  params:
+    bot_id: 123
+    # target_chat_id: integer|array|string (optional)
+    # text: string (optional)
+    # parse_mode: string (optional)
+    # message_edit: integer|boolean|string (optional)
+    # message_reply: integer (optional)
+    # inline: array (optional)
+    # reply: array (optional)
+    # attachment: array (optional)
+```
+
+
+<a id="user_hub"></a>
 ## user_hub
 
 **Description:** Central service for managing user states
@@ -1896,7 +1899,7 @@ step:
   - **`message`** (`string`) — Error message
   - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - 🔀 **`user_ids`** (`array`) — Array of Telegram user IDs
+  - 🔀 **`user_ids`** (`array (of integer)`) — Array of Telegram user IDs
   - **`user_count`** (`integer`) — Number of users
 
 **Note:**
@@ -2034,7 +2037,7 @@ step:
   - **`message`** (`string`) — Error message
   - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - 🔀 **`user_ids`** (`array`) — Array of Telegram user IDs where storage[key] == value
+  - 🔀 **`user_ids`** (`array (of integer)`) — Array of Telegram user IDs where storage[key] == value
   - **`user_count`** (`integer`) — Number of users found
 
 **Note:**
@@ -2147,6 +2150,7 @@ step:
 ```
 
 
+<a id="validator"></a>
 ## validator
 
 **Description:** Service for validating conditions in scenarios
