@@ -12,7 +12,15 @@ keywords: системные действия, coreness system actions, внут
 
 - [action_hub](#action_hub) (1 действий)
   - [get_available_actions](#get_available_actions)
-- [bot_hub](#bot_hub) (10 действий)
+- [event_processor](#event_processor) (1 действий)
+  - [process_event](#process_event)
+- [scenario_processor](#scenario_processor) (3 действий)
+  - [process_scenario_event](#process_scenario_event)
+  - [sync_scenarios](#sync_scenarios)
+  - [sync_tenant_scenarios](#sync_tenant_scenarios)
+- [storage_hub](#storage_hub) (1 действий)
+  - [sync_tenant_storage](#sync_tenant_storage)
+- [telegram_bot_manager](#telegram_bot_manager) (11 действий)
   - [get_bot_info](#get_bot_info)
   - [get_bot_status](#get_bot_status)
   - [get_telegram_bot_info](#get_telegram_bot_info)
@@ -23,24 +31,18 @@ keywords: системные действия, coreness system actions, внут
   - [sync_bot](#sync_bot)
   - [sync_bot_commands](#sync_bot_commands)
   - [sync_bot_config](#sync_bot_config)
-- [event_processor](#event_processor) (1 действий)
-  - [process_event](#process_event)
-- [scenario_processor](#scenario_processor) (2 действий)
-  - [process_scenario_event](#process_scenario_event)
-  - [sync_scenarios](#sync_scenarios)
-- [tenant_hub](#tenant_hub) (11 действий)
+  - [sync_telegram_bot](#sync_telegram_bot)
+- [tenant_hub](#tenant_hub) (8 действий)
   - [get_tenant_status](#get_tenant_status)
   - [get_tenants_list](#get_tenants_list)
   - [sync_all_tenants](#sync_all_tenants)
   - [sync_tenant](#sync_tenant)
-  - [sync_tenant_bot](#sync_tenant_bot)
   - [sync_tenant_config](#sync_tenant_config)
   - [sync_tenant_data](#sync_tenant_data)
-  - [sync_tenant_scenarios](#sync_tenant_scenarios)
-  - [sync_tenant_storage](#sync_tenant_storage)
   - [sync_tenants_from_files](#sync_tenants_from_files)
   - [update_tenant_config](#update_tenant_config)
 
+<a id="action_hub"></a>
 ## action_hub
 
 **Описание:** Центральный хаб действий для маршрутизации к сервисам
@@ -78,355 +80,7 @@ keywords: системные действия, coreness system actions, внут
 ```
 
 
-## bot_hub
-
-**Описание:** Центральный сервис для управления всеми ботами
-
-<a id="get_bot_info"></a>
-### get_bot_info
-
-**Описание:** Получение информации о боте из базы данных (с кэшированием)
-
-**Входные параметры:**
-
-- **`bot_id`** (`integer`, обязательное, мин: 1) — ID бота
-- **`force_refresh`** (`boolean`, опционально) — Принудительное обновление из БД (игнорирует кэш)
-
-<details>
-<summary>⚙️ Дополнительные параметры</summary>
-
-- **`_namespace`** (`string`) (опционально) — Кастомный ключ для создания вложенности в `_cache`. Если указан, данные сохраняются в `_cache[_namespace]` вместо плоского кэша. Используется для контроля перезаписи при повторных вызовах одного действия. Доступ через `{_cache._namespace.field}`. По умолчанию данные мержатся напрямую в `_cache` (плоское кэширование).
-
-</details>
-
-**Выходные параметры:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (опционально) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (опционально) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`bot_id`** (`integer`) — ID бота
-  - **`telegram_bot_id`** (`integer`) — ID бота в Telegram
-  - **`tenant_id`** (`integer`) — ID тенанта
-  - **`bot_token`** (`string`) — Токен бота
-  - **`username`** (`string`) — Username бота
-  - **`first_name`** (`string`) — Имя бота
-  - **`is_active`** (`boolean`) — Активен ли бот
-  - **`bot_command`** (`array`) — Команды бота
-
-**Пример использования:**
-
-```yaml
-# В сценарии
-- action: "get_bot_info"
-  params:
-    bot_id: 123
-    # force_refresh: boolean (опционально)
-```
-
-
-<a id="get_bot_status"></a>
-### get_bot_status
-
-**Описание:** Получение статуса пулинга и активности бота
-
-**Входные параметры:**
-
-- **`bot_id`** (`integer`, обязательное, мин: 1) — ID бота
-
-<details>
-<summary>⚙️ Дополнительные параметры</summary>
-
-- **`_namespace`** (`string`) (опционально) — Кастомный ключ для создания вложенности в `_cache`. Если указан, данные сохраняются в `_cache[_namespace]` вместо плоского кэша. Используется для контроля перезаписи при повторных вызовах одного действия. Доступ через `{_cache._namespace.field}`. По умолчанию данные мержатся напрямую в `_cache` (плоское кэширование).
-
-</details>
-
-**Выходные параметры:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (опционально) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (опционально) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`is_polling`** (`boolean`) — Активен ли пулинг: true - активен, false - не активен
-  - **`is_active`** (`boolean`) — Активен ли бот из настроек БД: true - активен, false - не активен
-
-**Пример использования:**
-
-```yaml
-# В сценарии
-- action: "get_bot_status"
-  params:
-    bot_id: 123
-```
-
-
-<a id="get_telegram_bot_info"></a>
-### get_telegram_bot_info
-
-**Описание:** Получение информации о боте через Telegram API
-
-**Входные параметры:**
-
-- **`bot_token`** (`string`, обязательное, мин. длина: 1) — Токен бота
-
-<details>
-<summary>⚙️ Дополнительные параметры</summary>
-
-- **`_namespace`** (`string`) (опционально) — Кастомный ключ для создания вложенности в `_cache`. Если указан, данные сохраняются в `_cache[_namespace]` вместо плоского кэша. Используется для контроля перезаписи при повторных вызовах одного действия. Доступ через `{_cache._namespace.field}`. По умолчанию данные мержатся напрямую в `_cache` (плоское кэширование).
-
-</details>
-
-**Выходные параметры:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (опционально) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (опционально) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`telegram_bot_id`** (`integer`) — ID бота в Telegram
-  - **`username`** (`string`) — Username бота
-  - **`first_name`** (`string`) — Имя бота
-  - **`is_bot`** (`boolean`) — Флаг, что это бот
-  - **`can_join_groups`** (`boolean`) — Может ли бот присоединяться к группам
-  - **`can_read_all_group_messages`** (`boolean`) — Может ли бот читать все сообщения в группах
-  - **`supports_inline_queries`** (`boolean`) — Поддерживает ли бот inline запросы
-
-**Пример использования:**
-
-```yaml
-# В сценарии
-- action: "get_telegram_bot_info"
-  params:
-    bot_token: "example"
-```
-
-
-<a id="set_bot_token"></a>
-### set_bot_token
-
-**Описание:** Установка токена бота. Бот должен быть создан через синхронизацию конфигурации (sync_bot_config). Токен будет проверен автоматически при запуске пулинга
-
-**Входные параметры:**
-
-- **`tenant_id`** (`integer`, обязательное, мин: 1) — ID тенанта
-- **`bot_token`** (`string|None`, опционально) — Токен бота (опционально, если не передан - поле не обновляется, если передан null - удаляется)
-
-**Выходные параметры:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (опционально) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (опционально) — Детали ошибки (например, ошибки валидации полей)
-
-**Пример использования:**
-
-```yaml
-# В сценарии
-- action: "set_bot_token"
-  params:
-    tenant_id: 123
-    # bot_token: string|None (опционально)
-```
-
-
-<a id="start_bot"></a>
-### start_bot
-
-**Описание:** Запуск бота
-
-**Входные параметры:**
-
-- **`bot_id`** (`integer`, обязательное, мин: 1) — ID бота
-
-**Выходные параметры:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (опционально) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (опционально) — Детали ошибки (например, ошибки валидации полей)
-
-**Пример использования:**
-
-```yaml
-# В сценарии
-- action: "start_bot"
-  params:
-    bot_id: 123
-```
-
-
-<a id="stop_all_bots"></a>
-### stop_all_bots
-
-**Описание:** Остановка всех ботов
-
-**Входные параметры:**
-
-
-**Выходные параметры:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (опционально) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (опционально) — Детали ошибки (например, ошибки валидации полей)
-
-**Пример использования:**
-
-```yaml
-# В сценарии
-- action: "stop_all_bots"
-  params:
-```
-
-
-<a id="stop_bot"></a>
-### stop_bot
-
-**Описание:** Остановка бота
-
-**Входные параметры:**
-
-- **`bot_id`** (`integer`, обязательное, мин: 1) — ID бота
-
-**Выходные параметры:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (опционально) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (опционально) — Детали ошибки (например, ошибки валидации полей)
-
-**Пример использования:**
-
-```yaml
-# В сценарии
-- action: "stop_bot"
-  params:
-    bot_id: 123
-```
-
-
-<a id="sync_bot"></a>
-### sync_bot
-
-**Описание:** Синхронизация бота: конфигурация + команды (обертка над sync_bot_config + sync_bot_commands)
-
-**Входные параметры:**
-
-- **`tenant_id`** (`integer`, обязательное, мин: 1) — ID тенанта
-- **`bot_token`** (`string`, обязательное, мин. длина: 1) — Токен бота
-- **`is_active`** (`boolean`, опционально) — Активен ли бот (по умолчанию true)
-- **`bot_commands`** (`array`, опционально) — Список команд для применения (опционально)
-
-<details>
-<summary>⚙️ Дополнительные параметры</summary>
-
-- **`_namespace`** (`string`) (опционально) — Кастомный ключ для создания вложенности в `_cache`. Если указан, данные сохраняются в `_cache[_namespace]` вместо плоского кэша. Используется для контроля перезаписи при повторных вызовах одного действия. Доступ через `{_cache._namespace.field}`. По умолчанию данные мержатся напрямую в `_cache` (плоское кэширование).
-
-</details>
-
-**Выходные параметры:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (опционально) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (опционально) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`bot_id`** (`integer`) — ID бота
-  - **`action`** (`string`) — Действие: created или updated
-
-**Пример использования:**
-
-```yaml
-# В сценарии
-- action: "sync_bot"
-  params:
-    tenant_id: 123
-    bot_token: "example"
-    # is_active: boolean (опционально)
-    # bot_commands: array (опционально)
-```
-
-
-<a id="sync_bot_commands"></a>
-### sync_bot_commands
-
-**Описание:** Синхронизация команд бота: сохранение в БД → применение в Telegram
-
-**Входные параметры:**
-
-- **`bot_id`** (`integer`, обязательное, мин: 1) — ID бота
-- **`command_list`** (`array`) — Список команд для применения
-
-**Выходные параметры:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (опционально) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (опционально) — Детали ошибки (например, ошибки валидации полей)
-
-**Пример использования:**
-
-```yaml
-# В сценарии
-- action: "sync_bot_commands"
-  params:
-    bot_id: 123
-    command_list: []
-```
-
-
-<a id="sync_bot_config"></a>
-### sync_bot_config
-
-**Описание:** Синхронизация конфигурации бота: создание/обновление бота + запуск пулинга. Если bot_token не передан, используется токен из БД (приоритет конфига)
-
-**Входные параметры:**
-
-- **`tenant_id`** (`integer`, обязательное, мин: 1) — ID тенанта
-- **`bot_token`** (`string`, опционально, мин. длина: 1) — Токен бота (опционально, если не передан - используется из БД)
-- **`is_active`** (`boolean`) — Активен ли бот
-
-<details>
-<summary>⚙️ Дополнительные параметры</summary>
-
-- **`_namespace`** (`string`) (опционально) — Кастомный ключ для создания вложенности в `_cache`. Если указан, данные сохраняются в `_cache[_namespace]` вместо плоского кэша. Используется для контроля перезаписи при повторных вызовах одного действия. Доступ через `{_cache._namespace.field}`. По умолчанию данные мержатся напрямую в `_cache` (плоское кэширование).
-
-</details>
-
-**Выходные параметры:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (опционально) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (опционально) — Детали ошибки (например, ошибки валидации полей)
-- **`response_data`** (`object`) — Данные ответа
-  - **`bot_id`** (`integer`) — ID бота
-  - **`action`** (`string`) — Действие: created или updated
-
-**Пример использования:**
-
-```yaml
-# В сценарии
-- action: "sync_bot_config"
-  params:
-    tenant_id: 123
-    # bot_token: string (опционально)
-    is_active: true
-```
-
-
+<a id="event_processor"></a>
 ## event_processor
 
 **Описание:** Сервис для обработки событий от пулинга
@@ -458,6 +112,7 @@ keywords: системные действия, coreness system actions, внут
 ```
 
 
+<a id="scenario_processor"></a>
 ## scenario_processor
 
 **Описание:** Сервис для обработки событий по сценариям
@@ -499,7 +154,7 @@ keywords: системные действия, coreness system actions, внут
 **Входные параметры:**
 
 - **`tenant_id`** (`integer`, обязательное, мин: 1) — ID tenant'а для синхронизации сценариев
-- **`scenarios`** (`array`) — Массив сценариев для синхронизации
+- **`scenarios`** (`array (of object)`) — Массив сценариев для синхронизации
 
 **Выходные параметры:**
 
@@ -520,9 +175,454 @@ keywords: системные действия, coreness system actions, внут
 ```
 
 
+<a id="sync_tenant_scenarios"></a>
+### sync_tenant_scenarios
+
+**Описание:** Синхронизация сценариев для тенанта: парсинг scenarios/*.yaml + синхронизация с БД
+
+**Входные параметры:**
+
+- **`tenant_id`** (`integer`, обязательное, мин: 1) — ID тенанта
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат: success, error
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "sync_tenant_scenarios"
+  params:
+    tenant_id: 123
+```
+
+
+<a id="storage_hub"></a>
+## storage_hub
+
+**Описание:** Сервис для управления tenant storage
+
+<a id="sync_tenant_storage"></a>
+### sync_tenant_storage
+
+**Описание:** Синхронизация storage для тенанта: парсинг storage/*.yaml + синхронизация с БД
+
+**Входные параметры:**
+
+- **`tenant_id`** (`integer`, обязательное, мин: 1) — ID тенанта
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат: success, error
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "sync_tenant_storage"
+  params:
+    tenant_id: 123
+```
+
+
+<a id="telegram_bot_manager"></a>
+## telegram_bot_manager
+
+**Описание:** Сервис управления lifecycle Telegram ботов
+
+<a id="get_bot_info"></a>
+### get_bot_info
+
+**Описание:** Получение информации о боте из базы данных (с кэшированием)
+
+**Входные параметры:**
+
+- **`bot_id`** (`integer`, обязательное, мин: 1) — ID бота
+- **`force_refresh`** (`boolean`, опционально) — Принудительно обновить кэш
+
+<details>
+<summary>⚙️ Дополнительные параметры</summary>
+
+- **`_namespace`** (`string`) (опционально) — Кастомный ключ для создания вложенности в `_cache`. Если указан, данные сохраняются в `_cache[_namespace]` вместо плоского кэша. Используется для контроля перезаписи при повторных вызовах одного действия. Доступ через `{_cache._namespace.field}`. По умолчанию данные мержатся напрямую в `_cache` (плоское кэширование).
+
+</details>
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат запроса
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+- **`response_data`** (`object`) — Данные бота из БД
+  - **`bot_id`** (`integer`) — ID бота
+  - **`telegram_bot_id`** (`integer`) — ID бота в Telegram
+  - **`tenant_id`** (`integer`) — ID тенанта
+  - **`bot_token`** (`string`) — Токен бота
+  - **`username`** (`string`) — Username бота
+  - **`first_name`** (`string`) — Имя бота
+  - **`is_active`** (`boolean`) — Активен ли бот
+  - **`bot_command`** (`array`) — Команды бота
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "get_bot_info"
+  params:
+    bot_id: 123
+    # force_refresh: boolean (опционально)
+```
+
+
+<a id="get_bot_status"></a>
+### get_bot_status
+
+**Описание:** Получение статуса пулинга и активности бота
+
+**Входные параметры:**
+
+- **`bot_id`** (`integer`, обязательное, мин: 1) — ID бота
+
+<details>
+<summary>⚙️ Дополнительные параметры</summary>
+
+- **`_namespace`** (`string`) (опционально) — Кастомный ключ для создания вложенности в `_cache`. Если указан, данные сохраняются в `_cache[_namespace]` вместо плоского кэша. Используется для контроля перезаписи при повторных вызовах одного действия. Доступ через `{_cache._namespace.field}`. По умолчанию данные мержатся напрямую в `_cache` (плоское кэширование).
+
+</details>
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат запроса
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+- **`response_data`** (`object`) — Статус бота
+  - **`is_polling`** (`boolean`) — Идёт ли пулинг
+  - **`is_webhook_active`** (`boolean`) — Активен ли вебхук
+  - **`is_active`** (`boolean`) — Активен ли бот
+  - **`is_working`** (`boolean`) — Работает ли бот (polling или webhook)
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "get_bot_status"
+  params:
+    bot_id: 123
+```
+
+
+<a id="get_telegram_bot_info"></a>
+### get_telegram_bot_info
+
+**Описание:** Получение информации о боте через Telegram API
+
+**Входные параметры:**
+
+- **`bot_token`** (`string`, обязательное, мин. длина: 1) — Токен бота Telegram
+
+<details>
+<summary>⚙️ Дополнительные параметры</summary>
+
+- **`_namespace`** (`string`) (опционально) — Кастомный ключ для создания вложенности в `_cache`. Если указан, данные сохраняются в `_cache[_namespace]` вместо плоского кэша. Используется для контроля перезаписи при повторных вызовах одного действия. Доступ через `{_cache._namespace.field}`. По умолчанию данные мержатся напрямую в `_cache` (плоское кэширование).
+
+</details>
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат запроса
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+- **`response_data`** (`object`) — Данные бота из Telegram API
+  - **`telegram_bot_id`** (`integer`) — ID бота в Telegram
+  - **`username`** (`string`) — Username бота
+  - **`first_name`** (`string`) — Имя бота
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "get_telegram_bot_info"
+  params:
+    bot_token: "example"
+```
+
+
+<a id="set_bot_token"></a>
+### set_bot_token
+
+**Описание:** Установка токена бота
+
+**Входные параметры:**
+
+- **`tenant_id`** (`integer`, обязательное, мин: 1) — ID тенанта
+- **`bot_token`** (`string|None`, опционально) — Токен бота или null для сброса
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат: success, error
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "set_bot_token"
+  params:
+    tenant_id: 123
+    # bot_token: string|None (опционально)
+```
+
+
+<a id="start_bot"></a>
+### start_bot
+
+**Описание:** Запуск бота (polling или webhook)
+
+**Входные параметры:**
+
+- **`bot_id`** (`integer`, обязательное, мин: 1) — ID бота
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат: success, error
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "start_bot"
+  params:
+    bot_id: 123
+```
+
+
+<a id="stop_all_bots"></a>
+### stop_all_bots
+
+**Описание:** Остановка всех ботов
+
+**Входные параметры:**
+
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат: success, error
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "stop_all_bots"
+  params:
+```
+
+
+<a id="stop_bot"></a>
+### stop_bot
+
+**Описание:** Остановка бота
+
+**Входные параметры:**
+
+- **`bot_id`** (`integer`, обязательное, мин: 1) — ID бота
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат: success, error
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "stop_bot"
+  params:
+    bot_id: 123
+```
+
+
+<a id="sync_bot"></a>
+### sync_bot
+
+**Описание:** Синхронизация бота: конфигурация + команды
+
+**Входные параметры:**
+
+- **`tenant_id`** (`integer`, обязательное, мин: 1) — ID тенанта
+- **`bot_token`** (`string`, обязательное, мин. длина: 1) — Токен бота Telegram
+- **`is_active`** (`boolean`, опционально) — Активен ли бот
+- **`bot_commands`** (`array`, опционально) — Список команд бота
+
+<details>
+<summary>⚙️ Дополнительные параметры</summary>
+
+- **`_namespace`** (`string`) (опционально) — Кастомный ключ для создания вложенности в `_cache`. Если указан, данные сохраняются в `_cache[_namespace]` вместо плоского кэша. Используется для контроля перезаписи при повторных вызовах одного действия. Доступ через `{_cache._namespace.field}`. По умолчанию данные мержатся напрямую в `_cache` (плоское кэширование).
+
+</details>
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат: success, error
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+- **`response_data`** (`object`) (опционально) — Данные ответа (bot_id, action)
+  - **`bot_id`** (`integer`) — ID бота
+  - **`action`** (`string`) — Выполненное действие
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "sync_bot"
+  params:
+    tenant_id: 123
+    bot_token: "example"
+    # is_active: boolean (опционально)
+    # bot_commands: array (опционально)
+```
+
+
+<a id="sync_bot_commands"></a>
+### sync_bot_commands
+
+**Описание:** Синхронизация команд бота: сохранение в БД → применение в Telegram
+
+**Входные параметры:**
+
+- **`bot_id`** (`integer`, обязательное, мин: 1) — ID бота
+- **`command_list`** (`array`) — Список команд бота
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат: success, error
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "sync_bot_commands"
+  params:
+    bot_id: 123
+    command_list: []
+```
+
+
+<a id="sync_bot_config"></a>
+### sync_bot_config
+
+**Описание:** Синхронизация конфигурации бота: создание/обновление бота + запуск
+
+**Входные параметры:**
+
+- **`tenant_id`** (`integer`, обязательное, мин: 1) — ID тенанта
+- **`bot_token`** (`string`, опционально, мин. длина: 1) — Токен бота Telegram
+- **`is_active`** (`boolean`) — Активен ли бот
+
+<details>
+<summary>⚙️ Дополнительные параметры</summary>
+
+- **`_namespace`** (`string`) (опционально) — Кастомный ключ для создания вложенности в `_cache`. Если указан, данные сохраняются в `_cache[_namespace]` вместо плоского кэша. Используется для контроля перезаписи при повторных вызовах одного действия. Доступ через `{_cache._namespace.field}`. По умолчанию данные мержатся напрямую в `_cache` (плоское кэширование).
+
+</details>
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат: success, error
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+- **`response_data`** (`object`) — Данные ответа
+  - **`bot_id`** (`integer`) — ID бота
+  - **`action`** (`string`) — Выполненное действие
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "sync_bot_config"
+  params:
+    tenant_id: 123
+    # bot_token: string (опционально)
+    is_active: true
+```
+
+
+<a id="sync_telegram_bot"></a>
+### sync_telegram_bot
+
+**Описание:** Синхронизация Telegram бота для тенанта: парсинг bots/telegram.yaml + создание/обновление бота + синхронизация команд + запуск
+
+**Входные параметры:**
+
+- **`tenant_id`** (`integer`, обязательное, мин: 1) — ID тенанта
+
+<details>
+<summary>⚙️ Дополнительные параметры</summary>
+
+- **`_namespace`** (`string`) (опционально) — Кастомный ключ для создания вложенности в `_cache`. Если указан, данные сохраняются в `_cache[_namespace]` вместо плоского кэша. Используется для контроля перезаписи при повторных вызовах одного действия. Доступ через `{_cache._namespace.field}`. По умолчанию данные мержатся напрямую в `_cache` (плоское кэширование).
+
+</details>
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат: success, error, not_found
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+- **`response_data`** (`object`) (опционально) — Данные ответа (bot_id, action)
+  - **`bot_id`** (`integer`) — ID бота
+  - **`action`** (`string`) — Выполненное действие
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "sync_telegram_bot"
+  params:
+    tenant_id: 123
+```
+
+
+<a id="tenant_hub"></a>
 ## tenant_hub
 
-**Описание:** Сервис для управления конфигурациями тенантов - координатор загрузки данных
+**Описание:** Сервис-оркестратор для управления тенантами. Координирует синхронизацию через GitHub, делегирует парсинг и синхронизацию специализированным сервисам
 
 <a id="get_tenant_status"></a>
 ### get_tenant_status
@@ -589,9 +689,9 @@ keywords: системные действия, coreness system actions, внут
   - **`message`** (`string`) — Сообщение об ошибке
   - **`details`** (`array`) (опционально) — Детали ошибки
 - **`response_data`** (`object`) — 
-  - **`tenant_ids`** (`array`) — Массив ID всех тенантов
-  - **`public_tenant_ids`** (`array`) — Массив ID публичных тенантов
-  - **`system_tenant_ids`** (`array`) — Массив ID системных тенантов
+  - **`tenant_ids`** (`array (of integer)`) — Массив ID всех тенантов
+  - **`public_tenant_ids`** (`array (of integer)`) — Массив ID публичных тенантов
+  - **`system_tenant_ids`** (`array (of integer)`) — Массив ID системных тенантов
   - **`tenant_count`** (`integer`) — Общее количество тенантов
 
 **Пример использования:**
@@ -655,33 +755,6 @@ keywords: системные действия, coreness system actions, внут
 ```
 
 
-<a id="sync_tenant_bot"></a>
-### sync_tenant_bot
-
-**Описание:** Синхронизация бота тенанта: pull из GitHub + парсинг + синхронизация
-
-**Входные параметры:**
-
-- **`tenant_id`** (`integer`, обязательное, мин: 1) — ID тенанта
-
-**Выходные параметры:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (опционально) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (опционально) — Детали ошибки
-
-**Пример использования:**
-
-```yaml
-# В сценарии
-- action: "sync_tenant_bot"
-  params:
-    tenant_id: 123
-```
-
-
 <a id="sync_tenant_config"></a>
 ### sync_tenant_config
 
@@ -736,60 +809,6 @@ keywords: системные действия, coreness system actions, внут
 ```
 
 
-<a id="sync_tenant_scenarios"></a>
-### sync_tenant_scenarios
-
-**Описание:** Синхронизация сценариев тенанта: pull из GitHub + парсинг + синхронизация
-
-**Входные параметры:**
-
-- **`tenant_id`** (`integer`, обязательное, мин: 1) — ID тенанта
-
-**Выходные параметры:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (опционально) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (опционально) — Детали ошибки
-
-**Пример использования:**
-
-```yaml
-# В сценарии
-- action: "sync_tenant_scenarios"
-  params:
-    tenant_id: 123
-```
-
-
-<a id="sync_tenant_storage"></a>
-### sync_tenant_storage
-
-**Описание:** Синхронизация storage тенанта: pull из GitHub + парсинг + синхронизация
-
-**Входные параметры:**
-
-- **`tenant_id`** (`integer`, обязательное, мин: 1) — ID тенанта
-
-**Выходные параметры:**
-
-- **`result`** (`string`) — Результат: success, error
-- **`error`** (`object`) (опционально) — Структура ошибки
-  - **`code`** (`string`) — Код ошибки
-  - **`message`** (`string`) — Сообщение об ошибке
-  - **`details`** (`array`) (опционально) — Детали ошибки
-
-**Пример использования:**
-
-```yaml
-# В сценарии
-- action: "sync_tenant_storage"
-  params:
-    tenant_id: 123
-```
-
-
 <a id="sync_tenants_from_files"></a>
 ### sync_tenants_from_files
 
@@ -797,7 +816,7 @@ keywords: системные действия, coreness system actions, внут
 
 **Входные параметры:**
 
-- **`files`** (`array`) — Список файлов в формате ["path1", "path2"] или [{"filename": "path"}, ...]
+- **`files`** (`array (of string)`) — Список файлов в формате ["path1", "path2"] или [{"filename": "path"}, ...]
 
 <details>
 <summary>⚙️ Дополнительные параметры</summary>

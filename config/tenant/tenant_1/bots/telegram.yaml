@@ -1,5 +1,5 @@
 # Telegram Bot configuration for Master tenant (system management)
-
+bot_token: "7164967043:AAH_lHGECZmLB0u1NF_HNVUlnh39oRxSLQQ"
 is_active: true
 
 # Bot commands (for BotCommand table)

@@ -14,7 +14,15 @@ Complete description of all available actions with their parameters and results.
 
 - [action_hub](#action_hub) (1 actions)
   - [get_available_actions](#get_available_actions)
-- [bot_hub](#bot_hub) (10 actions)
+- [event_processor](#event_processor) (1 actions)
+  - [process_event](#process_event)
+- [scenario_processor](#scenario_processor) (3 actions)
+  - [process_scenario_event](#process_scenario_event)
+  - [sync_scenarios](#sync_scenarios)
+  - [sync_tenant_scenarios](#sync_tenant_scenarios)
+- [storage_hub](#storage_hub) (1 actions)
+  - [sync_tenant_storage](#sync_tenant_storage)
+- [telegram_bot_manager](#telegram_bot_manager) (11 actions)
   - [get_bot_info](#get_bot_info)
   - [get_bot_status](#get_bot_status)
   - [get_telegram_bot_info](#get_telegram_bot_info)
@@ -25,24 +33,18 @@ Complete description of all available actions with their parameters and results.
   - [sync_bot](#sync_bot)
   - [sync_bot_commands](#sync_bot_commands)
   - [sync_bot_config](#sync_bot_config)
-- [event_processor](#event_processor) (1 actions)
-  - [process_event](#process_event)
-- [scenario_processor](#scenario_processor) (2 actions)
-  - [process_scenario_event](#process_scenario_event)
-  - [sync_scenarios](#sync_scenarios)
-- [tenant_hub](#tenant_hub) (11 actions)
+  - [sync_telegram_bot](#sync_telegram_bot)
+- [tenant_hub](#tenant_hub) (8 actions)
   - [get_tenant_status](#get_tenant_status)
   - [get_tenants_list](#get_tenants_list)
   - [sync_all_tenants](#sync_all_tenants)
   - [sync_tenant](#sync_tenant)
-  - [sync_tenant_bot](#sync_tenant_bot)
   - [sync_tenant_config](#sync_tenant_config)
   - [sync_tenant_data](#sync_tenant_data)
-  - [sync_tenant_scenarios](#sync_tenant_scenarios)
-  - [sync_tenant_storage](#sync_tenant_storage)
   - [sync_tenants_from_files](#sync_tenants_from_files)
   - [update_tenant_config](#update_tenant_config)
 
+<a id="action_hub"></a>
 ## action_hub
 
 **Description:** Central action hub for routing to services
@@ -80,355 +82,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
-## bot_hub
-
-**Description:** Central service for managing all bots
-
-<a id="get_bot_info"></a>
-### get_bot_info
-
-**Description:** Get bot info from database (with caching)
-
-**Input Parameters:**
-
-- **`bot_id`** (`integer`, required, min: 1) — Bot ID
-- **`force_refresh`** (`boolean`, optional) — Принудительное обновление из БД (игнорирует кэш)
-
-<details>
-<summary>⚙️ Additional Parameters</summary>
-
-- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
-
-</details>
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-- **`response_data`** (`object`) — Response data
-  - **`bot_id`** (`integer`) — Bot ID
-  - **`telegram_bot_id`** (`integer`) — ID бота в Telegram
-  - **`tenant_id`** (`integer`) — Tenant ID
-  - **`bot_token`** (`string`) — Токен бота
-  - **`username`** (`string`) — Username бота
-  - **`first_name`** (`string`) — Имя бота
-  - **`is_active`** (`boolean`) — Whether bot is active
-  - **`bot_command`** (`array`) — Bot commands
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "get_bot_info"
-  params:
-    bot_id: 123
-    # force_refresh: boolean (optional)
-```
-
-
-<a id="get_bot_status"></a>
-### get_bot_status
-
-**Description:** Get polling status and bot activity
-
-**Input Parameters:**
-
-- **`bot_id`** (`integer`, required, min: 1) — Bot ID
-
-<details>
-<summary>⚙️ Additional Parameters</summary>
-
-- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
-
-</details>
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-- **`response_data`** (`object`) — Response data
-  - **`is_polling`** (`boolean`) — Whether polling is active: true/false
-  - **`is_active`** (`boolean`) — Whether bot is active from DB settings: true/false
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "get_bot_status"
-  params:
-    bot_id: 123
-```
-
-
-<a id="get_telegram_bot_info"></a>
-### get_telegram_bot_info
-
-**Description:** Get bot info via Telegram API
-
-**Input Parameters:**
-
-- **`bot_token`** (`string`, required, min length: 1) — Токен бота
-
-<details>
-<summary>⚙️ Additional Parameters</summary>
-
-- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
-
-</details>
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-- **`response_data`** (`object`) — Response data
-  - **`telegram_bot_id`** (`integer`) — ID бота в Telegram
-  - **`username`** (`string`) — Username бота
-  - **`first_name`** (`string`) — Имя бота
-  - **`is_bot`** (`boolean`) — Флаг, что это бот
-  - **`can_join_groups`** (`boolean`) — Может ли бот присоединяться к группам
-  - **`can_read_all_group_messages`** (`boolean`) — Может ли бот читать все сообщения в группах
-  - **`supports_inline_queries`** (`boolean`) — Поддерживает ли бот inline запросы
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "get_telegram_bot_info"
-  params:
-    bot_token: "example"
-```
-
-
-<a id="set_bot_token"></a>
-### set_bot_token
-
-**Description:** Set bot token. Bot must be created via sync_bot_config. Token validated on polling start
-
-**Input Parameters:**
-
-- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
-- **`bot_token`** (`string|None`, optional) — Bot token (optional; if not passed - unchanged, if null - removed)
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "set_bot_token"
-  params:
-    tenant_id: 123
-    # bot_token: string|None (optional)
-```
-
-
-<a id="start_bot"></a>
-### start_bot
-
-**Description:** Start bot
-
-**Input Parameters:**
-
-- **`bot_id`** (`integer`, required, min: 1) — Bot ID
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "start_bot"
-  params:
-    bot_id: 123
-```
-
-
-<a id="stop_all_bots"></a>
-### stop_all_bots
-
-**Description:** Stop all bots
-
-**Input Parameters:**
-
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "stop_all_bots"
-  params:
-```
-
-
-<a id="stop_bot"></a>
-### stop_bot
-
-**Description:** Stop bot
-
-**Input Parameters:**
-
-- **`bot_id`** (`integer`, required, min: 1) — Bot ID
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "stop_bot"
-  params:
-    bot_id: 123
-```
-
-
-<a id="sync_bot"></a>
-### sync_bot
-
-**Description:** Sync bot: config + commands (wrapper over sync_bot_config + sync_bot_commands)
-
-**Input Parameters:**
-
-- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
-- **`bot_token`** (`string`, required, min length: 1) — Bot token
-- **`is_active`** (`boolean`, optional) — Whether bot is active (default true)
-- **`bot_commands`** (`array`, optional) — List of commands to apply (optional)
-
-<details>
-<summary>⚙️ Additional Parameters</summary>
-
-- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
-
-</details>
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-- **`response_data`** (`object`) — Response data
-  - **`bot_id`** (`integer`) — Bot ID
-  - **`action`** (`string`) — Action: created or updated
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "sync_bot"
-  params:
-    tenant_id: 123
-    bot_token: "example"
-    # is_active: boolean (optional)
-    # bot_commands: array (optional)
-```
-
-
-<a id="sync_bot_commands"></a>
-### sync_bot_commands
-
-**Description:** Sync bot commands: save to DB → apply in Telegram
-
-**Input Parameters:**
-
-- **`bot_id`** (`integer`, required, min: 1) — Bot ID
-- **`command_list`** (`array`) — List of commands to apply
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "sync_bot_commands"
-  params:
-    bot_id: 123
-    command_list: []
-```
-
-
-<a id="sync_bot_config"></a>
-### sync_bot_config
-
-**Description:** Sync bot config: create/update bot + start polling. Token from DB if bot_token not passed
-
-**Input Parameters:**
-
-- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
-- **`bot_token`** (`string`, optional, min length: 1) — Bot token (optional; from DB if not passed)
-- **`is_active`** (`boolean`) — Whether bot is active
-
-<details>
-<summary>⚙️ Additional Parameters</summary>
-
-- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
-
-</details>
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
-- **`response_data`** (`object`) — Response data
-  - **`bot_id`** (`integer`) — Bot ID
-  - **`action`** (`string`) — Action: created or updated
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "sync_bot_config"
-  params:
-    tenant_id: 123
-    # bot_token: string (optional)
-    is_active: true
-```
-
-
+<a id="event_processor"></a>
 ## event_processor
 
 **Description:** Service for processing polling events
@@ -460,6 +114,7 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="scenario_processor"></a>
 ## scenario_processor
 
 **Description:** Service for processing events by scenarios
@@ -501,7 +156,7 @@ Complete description of all available actions with their parameters and results.
 **Input Parameters:**
 
 - **`tenant_id`** (`integer`, required, min: 1) — Tenant ID for scenario sync
-- **`scenarios`** (`array`) — Array of scenarios to sync
+- **`scenarios`** (`array (of object)`) — Array of scenarios to sync
 
 **Output Parameters:**
 
@@ -522,9 +177,454 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
+<a id="sync_tenant_scenarios"></a>
+### sync_tenant_scenarios
+
+**Description:** Sync tenant scenarios: parse scenarios/*.yaml + sync to database
+
+**Input Parameters:**
+
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "sync_tenant_scenarios"
+  params:
+    tenant_id: 123
+```
+
+
+<a id="storage_hub"></a>
+## storage_hub
+
+**Description:** Service for managing tenant storage
+
+<a id="sync_tenant_storage"></a>
+### sync_tenant_storage
+
+**Description:** Sync tenant storage: parse storage/*.yaml + sync to database
+
+**Input Parameters:**
+
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "sync_tenant_storage"
+  params:
+    tenant_id: 123
+```
+
+
+<a id="telegram_bot_manager"></a>
+## telegram_bot_manager
+
+**Description:** Service for managing Telegram bot lifecycle
+
+<a id="get_bot_info"></a>
+### get_bot_info
+
+**Description:** Get bot info from database (with caching)
+
+**Input Parameters:**
+
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+- **`force_refresh`** (`boolean`, optional) — Force refresh cache
+
+<details>
+<summary>⚙️ Additional Parameters</summary>
+
+- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
+
+</details>
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Request result
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Bot data from database
+  - **`bot_id`** (`integer`) — Bot ID
+  - **`telegram_bot_id`** (`integer`) — Bot ID in Telegram
+  - **`tenant_id`** (`integer`) — Tenant ID
+  - **`bot_token`** (`string`) — Bot token
+  - **`username`** (`string`) — Bot username
+  - **`first_name`** (`string`) — Bot first name
+  - **`is_active`** (`boolean`) — Whether bot is active
+  - **`bot_command`** (`array`) — Bot commands
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "get_bot_info"
+  params:
+    bot_id: 123
+    # force_refresh: boolean (optional)
+```
+
+
+<a id="get_bot_status"></a>
+### get_bot_status
+
+**Description:** Get polling status and bot activity
+
+**Input Parameters:**
+
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+
+<details>
+<summary>⚙️ Additional Parameters</summary>
+
+- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
+
+</details>
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Request result
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Bot status
+  - **`is_polling`** (`boolean`) — Whether polling is active
+  - **`is_webhook_active`** (`boolean`) — Whether webhook is active
+  - **`is_active`** (`boolean`) — Whether bot is active
+  - **`is_working`** (`boolean`) — Whether bot is working (polling or webhook)
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "get_bot_status"
+  params:
+    bot_id: 123
+```
+
+
+<a id="get_telegram_bot_info"></a>
+### get_telegram_bot_info
+
+**Description:** Get bot info via Telegram API
+
+**Input Parameters:**
+
+- **`bot_token`** (`string`, required, min length: 1) — Telegram bot token
+
+<details>
+<summary>⚙️ Additional Parameters</summary>
+
+- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
+
+</details>
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Request result
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Bot data from Telegram API
+  - **`telegram_bot_id`** (`integer`) — Bot ID in Telegram
+  - **`username`** (`string`) — Bot username
+  - **`first_name`** (`string`) — Bot first name
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "get_telegram_bot_info"
+  params:
+    bot_token: "example"
+```
+
+
+<a id="set_bot_token"></a>
+### set_bot_token
+
+**Description:** Set bot token
+
+**Input Parameters:**
+
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`bot_token`** (`string|None`, optional) — Bot token or null to clear
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "set_bot_token"
+  params:
+    tenant_id: 123
+    # bot_token: string|None (optional)
+```
+
+
+<a id="start_bot"></a>
+### start_bot
+
+**Description:** Start bot (polling or webhook)
+
+**Input Parameters:**
+
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "start_bot"
+  params:
+    bot_id: 123
+```
+
+
+<a id="stop_all_bots"></a>
+### stop_all_bots
+
+**Description:** Stop all bots
+
+**Input Parameters:**
+
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "stop_all_bots"
+  params:
+```
+
+
+<a id="stop_bot"></a>
+### stop_bot
+
+**Description:** Stop bot
+
+**Input Parameters:**
+
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "stop_bot"
+  params:
+    bot_id: 123
+```
+
+
+<a id="sync_bot"></a>
+### sync_bot
+
+**Description:** Sync bot: config + commands
+
+**Input Parameters:**
+
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`bot_token`** (`string`, required, min length: 1) — Telegram bot token
+- **`is_active`** (`boolean`, optional) — Whether bot is active
+- **`bot_commands`** (`array`, optional) — List of bot commands
+
+<details>
+<summary>⚙️ Additional Parameters</summary>
+
+- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
+
+</details>
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) (optional) — Response data (bot_id, action)
+  - **`bot_id`** (`integer`) — Bot ID
+  - **`action`** (`string`) — Action performed
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "sync_bot"
+  params:
+    tenant_id: 123
+    bot_token: "example"
+    # is_active: boolean (optional)
+    # bot_commands: array (optional)
+```
+
+
+<a id="sync_bot_commands"></a>
+### sync_bot_commands
+
+**Description:** Sync bot commands: save to DB → apply in Telegram
+
+**Input Parameters:**
+
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+- **`command_list`** (`array`) — List of bot commands
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "sync_bot_commands"
+  params:
+    bot_id: 123
+    command_list: []
+```
+
+
+<a id="sync_bot_config"></a>
+### sync_bot_config
+
+**Description:** Sync bot config: create/update bot + start
+
+**Input Parameters:**
+
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+- **`bot_token`** (`string`, optional, min length: 1) — Telegram bot token
+- **`is_active`** (`boolean`) — Whether bot is active
+
+<details>
+<summary>⚙️ Additional Parameters</summary>
+
+- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
+
+</details>
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) — Response data
+  - **`bot_id`** (`integer`) — Bot ID
+  - **`action`** (`string`) — Action performed
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "sync_bot_config"
+  params:
+    tenant_id: 123
+    # bot_token: string (optional)
+    is_active: true
+```
+
+
+<a id="sync_telegram_bot"></a>
+### sync_telegram_bot
+
+**Description:** Sync Telegram bot for tenant: parse bots/telegram.yaml + create/update bot + sync commands + start
+
+**Input Parameters:**
+
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
+
+<details>
+<summary>⚙️ Additional Parameters</summary>
+
+- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
+
+</details>
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Result: success, error, not_found
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+- **`response_data`** (`object`) (optional) — Response data (bot_id, action)
+  - **`bot_id`** (`integer`) — Bot ID
+  - **`action`** (`string`) — Action performed
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "sync_telegram_bot"
+  params:
+    tenant_id: 123
+```
+
+
+<a id="tenant_hub"></a>
 ## tenant_hub
 
-**Description:** Service for managing tenant configurations - data loading coordinator
+**Description:** Orchestrator service for managing tenants. Coordinates GitHub sync, delegates parsing and sync to specialized services
 
 <a id="get_tenant_status"></a>
 ### get_tenant_status
@@ -591,9 +691,9 @@ Complete description of all available actions with their parameters and results.
   - **`message`** (`string`) — Error message
   - **`details`** (`array`) (optional) — Error details
 - **`response_data`** (`object`) — 
-  - **`tenant_ids`** (`array`) — Array of all tenant IDs
-  - **`public_tenant_ids`** (`array`) — Array of public tenant IDs
-  - **`system_tenant_ids`** (`array`) — Array of system tenant IDs
+  - **`tenant_ids`** (`array (of integer)`) — Array of all tenant IDs
+  - **`public_tenant_ids`** (`array (of integer)`) — Array of public tenant IDs
+  - **`system_tenant_ids`** (`array (of integer)`) — Array of system tenant IDs
   - **`tenant_count`** (`integer`) — Total number of tenants
 
 **Usage Example:**
@@ -657,33 +757,6 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
-<a id="sync_tenant_bot"></a>
-### sync_tenant_bot
-
-**Description:** Sync tenant bot: pull from GitHub + parse + sync
-
-**Input Parameters:**
-
-- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "sync_tenant_bot"
-  params:
-    tenant_id: 123
-```
-
-
 <a id="sync_tenant_config"></a>
 ### sync_tenant_config
 
@@ -738,60 +811,6 @@ Complete description of all available actions with their parameters and results.
 ```
 
 
-<a id="sync_tenant_scenarios"></a>
-### sync_tenant_scenarios
-
-**Description:** Sync tenant scenarios: pull from GitHub + parse + sync
-
-**Input Parameters:**
-
-- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "sync_tenant_scenarios"
-  params:
-    tenant_id: 123
-```
-
-
-<a id="sync_tenant_storage"></a>
-### sync_tenant_storage
-
-**Description:** Sync tenant storage: pull from GitHub + parse + sync
-
-**Input Parameters:**
-
-- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID
-
-**Output Parameters:**
-
-- **`result`** (`string`) — Result: success, error
-- **`error`** (`object`) (optional) — Error structure
-  - **`code`** (`string`) — Error code
-  - **`message`** (`string`) — Error message
-  - **`details`** (`array`) (optional) — Error details
-
-**Usage Example:**
-
-```yaml
-# In scenario
-- action: "sync_tenant_storage"
-  params:
-    tenant_id: 123
-```
-
-
 <a id="sync_tenants_from_files"></a>
 ### sync_tenants_from_files
 
@@ -799,7 +818,7 @@ Complete description of all available actions with their parameters and results.
 
 **Input Parameters:**
 
-- **`files`** (`array`) — List of files in format ["path1", "path2"] or [{"filename": "path"}, ...]
+- **`files`** (`array (of string)`) — List of files in format ["path1", "path2"] or [{"filename": "path"}, ...]
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
