@@ -78,13 +78,15 @@ actions:
           tools:
             type: array
             optional: true
-            description: "Список доступных функций для вызова моделью (tool calling)"
-            description_en: "List of functions available for model to call (tool calling)"
+            description: "Массив объектов-инструментов (tool calling). Каждый элемент — объект: type 'function', function: { name, description, parameters }. parameters — JSON Schema объекта аргументов вызова (OpenAI-совместимый формат)."
+            description_en: "Array of tool objects (tool calling). Each item is an object: type 'function', function: { name, description, parameters }. parameters is JSON Schema for the call arguments (OpenAI-compatible format)."
+            items:
+              type: object
           tool_choice:
             type: string
             optional: true
-            description: "Управление выбором инструментов: 'none', 'auto', 'required' или объект с конкретной функцией"
-            description_en: "Tool selection: 'none', 'auto', 'required' or object with specific function"
+            description: "Управление выбором инструментов. Строка: 'none' (не вызывать), 'auto' (по умолчанию при наличии tools), 'required' (обязательно вызвать хотя бы один). Объект: принудительный вызов одной функции — {\"type\": \"function\", \"function\": {\"name\": \"имя_функции\"}}."
+            description_en: "Tool selection. String: 'none' (do not call), 'auto' (default when tools present), 'required' (must call at least one). Object: force one function — {\"type\": \"function\", \"function\": {\"name\": \"function_name\"}}."
           chunk_format:
             type: object
             optional: true
@@ -169,18 +171,20 @@ actions:
           tool_calls:
             type: array
             optional: true
-            description: "Список вызовов функций, которые модель решила выполнить (только при использовании tools)"
-            description_en: "List of function calls the model decided to make (when using tools)"
+            description: "При использовании tools — массив объектов вызовов. Каждый элемент: id, type, function: { name, arguments }. arguments — JSON-строка с параметрами вызова (разный набор полей у каждой функции); при необходимости распарсить в сценарии."
+            description_en: "When using tools — array of call objects. Each item: id, type, function: { name, arguments }. arguments is a JSON string with call parameters (different keys per function); parse in scenario if needed."
+            items:
+              type: object
     details: |
       **JSON режимы:**
       - `json_object`: модель возвращает валидный JSON (парсится в `response_dict`)
       - `json_schema`: строгая JSON схема (требуется `json_schema` параметр)
       
       **Tool Calling:**
-      - Параметр `tools` позволяет модели вызывать функции
-      - Модель решает, какие функции вызвать и с какими параметрами
-      - Результаты вызовов в `response_data.tool_calls`
-      - `tool_choice`: управление выбором ('none', 'auto', 'required', или конкретная функция)
+      - `tools` — массив объектов (каждый: type, function.name, function.description, function.parameters по JSON Schema)
+      - Модель решает, какие функции вызвать и с какими параметрами; вызовы возвращаются в `response_data.tool_calls`
+      - `tool_calls` — массив объектов: id, type, function.name, function.arguments (JSON-строка); обработка и циклы — в сценарии
+      - `tool_choice`: строка 'none'|'auto'|'required' или объект для принудительного вызова одной функции
       
       **Формат чанков (chunk_format):**
       - Настройка отображения чанков из RAG через шаблоны с маркерами `$`
