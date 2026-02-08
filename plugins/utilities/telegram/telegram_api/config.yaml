@@ -360,6 +360,82 @@ methods:
             description: "Детали ошибки (например, ошибки валидации полей)"
             description_en: "Error details (e.g. field validation errors)"
 
+  restrict_chat_member:
+    description: "Ограничение участника в супергруппе (права по группам: сообщения, вложения, другое, управление)"
+    description_en: "Restrict a user in a supergroup (permission groups: messages, attachments, other, management)"
+    input:
+      bot_token:
+        type: string
+        description: "Токен бота"
+        description_en: "Bot token"
+      bot_id:
+        type: integer
+        description: "ID бота (для единообразия API)"
+        description_en: "Bot ID (for API consistency)"
+      data:
+        type: object
+        description: "Данные ограничения"
+        description_en: "Restriction data"
+        properties:
+          chat_id:
+            type: integer|string
+            description: "ID чата (супергруппы)"
+            description_en: "Chat ID (supergroup)"
+          target_user_id:
+            type: integer
+            description: "ID пользователя для ограничения (целевой; не конфликтует с user_id из контекста)"
+            description_en: "User ID to restrict (target; does not conflict with context user_id)"
+          messages:
+            type: boolean
+            optional: true
+            description: "Разрешить текстовые сообщения, контакты, локации и т.д. Если не указано — не передаётся в API"
+            description_en: "Allow text messages, contacts, locations, etc. If omitted — not sent to API"
+          attachments:
+            type: boolean
+            optional: true
+            description: "Разрешить аудио, документы, фото, видео, видео-заметки, голос. Если не указано — не передаётся в API"
+            description_en: "Allow audio, documents, photos, videos, video notes, voice. If omitted — not sent to API"
+          other:
+            type: boolean
+            optional: true
+            description: "Разрешить опросы, стикеры, игры, инлайн, превью ссылок. Если не указано — не передаётся в API"
+            description_en: "Allow polls, stickers, games, inline, link previews. If omitted — not sent to API"
+          management:
+            type: boolean
+            optional: true
+            description: "Разрешить менять инфо чата, приглашать, пинить, управлять топиками. Если не указано — не передаётся в API"
+            description_en: "Allow change info, invite users, pin messages, manage topics. If omitted — not sent to API"
+          until_date:
+            type: integer
+            optional: true
+            min: 0
+            description: "Unix-время снятия ограничения; 0 или не указано — навсегда"
+            description_en: "Unix time when restrictions are lifted; 0 or omit — forever"
+    output:
+      result:
+        type: string
+        description: "Результат: success, error"
+        description_en: "Result: success, error"
+      error:
+        type: object
+        optional: true
+        description: "Структура ошибки"
+        description_en: "Error structure"
+        properties:
+          code:
+            type: string
+            description: "Код ошибки"
+            description_en: "Error code"
+          message:
+            type: string
+            description: "Сообщение об ошибке"
+            description_en: "Error message"
+          details:
+            type: array
+            optional: true
+            description: "Детали ошибки"
+            description_en: "Error details"
+
   answer_callback_query:
     description: "Ответ на callback query (всплывающее уведомление или простое уведомление)"
     description_en: "Answer callback query (popup or simple notification)"

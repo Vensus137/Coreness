@@ -36,6 +36,7 @@ class TelegramAPI:
         # Components
         from .actions.bot_info_action import BotInfoAction
         from .actions.callback_action import CallbackAction
+        from .actions.chat_action import ChatAction
         from .actions.command_action import CommandAction
         from .actions.invoice_action import InvoiceAction
         from .actions.message_action import MessageAction
@@ -66,6 +67,7 @@ class TelegramAPI:
         self.bot_info_action = BotInfoAction(self.api_client, **kwargs)
         self.invoice_action = InvoiceAction(self.api_client, **kwargs)
         self.callback_action = CallbackAction(self.api_client, **kwargs)
+        self.chat_action = ChatAction(self.api_client, **kwargs)
     
     def _initialize_service(self):
         """Private service initialization"""
@@ -279,7 +281,21 @@ class TelegramAPI:
                     "message": str(e)
                 }
             }
-    
+
+    # === Methods for chat member restrictions ===
+
+    async def restrict_chat_member(self, bot_token: str, bot_id: int, data: dict) -> Dict[str, Any]:
+        """Restrict a user in a supergroup (simplified permission groups)."""
+        try:
+            result = await self.chat_action.restrict_chat_member(bot_token, bot_id, data)
+            return result
+        except Exception as e:
+            self.logger.error(f"[Bot-{bot_id}] Error restricting chat member: {e}")
+            return {
+                "result": "error",
+                "error": {"code": "INTERNAL_ERROR", "message": str(e)}
+            }
+
     # === Methods for working with invoices ===
     
     async def send_invoice(self, bot_token: str, bot_id: int, data: dict) -> Dict[str, Any]:

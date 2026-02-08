@@ -29,10 +29,6 @@ class BotRepository:
         """Generate cache key for bot"""
         return f"bot:{bot_id}"
     
-    def _get_token_cache_key(self, bot_token: str) -> str:
-        """Generate cache key for token lookup"""
-        return f"bot:token:{bot_token}"
-    
     async def get_bot_info(self, bot_id: int, force_refresh: bool = False) -> Dict[str, Any]:
         """
         Get full bot information (with caching)
@@ -124,65 +120,6 @@ class BotRepository:
             
         except Exception as e:
             self.logger.error(f"[Tenant-{tenant_id}] Error getting bot info: {e}")
-            return {
-                "result": "error",
-                "error": {"code": "INTERNAL_ERROR", "message": str(e)}
-            }
-    
-    async def get_telegram_bot_info_by_token(self, bot_token: str) -> Dict[str, Any]:
-        """
-        Get bot info from Telegram API (with caching)
-        Returns bot info directly from Telegram
-        """
-        try:
-            if not bot_token:
-                return {
-                    "result": "error",
-                    "error": {
-                        "code": "VALIDATION_ERROR",
-                        "message": "bot_token is required"
-                    }
-                }
-            
-            # Check cache
-            cache_key = self._get_token_cache_key(bot_token)
-            cached = await self.cache_manager.get(cache_key)
-            if cached:
-                if cached.get('_error'):
-                    return {
-                        "result": "error",
-                        "error": {
-                            "code": cached.get('code', 'API_ERROR'),
-                            "message": cached.get('message', 'Unknown error')
-                        }
-                    }
-                return {"result": "success", "response_data": cached}
-            
-            # Fetch from Telegram API
-            result = await self.telegram_api.get_bot_info(bot_token)
-            
-            if result.get('result') == 'success':
-                bot_info = result['response_data']
-                await self.cache_manager.set(cache_key, bot_info, ttl=self._bot_ttl)
-                return {"result": "success", "response_data": bot_info}
-            else:
-                # Cache error
-                error_data = {
-                    '_error': True,
-                    'code': 'API_ERROR',
-                    'message': 'Failed to get bot info from Telegram'
-                }
-                await self.cache_manager.set(cache_key, error_data, ttl=self._error_ttl)
-                return {
-                    "result": "error",
-                    "error": {
-                        "code": "API_ERROR",
-                        "message": "Failed to get bot info from Telegram"
-                    }
-                }
-                
-        except Exception as e:
-            self.logger.error(f"Error getting Telegram bot info: {e}")
             return {
                 "result": "error",
                 "error": {"code": "INTERNAL_ERROR", "message": str(e)}

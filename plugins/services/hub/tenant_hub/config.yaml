@@ -135,10 +135,11 @@ actions:
             description: "Детали ошибки"
             description_en: "Error details"
 
-  sync_tenant_data:
-    description: "Синхронизация данных тенанта: создание/обновление тенанта"
-    description_en: "Sync tenant data: create/update tenant"
+  get_bot_id_by_tenant_id:
+    description: "Получение bot_id бота по tenant_id и типу бота. Запрос к БД, к типу мессенджера не привязан."
+    description_en: "Get bot_id by tenant_id and bot type. Database lookup, not tied to messenger type."
     access_rules: ["system_access"]
+    public: false
     input:
       data:
         type: object
@@ -149,6 +150,12 @@ actions:
             min: 1
             description: "ID тенанта"
             description_en: "Tenant ID"
+          bot_type:
+            type: string
+            optional: true
+            default: "telegram"
+            description: "Тип бота (telegram, в будущем whatsapp и др.). Пока поддерживается только telegram."
+            description_en: "Bot type (telegram, later whatsapp etc.). Only telegram supported for now."
     output:
       result:
         type: string
@@ -157,105 +164,25 @@ actions:
       error:
         type: object
         optional: true
-        description: "Структура ошибки"
-        description_en: "Error structure"
+        description: "Структура ошибки (NOT_FOUND если у тенанта нет бота данного типа)"
+        description_en: "Error structure (NOT_FOUND if tenant has no bot of this type)"
         properties:
           code:
             type: string
-            description: "Код ошибки"
-            description_en: "Error code"
           message:
             type: string
-            description: "Сообщение об ошибке"
-            description_en: "Error message"
-          details:
-            type: array
-            optional: true
-            description: "Детали ошибки"
-            description_en: "Error details"
-
-  sync_tenant_config:
-    description: "Синхронизация конфига тенанта: pull из GitHub + парсинг + синхронизация"
-    description_en: "Sync tenant config: pull from GitHub + parse + sync"
-    access_rules: ["system_access"]
-    input:
-      data:
-        type: object
-        properties:
-          tenant_id:
-            type: integer
-            optional: false
-            min: 1
-            description: "ID тенанта"
-            description_en: "Tenant ID"
-    output:
-      result:
-        type: string
-        description: "Результат: success, error"
-        description_en: "Result: success, error"
-      error:
-        type: object
-        optional: true
-        description: "Структура ошибки"
-        description_en: "Error structure"
-        properties:
-          code:
-            type: string
-            description: "Код ошибки"
-            description_en: "Error code"
-          message:
-            type: string
-            description: "Сообщение об ошибке"
-            description_en: "Error message"
-          details:
-            type: array
-            optional: true
-            description: "Детали ошибки"
-            description_en: "Error details"
-
-  sync_tenants_from_files:
-    description: "Синхронизация тенантов из списка измененных файлов (универсальный метод для вебхуков и пуллинга)"
-    description_en: "Sync tenants from list of changed files (universal method for webhooks and polling)"
-    access_rules: ["system_access"]
-    input:
-      data:
-        type: object
-        properties:
-          files:
-            type: array
-            optional: false
-            description: "Список файлов в формате [\"path1\", \"path2\"] или [{\"filename\": \"path\"}, ...]"
-            description_en: "List of files in format [\"path1\", \"path2\"] or [{\"filename\": \"path\"}, ...]"
-            items:
-              type: string
-    output:
-      result:
-        type: string
-        description: "Результат: success, partial_success, error"
-        description_en: "Result: success, partial_success, error"
       response_data:
         type: object
-        optional: true
-        description: "Данные ответа (synced_tenants, total_tenants, errors)"
-        description_en: "Response data (synced_tenants, total_tenants, errors)"
-      error:
-        type: object
-        optional: true
-        description: "Структура ошибки"
-        description_en: "Error structure"
         properties:
-          code:
-            type: string
-            description: "Код ошибки"
-            description_en: "Error code"
-          message:
-            type: string
-            description: "Сообщение об ошибке"
-            description_en: "Error message"
+          bot_id:
+            type: integer
+            replaceable: true
+            description: "ID бота в БД"
+            description_en: "Bot ID in database"
 
   get_tenant_status:
-    description: "Получение статуса тенанта"
-    description_en: "Get tenant status"
+    description: "Получение статуса тенанта по кэшу: дата последнего обновления, последняя ошибка (без данных о ботах)"
+    description_en: "Get tenant status from cache: last update date, last error (no bot data)"
     access_rules: ["system_access"]
     input:
       data:
@@ -270,64 +197,29 @@ actions:
     output:
       result:
         type: string
-        description: "Результат: success, error"
-        description_en: "Result: success, error"
-      error:
-        type: object
-        optional: true
-        description: "Структура ошибки"
-        description_en: "Error structure"
-        properties:
-          code:
-            type: string
-            description: "Код ошибки"
-            description_en: "Error code"
-          message:
-            type: string
-            description: "Сообщение об ошибке"
-            description_en: "Error message"
-          details:
-            type: array
-            optional: true
-            description: "Детали ошибки"
-            description_en: "Error details"
+        description: "Результат: success"
+        description_en: "Result: success"
       response_data:
         type: object
-        description: "Данные ответа"
-        description_en: "Response data"
+        description: "Данные кэша тенанта"
+        description_en: "Tenant cache data"
         properties:
-          bot_is_active:
-            type: boolean
-            description: "Активен ли бот тенанта из настроек БД (флаг is_active в БД)"
-            description_en: "Whether tenant bot is active from DB settings (is_active flag)"
-          bot_is_polling:
-            type: boolean
-            description: "Активен ли пулинг бота тенанта (запущен ли процесс пулинга)"
-            description_en: "Whether tenant bot polling is active (polling process running)"
-          bot_is_webhook_active:
-            type: boolean
-            description: "Активен ли вебхук бота тенанта (установлен ли вебхук через Telegram API)"
-            description_en: "Whether tenant bot webhook is active (webhook set via Telegram API)"
-          bot_is_working:
-            type: boolean
-            description: "Работает ли бот тенанта (пулинг ИЛИ вебхуки активны). Показывает реальный статус работы бота"
-            description_en: "Whether tenant bot is working (polling OR webhooks active). Actual bot status"
           last_updated_at:
             type: string
             optional: true
-            description: "Дата последнего успешного обновления тенанта"
-            description_en: "Date of last successful tenant update"
+            description: "Дата последнего успешного обновления"
+            description_en: "Last successful update date"
           last_failed_at:
             type: string
             optional: true
-            description: "Дата последней ошибки при обновлении тенанта"
-            description_en: "Date of last error when updating tenant"
+            description: "Дата последней ошибки"
+            description_en: "Last failure date"
           last_error:
-            type: string
+            type: object
             optional: true
-            description: "Текст последней ошибки при обновлении тенанта"
-            description_en: "Text of last error when updating tenant"
-  
+            description: "Объект последней ошибки (code, message, details)"
+            description_en: "Last error object (code, message, details)"
+
   get_tenants_list:
     description: "Получение списка всех ID тенантов с разделением на публичные и системные"
     description_en: "Get list of all tenant IDs split into public and system"

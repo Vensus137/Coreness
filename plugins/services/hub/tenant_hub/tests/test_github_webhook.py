@@ -9,21 +9,21 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from aiohttp import web
 
-from handlers.github_webhook import GitHubWebhookHandler
+from plugins.services.hub.tenant_hub.handlers.github_webhook import GitHubWebhookHandler
 
 
 @pytest.fixture
-def mock_action_hub():
-    """Create mock action_hub"""
-    action_hub = Mock()
-    action_hub.execute_action = AsyncMock(return_value={
+def mock_webhook_actions():
+    """Create mock webhook_actions (sync logic, no tenant_hub reference)"""
+    actions = Mock()
+    actions.sync_tenants_from_files = AsyncMock(return_value={
         'result': 'success',
         'response_data': {
             'synced_tenants': 1,
             'total_tenants': 1
         }
     })
-    return action_hub
+    return actions
 
 
 @pytest.fixture
@@ -43,10 +43,10 @@ def webhook_secret():
 
 
 @pytest.fixture
-def handler(mock_action_hub, webhook_secret, mock_logger):
+def handler(mock_webhook_actions, webhook_secret, mock_logger):
     """Create handler instance"""
     return GitHubWebhookHandler(
-        mock_action_hub,
+        mock_webhook_actions,
         webhook_secret,
         mock_logger
     )
@@ -162,7 +162,7 @@ async def test_handle_wrong_event_type(handler, webhook_secret):
 
 
 @pytest.mark.asyncio
-async def test_handle_push_event_with_tenant_changes(handler, webhook_secret, mock_action_hub):
+async def test_handle_push_event_with_tenant_changes(handler, webhook_secret, mock_webhook_actions):
     """Test handling push event with tenant changes"""
     payload_data = {
         "commits": [
@@ -190,11 +190,12 @@ async def test_handle_push_event_with_tenant_changes(handler, webhook_secret, mo
     response = await handler.handle(request)
     
     assert response.status == 200
-    # Check that action was called
-    mock_action_hub.execute_action.assert_called_once()
-    call_args = mock_action_hub.execute_action.call_args
-    assert call_args[0][0] == 'sync_tenants_from_files'
-    assert 'files' in call_args[0][1]
+    mock_webhook_actions.sync_tenants_from_files.assert_called_once()
+    call_args = mock_webhook_actions.sync_tenants_from_files.call_args
+    data = call_args[0][0]
+    assert 'files' in data
+    assert 'tenant/tenant_101/bots/telegram.yaml' in data['files']
+    assert 'tenant/tenant_102/scenarios/scenario1.yaml' in data['files']
 
 
 @pytest.mark.asyncio

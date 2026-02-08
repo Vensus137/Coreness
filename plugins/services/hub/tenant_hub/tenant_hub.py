@@ -57,10 +57,6 @@ class TenantHub:
         self.github_webhook_secret = plugin_settings.get('github_webhook_secret', '')
         self.github_webhook_endpoint = plugin_settings.get('github_webhook_endpoint', '/webhooks/github')
         
-        # Register GitHub webhook endpoint (if webhooks enabled and available)
-        if self.use_webhooks:
-            self._register_github_webhook_endpoint()
-        
         # Create tenant repository
         self.tenant_repository = TenantRepository(self.database_manager, self.logger)
         
@@ -73,13 +69,24 @@ class TenantHub:
         # Create GitHub sync modules (unified)
         self.github_sync = GitHubSync(self.logger, self.settings_manager)
         
-        # Create block sync executor (simplified - uses Action Hub)
+        # Tenant actions first (needed by BlockSyncExecutor for internal sync_tenant_data)
+        self.tenant_actions = TenantActions(
+            self.logger,
+            self.action_hub,
+            self.database_manager,
+            self.tenant_cache,
+            self.tenant_repository,
+            self.max_system_tenant_id
+        )
+        
+        # Create block sync executor (uses Action Hub for scenarios/bots/storage; tenant_actions for sync_tenant_data)
         self.block_sync_executor = BlockSyncExecutor(
             self.logger,
             self.action_hub,
             self.github_sync,
             self.settings_manager,
-            self.tenant_cache
+            self.tenant_cache,
+            self.tenant_actions
         )
         
         # Create sync orchestrator
@@ -99,20 +106,15 @@ class TenantHub:
             self.block_sync_executor
         )
         
-        self.tenant_actions = TenantActions(
-            self.logger,
-            self.action_hub,
-            self.database_manager,
-            self.tenant_cache,
-            self.tenant_repository,
-            self.max_system_tenant_id
-        )
-        
         self.webhook_actions = WebhookActions(
             self.logger,
             self.github_sync,
             self.block_sync_executor
         )
+        
+        # Register GitHub webhook endpoint (requires webhook_actions)
+        if self.use_webhooks:
+            self._register_github_webhook_endpoint()
         
         # Register ourselves in ActionHub
         self.action_hub.register('tenant_hub', self)
@@ -197,9 +199,8 @@ class TenantHub:
             if not self.github_webhook_secret:
                 self.logger.warning("GitHub webhook secret not set, webhooks may be insecure")
             
-            # Create handler
             handler_instance = GitHubWebhookHandler(
-                self.action_hub,
+                self.webhook_actions,
                 self.github_webhook_secret,
                 self.logger
             )
@@ -229,22 +230,14 @@ class TenantHub:
         """Sync all tenants: system (locally) + public (from GitHub)"""
         return await self.sync_actions.sync_all_tenants(data)
     
-    async def sync_tenant_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Sync tenant data: create/update tenant"""
-        return await self.tenant_actions.sync_tenant_data(data)
-    
-    async def sync_tenant_config(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Sync tenant config: pull from GitHub + parsing + sync"""
-        return await self.sync_actions.sync_tenant_config(data)
-    
-    async def sync_tenants_from_files(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Sync tenants from list of changed files (universal method for webhooks and polling)"""
-        return await self.webhook_actions.sync_tenants_from_files(data)
-    
     async def get_tenant_status(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Get tenant status"""
+        """Get tenant status from cache (last update, last error; no bot data)"""
         return await self.tenant_actions.get_tenant_status(data)
-    
+
+    async def get_bot_id_by_tenant_id(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Get bot_id by tenant_id and bot_type (database lookup)"""
+        return await self.tenant_actions.get_bot_id_by_tenant_id(data)
+
     async def get_tenants_list(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Get list of all tenant IDs with separation into public and system"""
         return await self.tenant_actions.get_tenants_list(data)

@@ -58,7 +58,7 @@ class InvoiceService:
                 }
             
             # Get bot information through bot_hub
-            bot_result = await self.action_hub.execute_action('get_bot_info', {'bot_id': bot_id})
+            bot_result = await self.action_hub.execute_action('get_telegram_bot_info_by_id', {'bot_id': bot_id})
             if bot_result.get('result') != 'success':
                 error_msg = bot_result.get('error', 'Unknown error')
                 if isinstance(error_msg, dict):
@@ -206,7 +206,7 @@ class InvoiceService:
         bot_id = data.get('bot_id')
         
         # Get bot information through bot_hub
-        bot_result = await self.action_hub.execute_action('get_bot_info', {'bot_id': bot_id})
+        bot_result = await self.action_hub.execute_action('get_telegram_bot_info_by_id', {'bot_id': bot_id})
         if bot_result.get('result') != 'success':
             error_msg = bot_result.get('error', 'Unknown error')
             if isinstance(error_msg, dict):

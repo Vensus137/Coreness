@@ -11,10 +11,10 @@ from aiohttp import web
 
 
 class GitHubWebhookHandler:
-    """Handler for GitHub webhooks"""
-    
-    def __init__(self, action_hub, webhook_secret: str, logger):
-        self.action_hub = action_hub
+    """Handler for GitHub webhooks. Uses webhook_actions for sync, no reference to tenant_hub."""
+
+    def __init__(self, webhook_actions, webhook_secret: str, logger):
+        self.webhook_actions = webhook_actions
         self.webhook_secret = webhook_secret
         self.logger = logger
 
@@ -70,13 +70,7 @@ class GitHubWebhookHandler:
                     text="No file changes"
                 )
             
-            # Call universal sync method through ActionHub
-            # It uses existing logic from smart_sync for parsing
-            result = await self.action_hub.execute_action(
-                'sync_tenants_from_files',
-                {'files': all_files},  # Pass list of file paths
-                fire_and_forget=True  # Async, don't wait for completion
-            )
+            result = await self.webhook_actions.sync_tenants_from_files({'files': all_files})
             
             if result.get('result') not in ['success', 'partial_success']:
                 error_obj = result.get('error', {})

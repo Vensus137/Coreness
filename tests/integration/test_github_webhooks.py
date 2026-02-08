@@ -24,11 +24,11 @@ async def test_webhook_full_flow(initialized_di_container):
     """Test full flow: webhook → parsing → synchronization"""
     # Get dependencies
     http_server = initialized_di_container.get_utility('http_server')
-    action_hub = initialized_di_container.get_utility('action_hub')
+    tenant_hub = initialized_di_container.get_service('tenant_hub')
     
-    # Mock action_hub.execute_action to avoid real synchronization
-    original_execute_action = action_hub.execute_action
-    action_hub.execute_action = AsyncMock(return_value={
+    # Mock webhook_actions.sync_tenants_from_files (handler uses webhook_actions, not tenant_hub)
+    original_sync = tenant_hub.webhook_actions.sync_tenants_from_files
+    tenant_hub.webhook_actions.sync_tenants_from_files = AsyncMock(return_value={
         'result': 'success',
         'response_data': {
             'synced_tenants': 1,
@@ -88,17 +88,15 @@ async def test_webhook_full_flow(initialized_di_container):
         
         # Verify result
         assert response.status == 200
-        # Verify that execute_action was called with correct parameters
-        action_hub.execute_action.assert_called_once()
-        call_args = action_hub.execute_action.call_args
-        assert call_args[0][0] == 'sync_tenants_from_files'
-        assert 'files' in call_args[0][1]
-        assert 'tenant/tenant_101/bots/telegram.yaml' in call_args[0][1]['files']
-        assert 'tenant/tenant_102/scenarios/scenario1.yaml' in call_args[0][1]['files']
+        tenant_hub.webhook_actions.sync_tenants_from_files.assert_called_once()
+        call_args = tenant_hub.webhook_actions.sync_tenants_from_files.call_args
+        data = call_args[0][0]
+        assert 'files' in data
+        assert 'tenant/tenant_101/bots/telegram.yaml' in data['files']
+        assert 'tenant/tenant_102/scenarios/scenario1.yaml' in data['files']
         
     finally:
-        # Restore original method
-        action_hub.execute_action = original_execute_action
+        tenant_hub.webhook_actions.sync_tenants_from_files = original_sync
 
 
 @pytest.mark.integration

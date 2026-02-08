@@ -18,7 +18,7 @@ class TelegramBotAPI:
     - Answers callback queries
     - (Future: group management, etc.)
     
-    Note: Gets bot tokens through telegram_bot_manager.get_bot_info action
+    Note: Gets bot tokens through telegram_bot_manager.get_telegram_bot_info_by_id action
     """
     
     def __init__(self, **kwargs):
@@ -96,6 +96,20 @@ class TelegramBotAPI:
             return await self.message_handler.answer_callback_query(data)
         except Exception as e:
             self.logger.error(f"Error answering callback query: {e}")
+            return {
+                "result": "error",
+                "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": f"Internal error: {str(e)}"
+                }
+            }
+
+    async def restrict_chat_member(self, data: dict) -> Dict[str, Any]:
+        """Restrict a user in a supergroup (permission groups + optional until_date)."""
+        try:
+            return await self.message_handler.restrict_chat_member(data)
+        except Exception as e:
+            self.logger.error(f"Error restricting chat member: {e}")
             return {
                 "result": "error",
                 "error": {

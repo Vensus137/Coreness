@@ -16,7 +16,7 @@ for _ in range(10):
         break
     _root = _root.parent
 
-from plugins.services.hub.telegram.bot_api.bot_api import TelegramBotAPI
+from plugins.services.hub.telegram.telegram_bot_api.bot_api import TelegramBotAPI
 
 
 @pytest.fixture
