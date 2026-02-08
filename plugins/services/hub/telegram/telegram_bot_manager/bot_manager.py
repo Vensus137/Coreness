@@ -113,7 +113,7 @@ class TelegramBotManager:
                 return {"result": "not_found"}
             
             # Sync bot configuration
-            sync_result = await self.sync_bot_config({
+            sync_result = await self._sync_bot_config({
                 'tenant_id': tenant_id,
                 'bot_token': bot_config.get('bot_token'),
                 'is_active': bot_config.get('is_active', True)
@@ -137,7 +137,7 @@ class TelegramBotManager:
                     for cmd in commands
                 ]
                 
-                commands_result = await self.sync_bot_commands({
+                commands_result = await self._sync_bot_commands({
                     'bot_id': bot_id,
                     'command_list': command_list
                 })
@@ -159,8 +159,8 @@ class TelegramBotManager:
                 }
             }
     
-    async def sync_bot_config(self, data: dict) -> Dict[str, Any]:
-        """Create/update bot and start if active"""
+    async def _sync_bot_config(self, data: dict) -> Dict[str, Any]:
+        """Create/update bot and start if active (internal, used by sync_telegram_bot)"""
         try:
             return await self.lifecycle.sync_config(data)
         except Exception as e:
@@ -173,12 +173,12 @@ class TelegramBotManager:
                 }
             }
     
-    async def start_bot(self, data: dict) -> Dict[str, Any]:
-        """Start bot (polling or webhook)"""
+    async def start_telegram_bot(self, data: dict) -> Dict[str, Any]:
+        """Start Telegram bot (polling or webhook)"""
         try:
             return await self.lifecycle.start_bot(data['bot_id'])
         except Exception as e:
-            self.logger.error(f"Error starting bot: {e}")
+            self.logger.error(f"Error starting Telegram bot: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -187,12 +187,12 @@ class TelegramBotManager:
                 }
             }
     
-    async def stop_bot(self, data: dict) -> Dict[str, Any]:
-        """Stop bot"""
+    async def stop_telegram_bot(self, data: dict) -> Dict[str, Any]:
+        """Stop Telegram bot"""
         try:
             return await self.lifecycle.stop_bot(data['bot_id'])
         except Exception as e:
-            self.logger.error(f"Error stopping bot: {e}")
+            self.logger.error(f"Error stopping Telegram bot: {e}")
             return {
                 "result": "error",
                 "error": {
@@ -201,22 +201,8 @@ class TelegramBotManager:
                 }
             }
     
-    async def stop_all_bots(self, data: dict) -> Dict[str, Any]:
-        """Stop all bots"""
-        try:
-            return await self.lifecycle.stop_all_bots()
-        except Exception as e:
-            self.logger.error(f"Error stopping all bots: {e}")
-            return {
-                "result": "error",
-                "error": {
-                    "code": "INTERNAL_ERROR",
-                    "message": f"Internal error: {str(e)}"
-                }
-            }
-    
-    async def sync_bot_commands(self, data: dict) -> Dict[str, Any]:
-        """Sync bot commands to Telegram"""
+    async def _sync_bot_commands(self, data: dict) -> Dict[str, Any]:
+        """Sync bot commands to Telegram (internal, used by sync_telegram_bot)"""
         try:
             return await self.repository.sync_bot_commands(
                 data['bot_id'],
@@ -233,8 +219,8 @@ class TelegramBotManager:
                 }
             }
     
-    async def set_bot_token(self, data: dict) -> Dict[str, Any]:
-        """Set/update bot token"""
+    async def set_telegram_bot_token(self, data: dict) -> Dict[str, Any]:
+        """Set/update Telegram bot token"""
         try:
             return await self.lifecycle.set_bot_token(data)
         except Exception as e:
@@ -247,43 +233,8 @@ class TelegramBotManager:
                 }
             }
     
-    async def sync_bot(self, data: dict) -> Dict[str, Any]:
-        """
-        Sync bot: config + commands
-        Wrapper over sync_bot_config + sync_bot_commands
-        """
-        try:
-            # Sync config first
-            config_result = await self.sync_bot_config(data)
-            if config_result['result'] != 'success':
-                return config_result
-            
-            bot_id = config_result['response_data']['bot_id']
-            
-            # Sync commands if provided
-            if data.get('bot_commands'):
-                commands_result = await self.sync_bot_commands({
-                    'bot_id': bot_id,
-                    'command_list': data['bot_commands']
-                })
-                
-                if commands_result['result'] != 'success':
-                    self.logger.warning(f"[Bot-{bot_id}] Commands sync failed")
-            
-            return config_result
-            
-        except Exception as e:
-            self.logger.error(f"Error syncing bot: {e}")
-            return {
-                "result": "error",
-                "error": {
-                    "code": "INTERNAL_ERROR",
-                    "message": f"Internal error: {str(e)}"
-                }
-            }
-    
-    async def get_bot_info(self, data: dict) -> Dict[str, Any]:
-        """Get bot information from DB (with caching)"""
+    async def get_telegram_bot_info_by_id(self, data: dict) -> Dict[str, Any]:
+        """Get Telegram bot information from DB by bot_id (with caching)"""
         try:
             return await self.repository.get_bot_info(
                 data['bot_id'],
@@ -300,27 +251,13 @@ class TelegramBotManager:
                 }
             }
     
-    async def get_bot_status(self, data: dict) -> Dict[str, Any]:
-        """Get bot status (polling/webhook, active/inactive)"""
+    async def get_telegram_bot_status(self, data: dict) -> Dict[str, Any]:
+        """Get Telegram bot status (polling/webhook, active/inactive)"""
         try:
             return await self.lifecycle.get_bot_status(data['bot_id'])
         except Exception as e:
             bot_id = data.get('bot_id', 'unknown')
             self.logger.error(f"[Bot-{bot_id}] Error getting bot status: {e}")
-            return {
-                "result": "error",
-                "error": {
-                    "code": "INTERNAL_ERROR",
-                    "message": f"Internal error: {str(e)}"
-                }
-            }
-    
-    async def get_telegram_bot_info(self, data: dict) -> Dict[str, Any]:
-        """Get bot info from Telegram API (with caching)"""
-        try:
-            return await self.repository.get_telegram_bot_info_by_token(data['bot_token'])
-        except Exception as e:
-            self.logger.error(f"Error getting Telegram bot info: {e}")
             return {
                 "result": "error",
                 "error": {

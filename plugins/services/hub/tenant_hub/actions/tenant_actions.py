@@ -28,48 +28,46 @@ class TenantActions:
     
     @handle_action_errors()
     async def get_tenant_status(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Get tenant status:
-        - bot_is_active, bot_is_polling, bot_is_webhook_active, bot_is_working (via bot_hub)
-        - last_updated_at, last_failed_at, last_error (from TenantCache)
-        """
+        """Get tenant status from cache only: last_updated_at, last_failed_at, last_error. No bot data."""
         tenant_id = data.get('tenant_id')
-        
-        # Get bot_id for tenant
-        bot_id = await self.tenant_cache.get_bot_id_by_tenant_id(tenant_id)
-        
-        if not bot_id:
+        if not tenant_id:
             return {
                 "result": "error",
-                "error": {
-                    "code": "NOT_FOUND",
-                    "message": f"Bot for tenant {tenant_id} not found"
-                }
+                "error": {"code": "VALIDATION_ERROR", "message": "tenant_id is required"}
             }
-        
-        # Get bot status via bot_hub
-        bot_status = await self.action_hub.execute_action('get_bot_status', {'bot_id': bot_id})
-        
-        if bot_status.get('result') != 'success':
-            return bot_status
-        
-        # Rename fields for clarity and add cache metadata
-        response_data = bot_status.get('response_data', {})
-        cache_meta = await self.tenant_cache.get_tenant_cache(tenant_id)
-
+        cache_meta = await self.tenant_cache.get_tenant_cache(int(tenant_id))
         return {
             "result": "success",
             "response_data": {
-                "bot_is_active": response_data.get('is_active'),
-                "bot_is_polling": response_data.get('is_polling'),
-                "bot_is_webhook_active": response_data.get('is_webhook_active'),
-                "bot_is_working": response_data.get('is_working'),
-                "last_updated_at": cache_meta.get('last_updated_at'),
-                "last_failed_at": cache_meta.get('last_failed_at'),
-                "last_error": cache_meta.get('last_error')
+                "last_updated_at": cache_meta.get("last_updated_at"),
+                "last_failed_at": cache_meta.get("last_failed_at"),
+                "last_error": cache_meta.get("last_error"),
             }
         }
-    
+
+    @handle_action_errors()
+    async def get_bot_id_by_tenant_id(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Get bot_id by tenant_id and bot_type. Database lookup; only telegram supported for now."""
+        tenant_id = data.get('tenant_id')
+        if not tenant_id:
+            return {
+                "result": "error",
+                "error": {"code": "VALIDATION_ERROR", "message": "tenant_id is required"}
+            }
+        bot_type = (data.get('bot_type') or 'telegram').strip().lower()
+        if bot_type != 'telegram':
+            return {
+                "result": "error",
+                "error": {"code": "UNSUPPORTED_BOT_TYPE", "message": f"Unsupported bot_type: {bot_type}. Only telegram is supported."}
+            }
+        bot_id = await self.tenant_cache.get_bot_id_by_tenant_id(int(tenant_id))
+        if bot_id is None:
+            return {
+                "result": "error",
+                "error": {"code": "NOT_FOUND", "message": f"No bot for tenant {tenant_id} (type={bot_type})"}
+            }
+        return {"result": "success", "response_data": {"bot_id": bot_id}}
+
     @handle_action_errors()
     async def get_tenants_list(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """

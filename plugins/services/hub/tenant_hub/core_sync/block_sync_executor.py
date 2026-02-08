@@ -16,12 +16,13 @@ class BlockSyncExecutor:
     - sync_{bot_name}_bot → corresponding bot service (e.g., sync_telegram_bot → telegram_bot_manager)
     """
     
-    def __init__(self, logger, action_hub, github_sync, settings_manager, tenant_cache):
+    def __init__(self, logger, action_hub, github_sync, settings_manager, tenant_cache, tenant_actions):
         self.logger = logger
         self.action_hub = action_hub
         self.github_sync = github_sync
         self.settings_manager = settings_manager
         self.tenant_cache = tenant_cache
+        self.tenant_actions = tenant_actions
         
         # Get system tenant boundary once on initialization
         global_settings = self.settings_manager.get_global_settings()
@@ -85,8 +86,8 @@ class BlockSyncExecutor:
                 else:
                     self.logger.info(f"[Tenant-{tenant_id}] Data from GitHub updated")
             
-            # Create tenant if it doesn't exist
-            sync_tenant_result = await self.action_hub.execute_action('sync_tenant_data', {'tenant_id': tenant_id})
+            # Create tenant if it doesn't exist (internal call, not via Action Hub)
+            sync_tenant_result = await self.tenant_actions.sync_tenant_data({'tenant_id': tenant_id})
             
             if sync_tenant_result.get('result') != 'success':
                 error_obj = sync_tenant_result.get('error', {})

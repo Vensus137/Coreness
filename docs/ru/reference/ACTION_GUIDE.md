@@ -44,10 +44,11 @@ keywords: действия coreness, send_message, completion, validate, telegra
   - [get_storage](#get_storage)
   - [get_storage_groups](#get_storage_groups)
   - [set_storage](#set_storage)
-- [telegram_bot_api](#telegram_bot_api) (4 действий)
+- [telegram_bot_api](#telegram_bot_api) (5 действий)
   - [answer_callback_query](#answer_callback_query)
   - [build_keyboard](#build_keyboard)
   - [delete_message](#delete_message)
+  - [restrict_chat_member](#restrict_chat_member)
   - [send_message](#send_message)
 - [user_hub](#user_hub) (8 действий)
   - [clear_user_state](#clear_user_state)
@@ -1749,6 +1750,47 @@ step:
   params:
     bot_id: 123
     # delete_message_id: integer (опционально)
+```
+
+
+<a id="restrict_chat_member"></a>
+### restrict_chat_member
+
+**Описание:** Ограничение участника в супергруппе (права по группам: сообщения, вложения, другое, управление)
+
+**Входные параметры:**
+
+- **`bot_id`** (`integer`, обязательное, мин: 1) — ID бота
+- **`chat_id`** (`integer|string`) — ID чата (супергруппы)
+- **`target_user_id`** (`integer`) — ID пользователя для ограничения (целевой; не конфликтует с user_id из контекста)
+- **`messages`** (`boolean`, опционально) — Разрешить текстовые сообщения, контакты, локации и т.д. Если не указано — не передаётся
+- **`attachments`** (`boolean`, опционально) — Разрешить аудио, документы, фото, видео, видео-заметки, голос. Если не указано — не передаётся
+- **`other`** (`boolean`, опционально) — Разрешить опросы, стикеры, игры, инлайн, превью ссылок. Если не указано — не передаётся
+- **`management`** (`boolean`, опционально) — Разрешить менять инфо чата, приглашать, пинить, управлять топиками. Если не указано — не передаётся
+- **`until_date`** (`integer`, опционально, мин: 0) — Unix-время снятия ограничения; 0 или не указано — навсегда
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат: success, error
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "restrict_chat_member"
+  params:
+    bot_id: 123
+    chat_id: "value"
+    target_user_id: 123
+    # messages: boolean (опционально)
+    # attachments: boolean (опционально)
+    # other: boolean (опционально)
+    # management: boolean (опционально)
+    # until_date: integer (опционально)
 ```
 
 

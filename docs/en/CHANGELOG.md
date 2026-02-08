@@ -8,6 +8,23 @@ keywords: coreness changelog, version history, updates, breaking changes, migrat
 
 All notable changes to this project documented in this file.
 
+## [1.2.0] - TBD
+
+### ⚠️ BREAKING CHANGES
+- **telegram_bot_manager:** Removed `sync_bot`, `stop_all_bots`, `sync_bot_config`, `sync_bot_commands`; sync only via `sync_telegram_bot`. Renamed: `start_bot`→`start_telegram_bot`, `stop_bot`→`stop_telegram_bot`, `get_bot_status`→`get_telegram_bot_status`, `set_bot_token`→`set_telegram_bot_token`. Bot data only via `get_telegram_bot_info_by_id` (by bot_id); `get_bot_info` and `get_telegram_bot_info` (by token) removed.
+- **tenant_hub:** Removed from Action Hub (internal): `sync_tenant_data`, `sync_tenant_config`, `sync_tenants_from_files`. Use `sync_tenant` for tenant sync.
+
+### Added
+- `get_bot_id_by_tenant_id` (tenant_hub): get bot_id by tenant_id and bot_type (telegram only), for scenarios.
+- `get_tenant_status`: tenant cache only (last_updated_at, last_failed_at, last_error); bot data via `get_telegram_bot_status` by bot_id.
+- `restrict_chat_member` (telegram_api): action to restrict users in supergroups (permission groups: messages, attachments, other, management).
+
+### Changed
+- Tenant management scenarios: `set_telegram_bot_token`; menu uses `get_tenant_status` and `get_telegram_bot_status` by bot_id.
+
+### Technical Improvements
+- Unified Telegram action naming; single public bot sync — `sync_telegram_bot`.
+
 ## [1.1.2] - 2026-02-08
 
 ### ⚠️ BREAKING CHANGES

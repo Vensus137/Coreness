@@ -46,10 +46,11 @@ Complete description of all available actions with their parameters and results.
   - [get_storage](#get_storage)
   - [get_storage_groups](#get_storage_groups)
   - [set_storage](#set_storage)
-- [telegram_bot_api](#telegram_bot_api) (4 actions)
+- [telegram_bot_api](#telegram_bot_api) (5 actions)
   - [answer_callback_query](#answer_callback_query)
   - [build_keyboard](#build_keyboard)
   - [delete_message](#delete_message)
+  - [restrict_chat_member](#restrict_chat_member)
   - [send_message](#send_message)
 - [user_hub](#user_hub) (8 actions)
   - [clear_user_state](#clear_user_state)
@@ -1751,6 +1752,47 @@ step:
   params:
     bot_id: 123
     # delete_message_id: integer (optional)
+```
+
+
+<a id="restrict_chat_member"></a>
+### restrict_chat_member
+
+**Description:** Restrict a user in a supergroup (permission groups: messages, attachments, other, management)
+
+**Input Parameters:**
+
+- **`bot_id`** (`integer`, required, min: 1) — Bot ID
+- **`chat_id`** (`integer|string`) — Chat ID (supergroup)
+- **`target_user_id`** (`integer`) — User ID to restrict (target; does not conflict with context user_id)
+- **`messages`** (`boolean`, optional) — Allow text messages, contacts, locations, etc. If omitted — not sent to API
+- **`attachments`** (`boolean`, optional) — Allow audio, documents, photos, videos, video notes, voice. If omitted — not sent to API
+- **`other`** (`boolean`, optional) — Allow polls, stickers, games, inline, link previews. If omitted — not sent to API
+- **`management`** (`boolean`, optional) — Allow change info, invite users, pin messages, manage topics. If omitted — not sent to API
+- **`until_date`** (`integer`, optional, min: 0) — Unix time when restrictions are lifted; 0 or omit — forever
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "restrict_chat_member"
+  params:
+    bot_id: 123
+    chat_id: "value"
+    target_user_id: 123
+    # messages: boolean (optional)
+    # attachments: boolean (optional)
+    # other: boolean (optional)
+    # management: boolean (optional)
+    # until_date: integer (optional)
 ```
 
 

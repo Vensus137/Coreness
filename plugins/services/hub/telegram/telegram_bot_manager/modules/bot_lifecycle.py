@@ -182,55 +182,6 @@ class BotLifecycle:
                 "error": {"code": "INTERNAL_ERROR", "message": str(e)}
             }
     
-    async def stop_all_bots(self) -> Dict[str, Any]:
-        """Stop all bots"""
-        try:
-            if self.use_webhooks:
-                # For webhooks: get all bots and delete webhooks
-                master_repo = self.repository.database_manager.get_master_repository()
-                all_bots = await master_repo.get_all_bots()
-                
-                errors = []
-                for bot_data in all_bots:
-                    bot_id = bot_data.get('id')
-                    bot_token = bot_data.get('bot_token')
-                    
-                    if bot_token:
-                        result = await self.webhook_manager.delete_webhook(bot_token, bot_id)
-                        if result['result'] != 'success':
-                            errors.append(f"Bot-{bot_id}")
-                
-                if errors:
-                    return {
-                        "result": "partial_success",
-                        "error": {
-                            "code": "PARTIAL_ERROR",
-                            "message": f"Failed to stop bots: {', '.join(errors)}"
-                        }
-                    }
-                
-                return {"result": "success"}
-            else:
-                # For polling: stop all at once
-                success = await self.telegram_polling.stop_all_polling()
-                if success:
-                    return {"result": "success"}
-                else:
-                    return {
-                        "result": "error",
-                        "error": {
-                            "code": "INTERNAL_ERROR",
-                            "message": "Failed to stop all bots"
-                        }
-                    }
-                    
-        except Exception as e:
-            self.logger.error(f"Error stopping all bots: {e}")
-            return {
-                "result": "error",
-                "error": {"code": "INTERNAL_ERROR", "message": str(e)}
-            }
-    
     async def get_bot_status(self, bot_id: int) -> Dict[str, Any]:
         """
         Get bot status: is it running via polling or webhook?
@@ -315,7 +266,7 @@ class BotLifecycle:
                     "result": "error",
                     "error": {
                         "code": "NOT_FOUND",
-                        "message": f"Bot for tenant {tenant_id} not found. Create bot first via sync_bot_config"
+                        "message": f"Bot for tenant {tenant_id} not found. Create bot first via sync_telegram_bot"
                     }
                 }
             

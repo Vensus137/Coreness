@@ -44,6 +44,7 @@ tenant:
           transition_value: "default_error"
 
 # Tenant menu (with message editing)
+# Message uses bot status from get_telegram_bot_status (is_active, is_working)
 tenant_menu:
   description: "Display active tenant menu"
 
@@ -54,10 +55,22 @@ tenant_menu:
         key: "active_tenant_id"
         _response_key: "active_tenant_id"
     
-    # Get tenant bot status
+    # Get bot_id by tenant_id (for status)
+    - action: "get_bot_id_by_tenant_id"
+      params:
+        tenant_id: "{_cache.active_tenant_id}"
+        _response_key: "bot_id"
+    
+    # Load bot status (fills _cache.is_active, _cache.is_working for message text)
+    - action: "get_telegram_bot_status"
+      params:
+        bot_id: "{_cache.bot_id}"
+        _namespace: "bot_status"
+
     - action: "get_tenant_status"
       params:
         tenant_id: "{_cache.active_tenant_id}"
+        _namespace: "tenant_status"
     
     - action: "send_message"
       params:
@@ -414,8 +427,8 @@ set_bot_token_handler:
         text: |
           {_cache.translation.set_bot_token_handler_loading|fallback:{_cache.translation.default|fallback:Unknown error}}
     
-    # Set bot token
-    - action: "set_bot_token"
+    # Set Telegram bot token
+    - action: "set_telegram_bot_token"
       params:
         tenant_id: "{_cache.active_tenant_id}"
         bot_token: "{event_text}"
@@ -468,7 +481,7 @@ set_bot_token_delete:
           {_cache.translation.set_bot_token_delete_loading|fallback:{_cache.translation.default|fallback:Unknown error}}
     
     # Delete bot token (pass null)
-    - action: "set_bot_token"
+    - action: "set_telegram_bot_token"
       params:
         tenant_id: "{_cache.active_tenant_id}"
         bot_token: null

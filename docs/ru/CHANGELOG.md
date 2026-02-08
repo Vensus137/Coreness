@@ -8,6 +8,23 @@ keywords: changelog coreness, история изменений, обновле�
 
 Все важные изменения в проекте документируются в этом файле.
 
+## [1.2.0] - TBD
+
+### ⚠️ BREAKING CHANGES
+- **telegram_bot_manager:** удалены `sync_bot`, `stop_all_bots`, `sync_bot_config`, `sync_bot_commands`; синк — только `sync_telegram_bot`. Переименованы: `start_bot`→`start_telegram_bot`, `stop_bot`→`stop_telegram_bot`, `get_bot_status`→`get_telegram_bot_status`, `set_bot_token`→`set_telegram_bot_token`. Данные бота — только `get_telegram_bot_info_by_id` (по bot_id); `get_bot_info` и `get_telegram_bot_info` (по токену) удалены.
+- **tenant_hub:** из Action Hub убраны внутренние `sync_tenant_data`, `sync_tenant_config`, `sync_tenants_from_files`. Синк тенанта — действие `sync_tenant`.
+
+### Added
+- `get_bot_id_by_tenant_id` (tenant_hub): bot_id по tenant_id и bot_type (пока telegram), для сценариев.
+- `get_tenant_status`: только кэш тенанта (last_updated_at, last_failed_at, last_error); данные бота — через `get_telegram_bot_status` по bot_id.
+- `restrict_chat_member` (telegram_api): действие ограничения пользователей в супергруппах (permission groups: messages, attachments, other, management).
+
+### Changed
+- Сценарии управления тенантом: `set_telegram_bot_token`, меню — `get_tenant_status` + `get_telegram_bot_status` по bot_id.
+
+### Technical Improvements
+- Единый стиль имён действий Telegram, один публичный синк бота — `sync_telegram_bot`.
+
 ## [1.1.2] - 2026-02-08
 
 ### ⚠️ BREAKING CHANGES

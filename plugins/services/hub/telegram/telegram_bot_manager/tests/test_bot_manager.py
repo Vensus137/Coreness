@@ -16,7 +16,7 @@ for _ in range(10):
         break
     _root = _root.parent
 
-from plugins.services.hub.telegram.bot_manager.bot_manager import TelegramBotManager
+from plugins.services.hub.telegram.telegram_bot_manager.bot_manager import TelegramBotManager
 
 
 @pytest.fixture
@@ -72,9 +72,9 @@ async def test_sync_telegram_bot_not_found(bot_manager):
 
 
 @pytest.mark.asyncio
-async def test_get_bot_info_not_found(bot_manager):
-    """Test get_bot_info when bot doesn't exist"""
-    result = await bot_manager.get_bot_info({'bot_id': 999})
+async def test_get_telegram_bot_info_by_id_not_found(bot_manager):
+    """Test get_telegram_bot_info_by_id when bot doesn't exist"""
+    result = await bot_manager.get_telegram_bot_info_by_id({'bot_id': 999})
 
     assert result['result'] == 'error'
     assert result['error']['code'] in ['NOT_FOUND', 'INTERNAL_ERROR']

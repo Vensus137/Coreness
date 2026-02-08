@@ -62,11 +62,11 @@ translation_en:
   tenant_menu: |
     🏠 <b>Tenant menu <code>{_cache.active_tenant_id}</code></b>
     
-    Bot status: <code>{_cache.bot_is_active|equals:True|value:✅ Enabled|fallback:{_cache.bot_is_active|equals:False|value:❌ Disabled|fallback:❓ Unknown}}</code>
-    Working status: <code>{_cache.bot_is_working|equals:True|value:✅ Working|fallback:{_cache.bot_is_working|equals:False|value:❌ Not working|fallback:❓ Unknown}}</code>
+    Bot status: <code>{_cache.bot_status.is_active|equals:True|value:✅ Enabled|fallback:{_cache.bot_status.is_active|equals:False|value:❌ Disabled|fallback:❓ Unknown}}</code>
+    Working status: <code>{_cache.bot_status.is_working|equals:True|value:✅ Working|fallback:{_cache.bot_status.is_working|equals:False|value:❌ Not working|fallback:❓ Unknown}}</code>
     
-    Update date: <code>{_cache.last_updated_at|format:datetime_full|fallback:❓ Unknown}</code>
-    {_cache.last_error|length|true|value:Last error: <code></code>}<code>{_cache.last_failed_at|format:datetime_full}</code>{_cache.last_failed_at|length|true|value: — }<code>{_cache.last_error|fallback:}</code>
+    Update date: <code>{_cache.tenant_status.last_updated_at|format:datetime_full|fallback:❓ Unknown}</code>
+    {_cache.tenant_status.last_error|length|true|value:Last error: <code></code>}<code>{_cache.tenant_status.last_failed_at|format:datetime_full}</code>{_cache.tenant_status.last_failed_at|length|true|value: — }<code>{_cache.tenant_status.last_error|fallback:}</code>
   tenant_menu_inline:
     - [{"🏢 Tenant Storage": "tenant_storage_menu"}, {"👤 User Storage": "user_storage_menu"}]
     - [{"⚙️ Configuration": "tenant_config_menu"}, {"🔑 Set bot token": "set_bot_token_input"}]
@@ -226,11 +226,11 @@ translation_ru:
   tenant_menu: |
     🏠 <b>Меню тенанта <code>{_cache.active_tenant_id}</code></b>
     
-    Статус бота: <code>{_cache.bot_is_active|equals:True|value:✅ Включен|fallback:{_cache.bot_is_active|equals:False|value:❌ Выключен|fallback:❓ Неизвестно}}</code>
-    Статус работы: <code>{_cache.bot_is_working|equals:True|value:✅ Работает|fallback:{_cache.bot_is_working|equals:False|value:❌ Не работает|fallback:❓ Неизвестно}}</code>
-    
-    Дата обновления: <code>{_cache.last_updated_at|format:datetime_full|fallback:❓ Неизвестно}</code>
-    {_cache.last_error|length|true|value:Последняя ошибка: <code></code>}<code>{_cache.last_failed_at|format:datetime_full}</code>{_cache.last_failed_at|length|true|value: — }<code>{_cache.last_error|fallback:}</code>
+    Статус бота: <code>{_cache.bot_status.is_active|equals:True|value:✅ Включен|fallback:{_cache.bot_status.is_active|equals:False|value:❌ Выключен|fallback:❓ Неизвестно}}</code>
+    Статус работы: <code>{_cache.bot_status.is_working|equals:True|value:✅ Работает|fallback:{_cache.bot_status.is_working|equals:False|value:❌ Не работает|fallback:❓ Неизвестно}}</code>
+
+    Дата обновления: <code>{_cache.tenant_status.last_updated_at|format:datetime_full|fallback:❓ Неизвестно}</code>
+    {_cache.tenant_status.last_error|length|true|value:Последняя ошибка: <code></code>}<code>{_cache.tenant_status.last_failed_at|format:datetime_full}</code>{_cache.tenant_status.last_failed_at|length|true|value: — }<code>{_cache.tenant_status.last_error|fallback:}</code>
   tenant_menu_inline:
     - [{"🏢 Tenant Storage": "tenant_storage_menu"}, {"👤 User Storage": "user_storage_menu"}]
     - [{"⚙️ Конфигурация": "tenant_config_menu"}, {"🔑 Установить токен": "set_bot_token_input"}]
