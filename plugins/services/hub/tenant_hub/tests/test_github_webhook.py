@@ -167,7 +167,7 @@ async def test_handle_push_event_with_tenant_changes(handler, webhook_secret, mo
     payload_data = {
         "commits": [
             {
-                "added": ["tenant/tenant_101/tg_bot.yaml"],
+                "added": ["tenant/tenant_101/bots/telegram.yaml"],
                 "modified": ["tenant/tenant_102/scenarios/scenario1.yaml"],
                 "removed": []
             }

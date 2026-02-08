@@ -107,24 +107,24 @@ Automation based on cron expressions:
 
 **In repo:** complete documentation is also in the **[`docs/`](docs/)** folder → **[Documentation Navigation](docs/en/README.md)**
 
-### Quick Start
-- 🚀 **[Practical Examples](docs/en/EXAMPLES_GUIDE.md)** — from simple bot to AI agent with RAG
-- 📋 **[Scenario Guide](docs/en/SCENARIO_CONFIG_GUIDE.md)** — creating bot logic
-- 🎯 **[Action Guide](docs/en/ACTION_GUIDE.md)** — reference of all available actions
+### 🚀 Getting Started
+- 📖 **[Practical Examples](docs/en/getting-started/EXAMPLES_GUIDE.md)** — from simple bot to AI agent with RAG
+- 🚀 **[Deployment](docs/en/getting-started/DEPLOYMENT.md)** — complete installation and update guide
+- 🔧 **[Master Bot](docs/en/getting-started/MASTER_BOT_GUIDE.md)** — tenant management system (like @BotFather)
 
-### Configuration
-- ⚙️ **[Tenant Configuration](docs/en/TENANT_CONFIG_GUIDE.md)** — bot setup
-- 💾 **[Attribute Storage](docs/en/STORAGE_CONFIG_GUIDE.md)** — working with Storage
-- 🤖 **[AI Models](docs/en/AI_MODELS_GUIDE.md)** — LLM integration
+### 📋 Guides
+- 📋 **[Scenario Guide](docs/en/guides/SCENARIO_CONFIG_GUIDE.md)** — creating bot logic
+- ⚙️ **[Tenant Configuration](docs/en/guides/TENANT_CONFIG_GUIDE.md)** — bot setup
+- 💾 **[Attribute Storage](docs/en/guides/STORAGE_CONFIG_GUIDE.md)** — working with Storage
 
-### Reference
-- 📡 **[System Events](docs/en/EVENT_GUIDE.md)** — available fields in placeholders
+### 📚 Reference
+- 🎯 **[Action Guide](docs/en/reference/ACTION_GUIDE.md)** — reference of all available actions
+- 📡 **[System Events](docs/en/reference/EVENT_GUIDE.md)** — available fields in placeholders
+- 🤖 **[AI Models](docs/en/reference/AI_MODELS_GUIDE.md)** — LLM integration
 - 🔄 **[Changelog](docs/en/CHANGELOG.md)** — change history and updates
 
-### Advanced Documentation
-- 🔧 **[Master Bot](docs/en/advanced/MASTER_BOT_GUIDE.md)** — tenant management system (like @BotFather)
+### 🔧 Advanced Documentation
 - 🏗️ **[Platform Architecture](docs/en/advanced/ARCHITECTURE.md)** — detailed architecture and patterns
-- 🚀 **[Deployment](docs/en/advanced/DEPLOYMENT.md)** — complete installation and update guide
 - 🔌 **[Plugin Development](docs/en/advanced/PLUGINS_GUIDE.md)** — creating custom services and utilities
 - ⚙️ **[System Configuration](docs/en/advanced/SETTINGS_CONFIG_GUIDE.md)** — global platform parameters
 - 📝 **[Logging](docs/en/advanced/LOGGING_GUIDE.md)** — working with logs and debugging

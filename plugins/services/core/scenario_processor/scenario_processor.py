@@ -6,6 +6,7 @@ import asyncio
 from typing import Any, Dict, Optional
 
 from .core.scheduled_scenario_manager import ScheduledScenarioManager
+from .parsers.scenario_parser import ScenarioParser
 from .scenario_engine.scenario_engine import ScenarioEngine
 from .utils.data_loader import DataLoader
 from .utils.scheduler import ScenarioScheduler
@@ -17,6 +18,7 @@ class ScenarioProcessor:
     - Receives processed events from event_processor
     - Determines tenant_id and loads scenarios
     - Executes actions through ActionHub
+    - Parses and synchronizes tenant scenarios
     """
     
     def __init__(self, **kwargs):
@@ -25,10 +27,19 @@ class ScenarioProcessor:
         self.action_hub = kwargs['action_hub']
         self.database_manager = kwargs['database_manager']
         self.datetime_formatter = kwargs['datetime_formatter']
+        self.condition_parser = kwargs['condition_parser']
+        
         # Create DataLoader to pass to ScenarioEngine
         self.data_loader = DataLoader(
             logger=self.logger,
             database_manager=self.database_manager
+        )
+        
+        # Create scenario parser
+        self.scenario_parser = ScenarioParser(
+            logger=self.logger,
+            settings_manager=self.settings_manager,
+            condition_parser=self.condition_parser
         )
         
         # Create scenario processing engine
@@ -93,6 +104,66 @@ class ScenarioProcessor:
         self.scheduled_manager.shutdown()
     
     # === Actions for ActionHub ===
+    
+    async def sync_tenant_scenarios(self, data: dict) -> Dict[str, Any]:
+        """
+        Synchronize tenant scenarios: parse scenarios/*.yaml + sync to database
+        Called by Tenant Hub when scenarios/ files change
+        """
+        try:
+            # Validation is done centrally in ActionRegistry
+            tenant_id = data.get('tenant_id')
+            
+            # Parse scenarios files
+            parse_result = await self.scenario_parser.parse_scenarios(tenant_id)
+            
+            if parse_result.get("result") != "success":
+                error_obj = parse_result.get('error')
+                error_msg = error_obj.get('message', 'Unknown error') if isinstance(error_obj, dict) else str(error_obj)
+                self.logger.error(f"[Tenant-{tenant_id}] Error parsing scenarios: {error_msg}")
+                return {
+                    "result": "error",
+                    "error": {
+                        "code": "PARSE_ERROR",
+                        "message": f"Failed to parse scenarios for tenant {tenant_id}: {error_msg}"
+                    }
+                }
+            
+            scenario_data = parse_result.get('response_data')
+            
+            if not scenario_data:
+                self.logger.error(f"[Tenant-{tenant_id}] No scenario data after parsing")
+                return {"result": "error", "error": f"Failed to get scenario data for tenant {tenant_id}"}
+            
+            # Synchronize scenarios to database
+            scenarios_count = len(scenario_data.get("scenarios", []))
+            if scenarios_count > 0:
+                sync_result = await self.action_hub.execute_action('sync_scenarios', {
+                    'tenant_id': tenant_id,
+                    'scenarios': scenario_data['scenarios']
+                })
+                
+                if sync_result.get('result') != 'success':
+                    error_obj = sync_result.get('error', {})
+                    error_msg = error_obj.get('message', 'Unknown error') if isinstance(error_obj, dict) else str(error_obj)
+                    self.logger.error(f"[Tenant-{tenant_id}] Error synchronizing scenarios: {error_msg}")
+                    return {"result": "error", "error": error_obj}
+                
+                self.logger.info(f"[Tenant-{tenant_id}] Scenarios successfully synchronized ({scenarios_count} scenarios)")
+            else:
+                self.logger.info(f"[Tenant-{tenant_id}] No scenarios to synchronize")
+            
+            return {"result": "success"}
+            
+        except Exception as e:
+            self.logger.error(f"Error synchronizing tenant scenarios: {e}")
+            return {
+                "result": "error",
+                "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": f"Internal error: {str(e)}"
+                }
+            }
     
     async def process_scenario_event(self, data: dict) -> Dict[str, Any]:
         """

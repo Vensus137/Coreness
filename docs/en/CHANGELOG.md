@@ -8,6 +8,18 @@ keywords: coreness changelog, version history, updates, breaking changes, migrat
 
 All notable changes to this project documented in this file.
 
+## [1.1.2] - 2026-02-08
+
+### ⚠️ BREAKING CHANGES
+- **Tenant configuration structure:** The `tg_bot.yaml` file in the tenant root has been replaced by a `bots/` folder containing bot configs. Telegram bot config is now stored in `bots/telegram.yaml`. The `bots/` folder can hold configs for different bots (e.g. `telegram.yaml`, `whatsapp.yaml`).
+
+### Changed
+- Documentation updated and improved: section structure, navigation, and wording
+- Hub structure reworked: tenant_hub and the bot management service (formerly referred to as «bot hub»); bot management is now centralized in the Telegram service (telegram_bot_manager)
+
+### Technical Improvements
+- Tenant hub refactoring: action handlers extracted (actions), GitHub sync logic unified, domain modules renamed (utils → domain, TenantDataManager → TenantRepository)
+
 ## [1.1.1] - 2026-02-04
 
 ### Changed
@@ -22,8 +34,6 @@ All notable changes to this project documented in this file.
 ### Technical Improvements
 - Backup system: simplified backup management with DB type separation into folders (sqlite/, postgresql/), added compression (gzip for SQLite, pg_dump -Z 9 for PostgreSQL), unified formats between utility and plugin
 
----
-
 ## [1.1.0] - 2026-02-02
 
 ### Added
@@ -36,8 +46,6 @@ All notable changes to this project documented in this file.
 
 ### Technical Improvements
 - Deployment utility fully reworked: replaced with Core Manager (`tools/core_manager`). Full bilingual support (EN/RU), optimized structure and logic, improved UI/UX, self-update refined. Deployment guide updated to match the new utility
-
----
 
 ## [1.0.3] - 2026-01-21
 
@@ -52,8 +60,6 @@ All notable changes to this project documented in this file.
 - Created `extensions` level for plugins — allows easily adding additional plugins to extend platform functionality, which are not overwritten during updates
 - Updated plugin documentation — added description of extension system and usage rules
 
----
-
 ## [1.0.2] - 2026-01-16
 
 ### ⚠️ BREAKING CHANGES
@@ -67,8 +73,6 @@ All notable changes to this project documented in this file.
 - **Placeholders: `shift` modifier for date shifting** — new modifier for working with dates in PostgreSQL style: `{created|shift:+1 day}`, `{created|shift:+1 year 2 months}`, `{created|shift:-2 hours}`. Supports all date formats (PostgreSQL, standard, ISO, timestamp), correctly handles months/years and month edges (e.g., Jan 31 + 1 month = Feb 29 in leap year)
 - **Placeholders: Modifiers for rounding dates to period start** — new modifiers for rounding dates to start of various periods: `to_date` (start of day), `to_hour` (start of hour), `to_minute` (start of minute), `to_second` (start of second), `to_week` (start of week - Monday), `to_month` (start of month), `to_year` (start of year). All return ISO format (`YYYY-MM-DD HH:MM:SS`). Examples: `{created|to_date}`, `{created|to_month|format:date}`
 
----
-
 ## [1.0.1] - 2026-01-15
 
 ### Fixed
@@ -76,8 +80,6 @@ All notable changes to this project documented in this file.
 
 ### Technical Improvements
 - Simplified Docker management utility (`docker/compose`) — removed environment specification requirement for most commands, direct work with containers by name (e.g., `dc logs app-test`, `dc start app-test`), improved `logs` command with tail and follow support by default (last 100 lines + follow)
-
----
 
 ## [1.0.0] - 2025-12-31
 
@@ -142,4 +144,3 @@ Platform reached stable state and ready for full production use. During developm
 - **Quick Start** — separate guide for new users
 - **Usage Examples** — practical examples working with RAG, payments, storage and other features
 
----

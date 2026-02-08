@@ -12,25 +12,26 @@ keywords: Coreness, AI agents, Telegram bots, self-hosted platform, multitenant,
 
 This documentation covers quick start, scenario guides, and reference.
 
-> 🔧 **For advanced users:** [Advanced Documentation](advanced/README.md) — architecture, plugins, deployment
+> 🔧 **For advanced users:** [Advanced Documentation](advanced/README) — architecture, plugins
 
 ## ⚡ Documentation Table of Contents
 
-- [Practical Scenario Examples](EXAMPLES_GUIDE.md)
-- [Master Bot — Tenant Management](MASTER_BOT_GUIDE.md)
-- [Scenario Creation Guide](SCENARIO_CONFIG_GUIDE.md)
-- [System Actions Guide](ACTION_GUIDE.md)
-- [System Events Guide](EVENT_GUIDE.md)
-- [Tenant Configuration Guide](TENANT_CONFIG_GUIDE.md)
-- [Storage Attributes Guide](STORAGE_CONFIG_GUIDE.md)
-- [AI Models Guide](AI_MODELS_GUIDE.md)
-- [Changelog](CHANGELOG.md)
-
----
+- [Getting Started](getting-started/README)
+- [Practical Scenario Examples](getting-started/EXAMPLES_GUIDE)
+- [Master Bot — Tenant Management](getting-started/MASTER_BOT_GUIDE)
+- [Deployment](getting-started/DEPLOYMENT)
+- [Scenario Creation Guide](guides/SCENARIO_CONFIG_GUIDE)
+- [Tenant Configuration Guide](guides/TENANT_CONFIG_GUIDE)
+- [Storage Attributes Guide](guides/STORAGE_CONFIG_GUIDE)
+- [System Actions Guide](reference/ACTION_GUIDE)
+- [System Events Guide](reference/EVENT_GUIDE)
+- [Placeholders](reference/PLACEHOLDERS)
+- [AI Models Guide](reference/AI_MODELS_GUIDE)
+- [Changelog](CHANGELOG)
 
 ## 🚀 Getting Started
 
-### [📖 Practical Scenario Examples](EXAMPLES_GUIDE.md)
+### [📖 Practical Scenario Examples](getting-started/EXAMPLES_GUIDE)
 
 A collection of examples: from quick start to scenarios with payments and RAG. Step-by-step first bot guide, basic and advanced examples included.
 
@@ -38,7 +39,7 @@ A collection of examples: from quick start to scenarios with payments and RAG. S
 
 ---
 
-### [🔧 Master Bot — Tenant Management](MASTER_BOT_GUIDE.md)
+### [🔧 Master Bot — Tenant Management](getting-started/MASTER_BOT_GUIDE)
 
 System bot for managing tenants (like @BotFather). Use it to switch tenants, set tokens, manage Storage, and sync with GitHub.
 
@@ -48,7 +49,7 @@ System bot for managing tenants (like @BotFather). Use it to switch tenants, set
 
 ## 📖 Complete Documentation Index
 
-### [📋 Scenario Creation Guide](SCENARIO_CONFIG_GUIDE.md)
+### [📋 Scenario Creation Guide](guides/SCENARIO_CONFIG_GUIDE)
 
 **What it is:** Guide to creating scenarios for Telegram bots. Placeholders, transitions, and dynamic logic are covered.
 
@@ -66,7 +67,7 @@ System bot for managing tenants (like @BotFather). Use it to switch tenants, set
 
 ---
 
-### [🔧 Master Bot — Tenant Management](MASTER_BOT_GUIDE.md)
+### [🔧 Master Bot — Tenant Management](getting-started/MASTER_BOT_GUIDE)
 
 **What it is:** Guide to Master Bot. Tenant selection, token setup, Storage, and GitHub sync.
 
@@ -76,7 +77,7 @@ System bot for managing tenants (like @BotFather). Use it to switch tenants, set
 
 ---
 
-### [⚙️ Tenant Configuration Guide](TENANT_CONFIG_GUIDE.md)
+### [⚙️ Tenant Configuration Guide](guides/TENANT_CONFIG_GUIDE)
 
 **What it is:** Guide to configuring tenants (clients) and their Telegram bots.
 
@@ -86,7 +87,7 @@ System bot for managing tenants (like @BotFather). Use it to switch tenants, set
 - Tenant configuration structure
 - Tenant types (system and public)
 - Tenant synchronization
-- Bot configuration (tg_bot.yaml)
+- Bot configuration (folder `bots/`, e.g. `bots/telegram.yaml`)
 - Organizing scenarios in folders
 - Synchronization with external repository
 
@@ -94,7 +95,7 @@ System bot for managing tenants (like @BotFather). Use it to switch tenants, set
 
 ---
 
-### [💾 Storage Attributes Guide](STORAGE_CONFIG_GUIDE.md)
+### [💾 Storage Attributes Guide](guides/STORAGE_CONFIG_GUIDE)
 
 **What it is:** Guide to tenant attribute storage (Storage). Key-value store for settings, limits, and flags.
 
@@ -110,7 +111,7 @@ System bot for managing tenants (like @BotFather). Use it to switch tenants, set
 
 ---
 
-### [🎯 System Actions Guide](ACTION_GUIDE.md)
+### [🎯 System Actions Guide](reference/ACTION_GUIDE)
 
 **What it is:** Reference of all actions in the system.
 
@@ -126,7 +127,7 @@ System bot for managing tenants (like @BotFather). Use it to switch tenants, set
 
 ---
 
-### [📡 System Events Guide](EVENT_GUIDE.md)
+### [📡 System Events Guide](reference/EVENT_GUIDE)
 
 **What it is:** Reference of all fields in events.
 
@@ -143,7 +144,7 @@ System bot for managing tenants (like @BotFather). Use it to switch tenants, set
 
 ---
 
-### [🤖 AI Models Guide](AI_MODELS_GUIDE.md)
+### [🤖 AI Models Guide](reference/AI_MODELS_GUIDE)
 
 **What it is:** Reference for AI models (Polza.AI) and their parameters.
 
@@ -159,24 +160,21 @@ System bot for managing tenants (like @BotFather). Use it to switch tenants, set
 
 ---
 
-### [🔄 Changelog](CHANGELOG.md)
+### [🔄 Changelog](CHANGELOG)
 
 Latest changes, new features, breaking changes, and migrations.
 
 **When to use:** Before upgrading — see what changed and what might break.
 
----
-
 ## 📚 Recommended Learning Order
 
-1. **[Practical Examples](EXAMPLES_GUIDE.md)** — create your first bot and explore examples
-2. **[Master Bot](MASTER_BOT_GUIDE.md)** — configure tenant management (if deploying the platform)
-3. **[Scenario Guide](SCENARIO_CONFIG_GUIDE.md)** — learn scenario creation
-4. **[Actions Guide](ACTION_GUIDE.md)** — learn available actions
-5. **[Events Guide](EVENT_GUIDE.md)** — learn working with placeholders
-6. **[Tenant Setup](TENANT_CONFIG_GUIDE.md)** — configure your bot
-7. **[Storage Attributes](STORAGE_CONFIG_GUIDE.md)** — work with data
-8. **[AI Models](AI_MODELS_GUIDE.md)** — AI setup (optional)
-9. **[Changelog](CHANGELOG.md)** — latest changes (optional)
-
----
+1. **[Practical Examples](getting-started/EXAMPLES_GUIDE)** — create your first bot and explore examples
+2. **[Deployment](getting-started/DEPLOYMENT)** — install the platform (if not yet deployed)
+3. **[Master Bot](getting-started/MASTER_BOT_GUIDE)** — configure tenant management
+4. **[Scenario Guide](guides/SCENARIO_CONFIG_GUIDE)** — learn scenario creation
+5. **[Actions Guide](reference/ACTION_GUIDE)** — learn available actions
+6. **[Events Guide](reference/EVENT_GUIDE)** — learn working with placeholders
+7. **[Tenant Setup](guides/TENANT_CONFIG_GUIDE)** — configure your bot
+8. **[Storage Attributes](guides/STORAGE_CONFIG_GUIDE)** — work with data
+9. **[AI Models](reference/AI_MODELS_GUIDE)** — AI setup (optional)
+10. **[Changelog](CHANGELOG)** — latest changes (optional)

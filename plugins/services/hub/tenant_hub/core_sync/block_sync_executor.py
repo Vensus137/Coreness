@@ -1,29 +1,63 @@
 """
 Block Sync Executor - executor for tenant block synchronization
-Executes synchronization of separate blocks (bot/scenarios) for performance optimization
+Delegates synchronization to specialized services through Action Hub
 """
 
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, List
 
 
 class BlockSyncExecutor:
     """
     Executor for tenant block synchronization
-    Optimizes synchronization: synchronizes only changed blocks (bot/scenarios)
+    Delegates synchronization to specialized services:
+    - sync_tenant_scenarios → scenario_processor
+    - sync_tenant_storage → storage_hub
+    - sync_{bot_name}_bot → corresponding bot service (e.g., sync_telegram_bot → telegram_bot_manager)
     """
     
-    def __init__(self, logger, tenant_parser, action_hub, github_sync, settings_manager, tenant_cache, storage_manager):
+    def __init__(self, logger, action_hub, github_sync, settings_manager, tenant_cache):
         self.logger = logger
-        self.tenant_parser = tenant_parser
         self.action_hub = action_hub
         self.github_sync = github_sync
         self.settings_manager = settings_manager
         self.tenant_cache = tenant_cache
-        self.storage_manager = storage_manager
         
         # Get system tenant boundary once on initialization
         global_settings = self.settings_manager.get_global_settings()
         self.max_system_tenant_id = global_settings.get('max_system_tenant_id', 99)
+        
+        # Get tenants path
+        tenants_config_path = global_settings.get("tenants_config_path", "config/tenant")
+        project_root = self.settings_manager.get_project_root()
+        self.tenants_path = Path(project_root) / tenants_config_path
+    
+    def _get_available_bots(self, tenant_id: int) -> List[str]:
+        """
+        Get list of available bots for tenant by scanning bots/ folder
+        
+        Returns list of bot names (e.g., ["telegram", "whatsapp"])
+        """
+        try:
+            tenant_name = f"tenant_{tenant_id}"
+            tenant_path = self.tenants_path / tenant_name
+            bots_path = tenant_path / "bots"
+            
+            if not bots_path.exists() or not bots_path.is_dir():
+                return []
+            
+            # Scan for .yaml/.yml files in bots/ directory
+            bot_names = []
+            for file in bots_path.iterdir():
+                if file.is_file() and file.suffix in ['.yaml', '.yml']:
+                    bot_name = file.stem  # filename without extension
+                    bot_names.append(bot_name)
+            
+            return bot_names
+            
+        except Exception as e:
+            self.logger.error(f"[Tenant-{tenant_id}] Error scanning bots folder: {e}")
+            return []
     
     def _extract_error_message(self, error: dict) -> str:
         """
@@ -74,51 +108,17 @@ class BlockSyncExecutor:
     
     async def _sync_scenarios_block(self, tenant_id: int) -> Dict[str, Any]:
         """
-        Internal scenarios block synchronization (without data preparation)
+        Synchronize scenarios block through scenario_processor
         """
         try:
-            # Parse scenarios
-            parse_result = await self.tenant_parser.parse_scenarios(tenant_id)
-
-            if parse_result.get("result") != "success":
-                error_obj = parse_result.get('error')
-                error_msg = self._extract_error_message(error_obj)
-                self.logger.error(f"[Tenant-{tenant_id}] Error parsing scenarios: {error_msg}")
-                return {
-                    "result": "error",
-                    "error": {
-                        "code": "PARSE_ERROR",
-                        "message": f"Failed to parse scenarios for tenant {tenant_id}: {error_msg}"
-                    }
-                }
-
-            scenario_data = parse_result.get('response_data')
-
-            if not scenario_data:
-                self.logger.error(f"[Tenant-{tenant_id}] No scenario data after parsing")
-                return {"result": "error", "error": f"Failed to get scenario data for tenant {tenant_id}"}
-
-            # Synchronize scenarios
-            scenarios_count = len(scenario_data.get("scenarios", []))
-            if scenarios_count > 0:
-
-                sync_result = await self.action_hub.execute_action('sync_scenarios', {
-                    'tenant_id': tenant_id,
-                    'scenarios': scenario_data['scenarios']
-                })
-
-                if sync_result.get('result') != 'success':
-                    error_obj = sync_result.get('error', {})
-                    error_msg = self._extract_error_message(error_obj)
-                    self.logger.error(f"[Tenant-{tenant_id}] Error synchronizing scenarios: {error_msg}")
-                    return {"result": "error", "error": error_obj}
-
-                self.logger.info(f"[Tenant-{tenant_id}] Scenarios successfully synchronized")
-            else:
-                self.logger.info(f"[Tenant-{tenant_id}] No scenarios to synchronize")
-
-            return {"result": "success"}
-
+            # Call sync_tenant_scenarios action (scenario_processor handles it)
+            result = await self.action_hub.execute_action(
+                'sync_tenant_scenarios',
+                {'tenant_id': tenant_id}
+            )
+            
+            return result
+            
         except Exception as e:
             self.logger.error(f"Error synchronizing scenarios: {e}")
             return {
@@ -129,126 +129,55 @@ class BlockSyncExecutor:
                 }
             }
     
-    async def _sync_bot_block(self, tenant_id: int) -> Dict[str, Any]:
+    async def _sync_bot_block(self, tenant_id: int, bot_name: str) -> Dict[str, Any]:
         """
-        Internal bot block synchronization (without data preparation)
+        Synchronize bot block by bot name (universal method)
+        
+        Dynamically calls action: sync_{bot_name}_bot
+        Examples:
+        - bot_name="telegram" → calls sync_telegram_bot
+        - bot_name="whatsapp" → calls sync_whatsapp_bot
         """
         try:
-            # Parse bot data
-            parse_result = await self.tenant_parser.parse_bot(tenant_id)
-
-            if parse_result.get("result") != "success":
-                error_obj = parse_result.get('error')
-                error_msg = self._extract_error_message(error_obj)
-                return {
-                    "result": "error",
-                    "error": {
-                        "code": "PARSE_ERROR",
-                        "message": f"Failed to parse bot data for tenant {tenant_id}: {error_msg}"
-                    }
-                }
-
-            bot_data = parse_result.get('response_data')
-
-            if not bot_data:
-                return {"result": "error", "error": f"Failed to get bot data for tenant {tenant_id}"}
-
-            # Synchronize bot configuration
-            bot_id = None
-            if bot_data.get("bot"):
-                self.logger.info(f"[Tenant-{tenant_id}] Synchronizing bot configuration...")
-
-                bot_config = bot_data.get('bot', {}).copy()
-                bot_config['tenant_id'] = tenant_id
-
-                sync_bot_result = await self.action_hub.execute_action('sync_bot_config', bot_config)
-
-                if sync_bot_result.get('result') != 'success':
-                    error_obj = sync_bot_result.get('error', {})
-                    error_msg = self._extract_error_message(error_obj)
-                    self.logger.error(f"[Tenant-{tenant_id}] Error synchronizing bot configuration: {error_msg}")
-                    return {"result": "error", "error": error_obj}
-
-                bot_id = sync_bot_result.get('response_data', {}).get('bot_id')
-                self.logger.info(f"[Tenant-{tenant_id}] Bot configuration successfully synchronized")
-
-                # Synchronize bot commands
-                if bot_data.get("bot_commands"):
-                    commands_count = len(bot_data.get("bot_commands", []))
-                    if commands_count > 0:
-                        sync_result = await self.action_hub.execute_action('sync_bot_commands', {
-                            'bot_id': bot_id,
-                            'command_list': bot_data['bot_commands']
-                        })
-                        if sync_result.get('result') != 'success':
-                            error_msg = self._extract_error_message(sync_result.get('error', 'Unknown error'))
-                            self.logger.warning(f"[Tenant-{tenant_id}] Error synchronizing bot commands: {error_msg}")
-                        else:
-                            self.logger.info(f"[Tenant-{tenant_id}] Bot commands successfully synchronized")
-                    else:
-                        self.logger.info(f"[Tenant-{tenant_id}] No bot commands to synchronize")
-            else:
-                self.logger.info(f"[Tenant-{tenant_id}] No bot configuration to synchronize")
-
-            return {"result": "success"}
-
+            action_name = f"sync_{bot_name}_bot"
+            
+            self.logger.info(f"[Tenant-{tenant_id}] Synchronizing {bot_name} bot via action: {action_name}")
+            
+            # Call action dynamically
+            result = await self.action_hub.execute_action(
+                action_name,
+                {'tenant_id': tenant_id}
+            )
+            
+            # not_found is OK - tenant may not have this bot
+            if result.get('result') == 'not_found':
+                self.logger.info(f"[Tenant-{tenant_id}] No {bot_name} bot configuration to synchronize")
+                return {"result": "success"}
+            
+            return result
+            
         except Exception as e:
-            self.logger.error(f"Error synchronizing bot: {e}")
+            self.logger.error(f"[Tenant-{tenant_id}] Error synchronizing {bot_name} bot: {e}")
             return {
                 "result": "error",
                 "error": {
                     "code": "SYNC_ERROR",
-                    "message": str(e)
+                    "message": f"Failed to sync {bot_name} bot: {str(e)}"
                 }
             }
     
     async def _sync_storage_block(self, tenant_id: int) -> Dict[str, Any]:
         """
-        Internal storage block synchronization (without data preparation)
+        Synchronize storage block through storage_hub
         """
         try:
-            # Parse storage
-            parse_result = await self.tenant_parser.parse_storage(tenant_id)
+            # Call sync_tenant_storage action (storage_hub handles it)
+            result = await self.action_hub.execute_action(
+                'sync_tenant_storage',
+                {'tenant_id': tenant_id}
+            )
             
-            if parse_result.get("result") != "success":
-                error_obj = parse_result.get('error')
-                error_msg = self._extract_error_message(error_obj)
-                self.logger.error(f"[Tenant-{tenant_id}] Error parsing storage: {error_msg}")
-                return {
-                    "result": "error",
-                    "error": {
-                        "code": "PARSE_ERROR",
-                        "message": f"Failed to parse storage for tenant {tenant_id}: {error_msg}"
-                    }
-                }
-            
-            storage_data = parse_result.get('response_data', {}).get('storage', {})
-            
-            if not storage_data:
-                self.logger.info(f"[Tenant-{tenant_id}] No storage data to synchronize")
-                return {"result": "success"}
-            
-            # Synchronize storage
-            groups_count = len(storage_data)
-            if groups_count > 0:
-
-                success = await self.storage_manager.sync_storage(tenant_id, storage_data)
-                
-                if not success:
-                    self.logger.error(f"[Tenant-{tenant_id}] Error synchronizing storage")
-                    return {
-                        "result": "error",
-                        "error": {
-                            "code": "SYNC_ERROR",
-                            "message": "Failed to synchronize storage"
-                        }
-                    }
-                
-                self.logger.info(f"[Tenant-{tenant_id}] Storage successfully synchronized")
-            else:
-                self.logger.info(f"[Tenant-{tenant_id}] No storage to synchronize")
-            
-            return {"result": "success"}
+            return result
             
         except Exception as e:
             self.logger.error(f"Error synchronizing storage: {e}")
@@ -262,42 +191,16 @@ class BlockSyncExecutor:
     
     async def _sync_config_block(self, tenant_id: int) -> Dict[str, Any]:
         """
-        Internal tenant config block synchronization (without data preparation)
+        Synchronize tenant config block (tenant attributes like ai_token)
+        Note: config.yaml is optional, updates cache from DB if file not found
         """
         try:
-            # Parse tenant config (config.yaml)
-            parse_result = await self.tenant_parser.parse_tenant_config(tenant_id)
+            # Call update_tenant_config action (tenant_hub handles it)
+            # Config parsing will be done by tenant_hub action itself
+            # For now, just update cache from DB
+            await self.tenant_cache.update_tenant_config_cache(tenant_id)
             
-            config = None
-            if parse_result.get("result") != "success":
-                error_obj = parse_result.get('error')
-                error_msg = self._extract_error_message(error_obj)
-                # config.yaml file is optional, so don't return error
-                self.logger.warning(f"[Tenant-{tenant_id}] Error parsing tenant config: {error_msg}, updating cache from DB")
-            else:
-                config = parse_result.get('response_data', {})
-            
-            if not config:
-                # No config in file - update cache from DB (will create empty config in cache if it doesn't exist)
-                self.logger.info(f"[Tenant-{tenant_id}] No config in configuration, updating cache from DB")
-                await self.tenant_cache.update_tenant_config_cache(tenant_id)
-                return {"result": "success"}
-            
-            # Synchronize config through action (like in other blocks)
-            update_data = {
-                'tenant_id': tenant_id,
-                **config
-            }
-            
-            sync_result = await self.action_hub.execute_action('update_tenant_config', update_data)
-            
-            if sync_result.get('result') != 'success':
-                error_obj = sync_result.get('error', {})
-                error_msg = self._extract_error_message(error_obj)
-                self.logger.error(f"[Tenant-{tenant_id}] Error synchronizing tenant config: {error_msg}")
-                return {"result": "error", "error": error_obj}
-            
-            self.logger.info(f"[Tenant-{tenant_id}] Tenant config successfully synchronized")
+            self.logger.info(f"[Tenant-{tenant_id}] Tenant config cache updated")
             return {"result": "success"}
             
         except Exception as e:
@@ -310,17 +213,26 @@ class BlockSyncExecutor:
                 }
             }
     
-    async def sync_blocks(self, tenant_id: int, blocks: Dict[str, bool], pull_from_github: bool = False) -> Dict[str, Any]:
+    async def sync_blocks(self, tenant_id: int, blocks: Dict[str, Any], pull_from_github: bool = False) -> Dict[str, Any]:
         """
         Synchronize specified tenant blocks with optimization
+        Delegates to specialized services through Action Hub
+        
+        blocks structure:
+        {
+            "bots": ["telegram", "whatsapp"],  # List of bot names to sync
+            "scenarios": True/False,
+            "storage": True/False,
+            "config": True/False
+        }
         """
         try:
-            bot_changed = blocks.get("bot", False)
+            bots_to_sync = blocks.get("bots", [])
             scenarios_changed = blocks.get("scenarios", False)
             storage_changed = blocks.get("storage", False)
             config_changed = blocks.get("config", False)
             
-            if not bot_changed and not scenarios_changed and not storage_changed and not config_changed:
+            if not bots_to_sync and not scenarios_changed and not storage_changed and not config_changed:
                 return {
                     "result": "error",
                     "error": {
@@ -329,9 +241,10 @@ class BlockSyncExecutor:
                     }
                 }
             
+            bots_str = ', '.join(bots_to_sync) if bots_to_sync else '-'
             self.logger.info(
                 f"Synchronizing tenant [Tenant-{tenant_id}] "
-                f"(bot: {'+' if bot_changed else '-'}, scenarios: {'+' if scenarios_changed else '-'}, "
+                f"(bots: {bots_str}, scenarios: {'+' if scenarios_changed else '-'}, "
                 f"storage: {'+' if storage_changed else '-'}, config: {'+' if config_changed else '-'})..."
             )
             
@@ -343,7 +256,7 @@ class BlockSyncExecutor:
                 return {"result": "error", "error": error_obj}
 
             # Synchronize blocks as needed
-            # IMPORTANT: First synchronize scenarios, storage and config, then bot (which starts polling)
+            # IMPORTANT: First synchronize scenarios, storage and config, then bots (which start polling)
             # This guarantees all data is ready before event processing starts
             
             if scenarios_changed:
@@ -364,9 +277,10 @@ class BlockSyncExecutor:
                     await self.tenant_cache.set_last_failed(tenant_id, config_result.get("error"))
                     return config_result
             
-            # Bot synchronization at the end - starts polling/webhooks after all data is ready
-            if bot_changed:
-                bot_result = await self._sync_bot_block(tenant_id)
+            # Bots synchronization at the end - starts polling/webhooks after all data is ready
+            # Sync each bot independently
+            for bot_name in bots_to_sync:
+                bot_result = await self._sync_bot_block(tenant_id, bot_name)
                 if bot_result.get("result") != "success":
                     await self.tenant_cache.set_last_failed(tenant_id, bot_result.get("error"))
                     return bot_result

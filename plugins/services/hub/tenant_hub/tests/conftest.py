@@ -102,7 +102,7 @@ def tenant_cache(logger, mock_database_manager, mock_datetime_formatter, mock_ma
     import importlib.util
     
     # Direct import of TenantCache without relative imports
-    tenant_cache_path = Path(__file__).parent.parent / "utils" / "tenant_cache.py"
+    tenant_cache_path = Path(__file__).parent.parent / "domain" / "tenant_cache.py"
     spec = importlib.util.spec_from_file_location("tenant_cache_module", tenant_cache_path)
     tenant_cache_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(tenant_cache_module)

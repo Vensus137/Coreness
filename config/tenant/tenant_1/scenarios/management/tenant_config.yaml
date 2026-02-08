@@ -44,10 +44,9 @@ set_ai_token_input:
       callback_data: "set_ai_token_input"
 
   step:
-    # Access check
     - action: "execute_scenario"
       params:
-        scenario: "access_check"
+        scenario: "default_check"
     
     # Get active tenant from User Storage
     - action: "get_user_storage"
@@ -79,10 +78,9 @@ set_ai_token_handler:
       user_state: "set_ai_token"
 
   step:
-    # Access check
     - action: "execute_scenario"
       params:
-        scenario: "access_check"
+        scenario: "default_check"
     
     # Check that input is not a command
     - action: "execute_scenario"
@@ -175,10 +173,9 @@ set_ai_token_delete:
   description: "AI token deletion via null/none input"
 
   step:
-    # Access check
     - action: "execute_scenario"
       params:
-        scenario: "access_check"
+        scenario: "default_check"
     
     # Get active tenant from User Storage
     - action: "get_user_storage"

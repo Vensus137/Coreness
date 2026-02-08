@@ -8,14 +8,13 @@ from typing import Any, Dict
 
 class SyncOrchestrator:
     """
-    Tenant synchronization orchestrator
-    Coordinates synchronization of system (locally) and public (from GitHub) tenants
+    Tenant synchronization orchestrator.
+    Coordinates synchronization of system (locally) and public (from GitHub) tenants.
     """
     
-    def __init__(self, logger, smart_github_sync, github_sync, block_sync_executor, settings_manager, task_manager):
+    def __init__(self, logger, github_sync, github_sync_legacy, block_sync_executor, settings_manager, task_manager):
         self.logger = logger
-        self.smart_github_sync = smart_github_sync
-        self.github_sync = github_sync
+        self.github_sync = github_sync  # Unified GitHub sync
         self.block_sync_executor = block_sync_executor
         self.settings_manager = settings_manager
         self.task_manager = task_manager
@@ -99,10 +98,13 @@ class SyncOrchestrator:
             self.logger.info(f"Starting synchronization of {len(system_tenant_ids)} system tenants in background...")
             errors = []
             for tenant_id in system_tenant_ids:
+                # Get available bots for tenant
+                available_bots = self.block_sync_executor._get_available_bots(tenant_id)
+                
                 res = await self.task_manager.submit_task(
                     task_id=f"sync_tenant_{tenant_id}",
-                    coro=(lambda t=tenant_id: self.block_sync_executor.sync_blocks(
-                        t, {"bot": True, "scenarios": True, "storage": True, "config": True}, pull_from_github=False)),
+                    coro=(lambda t=tenant_id, bots=available_bots: self.block_sync_executor.sync_blocks(
+                        t, {"bots": bots, "scenarios": True, "storage": True, "config": True}, pull_from_github=False)),
                     fire_and_forget=True
                 )
                 if res.get('result') != 'success':
@@ -142,10 +144,13 @@ class SyncOrchestrator:
                     }
                 }
             
+            # Get available bots for tenant
+            available_bots = self.block_sync_executor._get_available_bots(tenant_id)
+            
             # Synchronize all blocks
             return await self.block_sync_executor.sync_blocks(
                 tenant_id,
-                {"bot": True, "scenarios": True, "storage": True, "config": True},
+                {"bots": available_bots, "scenarios": True, "storage": True, "config": True},
                 pull_from_github=pull_from_github
             )
             
@@ -203,11 +208,11 @@ class SyncOrchestrator:
 
     async def _sync_public_tenants_incremental(self) -> Dict[str, Any]:
         """
-        Performs incremental synchronization: determines changes through GitHub API and synchronizes only changed tenants
+        Performs incremental synchronization: determines changes through GitHub API and synchronizes only changed tenants.
         """
         try:
             # 1. Determine changed tenants through GitHub Compare API
-            changed_result = await self.smart_github_sync.get_changed_tenants()
+            changed_result = await self.github_sync.get_changed_tenants()
 
             if changed_result.get("result") != "success":
                 # If failed to determine changes - just skip
@@ -248,7 +253,7 @@ class SyncOrchestrator:
             # 4. Update files from GitHub (only changed tenants)
             changed_tenant_ids = list(changed_tenants_data.keys())
             
-            sync_files_result = await self.smart_github_sync.sync_changed_tenants(
+            sync_files_result = await self.github_sync.sync_changed_tenants(
                 changed_tenant_ids=changed_tenant_ids, 
                 current_sha=current_sha
             )
@@ -281,10 +286,13 @@ class SyncOrchestrator:
                 }
             }
     
-    async def sync_changed_blocks(self, changed_tenants_data: Dict[int, Dict[str, bool]]) -> Dict[str, Any]:
+    async def sync_changed_blocks(self, changed_tenants_data: Dict[int, Dict[str, Any]]) -> Dict[str, Any]:
         """
         Synchronizes only changed blocks for specified tenants with DB
         Optimization: if only scenarios changed - don't restart polling
+        
+        changed_tenants_data structure:
+        {tenant_id: {"bots": ["telegram"], "scenarios": True, "storage": False}}
         """
         try:
             errors: list[int] = []
@@ -326,7 +334,7 @@ class SyncOrchestrator:
             if updated_files_count == 0:
                 self.logger.info("No public tenants to synchronize")
                 # Update SHA even if nothing to update
-                self.smart_github_sync.update_processed_sha(current_sha)
+                self.github_sync.update_processed_sha(current_sha)
                 return {
                     "result": "success",
                     "response_data": {
@@ -335,7 +343,7 @@ class SyncOrchestrator:
                 }
             
             # Update SHA in memory after successful synchronization
-            self.smart_github_sync.update_processed_sha(current_sha)
+            self.github_sync.update_processed_sha(current_sha)
             
             # 2. Get list of all public tenants from local folder
             # Folder already created on initialization, no check needed
@@ -367,7 +375,10 @@ class SyncOrchestrator:
             self.logger.info(f"Starting synchronization of {len(public_tenant_ids)} public tenants in background...")
             errors = []
             for tenant_id in public_tenant_ids:
-                blocks = {"bot": True, "scenarios": True, "storage": True, "config": True}
+                # Get available bots for tenant
+                available_bots = self.block_sync_executor._get_available_bots(tenant_id)
+                blocks = {"bots": available_bots, "scenarios": True, "storage": True, "config": True}
+                
                 res = await self.task_manager.submit_task(
                     task_id=f"sync_public_tenant_{tenant_id}",
                     coro=(lambda t=tenant_id, b=blocks: self.block_sync_executor.sync_blocks(

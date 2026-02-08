@@ -1,0 +1,15 @@
+# Telegram Bot configuration for Master tenant (system management)
+bot_token: "7164967043:AAHc9UFF67gjN3UKdycveP8xdkXyiYUE_Go"
+is_active: true
+
+# Bot commands (for BotCommand table)
+commands:
+  - command: "tenant"
+    description: "Menu of tenants"
+    scope: "all_private_chats"
+  - command: "help"
+    description: "Help"
+    scope: "all_private_chats"
+  - command: "me"
+    description: "User information"
+    scope: "all_private_chats"

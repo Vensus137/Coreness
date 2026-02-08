@@ -10,8 +10,6 @@ This document serves as a reference for formatting configs for all project plugi
 Sections marked as (optional) can be omitted if not needed for specific case.
 Follow template structure for your plugin type.
 
----
-
 ## 1. Universal Template for All Utilities
 
 **Applies to: Custom Layers, Foundation, Core**

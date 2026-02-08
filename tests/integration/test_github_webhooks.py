@@ -50,7 +50,7 @@ async def test_webhook_full_flow(initialized_di_container):
         payload_data = {
             "commits": [
                 {
-                    "added": ["tenant/tenant_101/tg_bot.yaml"],
+                    "added": ["tenant/tenant_101/bots/telegram.yaml"],
                     "modified": ["tenant/tenant_102/scenarios/scenario1.yaml"],
                     "removed": []
                 }
@@ -93,7 +93,7 @@ async def test_webhook_full_flow(initialized_di_container):
         call_args = action_hub.execute_action.call_args
         assert call_args[0][0] == 'sync_tenants_from_files'
         assert 'files' in call_args[0][1]
-        assert 'tenant/tenant_101/tg_bot.yaml' in call_args[0][1]['files']
+        assert 'tenant/tenant_101/bots/telegram.yaml' in call_args[0][1]['files']
         assert 'tenant/tenant_102/scenarios/scenario1.yaml' in call_args[0][1]['files']
         
     finally:
