@@ -31,6 +31,14 @@ keywords: coreness architecture, event-driven, dependency injection, plugins, mu
 - **cryptography** — self-signed SSL certificate generation for Telegram webhooks
 - **pgvector** — vector data operations in PostgreSQL for RAG (Retrieval-Augmented Generation)
 - **python-dateutil** — date and time interval handling (correct month/year processing, month edges)
+- **aiofiles** — asynchronous file operations
+- **PyMuPDF** — PDF text extraction (fast, lightweight)
+- **python-docx** — DOCX text extraction
+- **chardet** — text encoding detection
+- **beautifulsoup4** — HTML parsing and cleaning
+- **html5lib** — HTML parser backend
+- **pandas** — HTML table extraction
+- **filetype** — file type detection via magic bytes
 
 ### Deployment System Dependencies
 

@@ -18,6 +18,8 @@ keywords: действия coreness, send_message, completion, validate, telegra
 - [ai_service](#ai_service) (2 действий)
   - [completion](#completion)
   - [embedding](#embedding)
+- [download_service](#download_service) (1 действий)
+  - [⭐ download_and_extract](#download_and_extract)
 - [invoice_service](#invoice_service) (7 действий)
   - [cancel_invoice](#cancel_invoice)
   - [confirm_payment](#confirm_payment)
@@ -256,8 +258,8 @@ data:
 - **`chunk_metadata`** (`object`, опционально) — Метаданные чанка (JSON объект): chat_id, username и др. Сохраняется в chunk_metadata и используется для фильтрации при поиске и удалении. Может быть использовано в chunk_format для отображения в контексте AI
 - **`model`** (`string`, опционально) — Модель для генерации embedding (по умолчанию из настроек ai_client.default_embedding_model)
 - **`dimensions`** (`integer`, опционально) — Размерность embedding (по умолчанию 1024)
-- **`chunk_size`** (`integer`, опционально, диапазон: 100-8000) — Размер чанка в символах (по умолчанию 512)
-- **`chunk_overlap`** (`integer`, опционально, диапазон: 0-500) — Перекрытие между чанками в символах (по умолчанию 100, ~20% от chunk_size). Сохраняет контекст на границах чанков для лучшего поиска
+- **`chunk_size`** (`integer`, опционально, диапазон: 100-8000) — Размер чанка в символах (по умолчанию 1000, ~300-400 токенов). Адаптивно увеличивается для таблиц и структурированного контента
+- **`chunk_overlap`** (`integer`, опционально, диапазон: 0-1000) — Перекрытие между чанками в символах (по умолчанию 200, ~20% от chunk_size). Сохраняет контекст на границах чанков для лучшего поиска
 - **`replace_existing`** (`boolean`, опционально) — Заменить существующий документ (по умолчанию false - добавить). Если документ существует и replace_existing=false - вернется ошибка ALREADY_EXISTS
 - **`generate_embedding`** (`boolean`, опционально) — Генерировать ли embedding для чанков (по умолчанию true). Если false - сохраняется только текст без эмбеддинга (полезно для истории без векторного поиска)
 - **`created_at`** (`string`, опционально) — Реальная дата создания (для правильной сортировки истории). Поддерживает форматы: ISO, YYYY-MM-DD, YYYY-MM-DD HH:MM:SS. Если не указано - используется текущее локальное время
@@ -640,6 +642,59 @@ response_data:
 ```
 
 </details>
+
+
+<a id="download_service"></a>
+## download_service
+
+**Описание:** Сервис для загрузки файлов по ссылкам и извлечения текстового содержимого
+
+<a id="download_and_extract"></a>
+### ⭐ download_and_extract
+
+**Описание:** Загрузить файл по URL и извлечь текстовое содержимое. Поддержка форматов: PDF, DOCX, TXT, MD, HTML, CSV (в т.ч. Google Таблицы). Автоопределение типа по magic bytes, Content-Type или расширению
+
+**Входные параметры:**
+
+- **`tenant_id`** (`integer`, обязательное, мин: 1) — ID тенанта (обязательно, для изоляции файлов)
+- **`url`** (`string`) — URL для загрузки файла (прямая ссылка, Google Drive, Google Docs/Sheets и т.д.)
+- **`file_type`** (`string`, опционально, значения: [`pdf`, `docx`, `txt`, `md`, `html`, `csv`]) — Подсказка типа файла (pdf, docx, txt, md, html, csv). Если не указан - определяется автоматически по magic bytes, Content-Type или расширению
+- **`keep_file`** (`boolean`, опционально) — Сохранить загруженный файл вместо автоудаления (по умолчанию false - файл удаляется после извлечения текста)
+- **`max_file_size_mb`** (`integer`, опционально, диапазон: 1-500) — Максимальный размер файла в МБ для этого конкретного действия (переопределяет настройку по умолчанию). Проверяется через HEAD запрос перед загрузкой
+- **`download_timeout_seconds`** (`integer`, опционально, диапазон: 10-3600) — Таймаут загрузки в секундах для этого конкретного действия (переопределяет настройку по умолчанию)
+
+<details>
+<summary>⚙️ Дополнительные параметры</summary>
+
+- **`_namespace`** (`string`) (опционально) — Кастомный ключ для создания вложенности в `_cache`. Если указан, данные сохраняются в `_cache[_namespace]` вместо плоского кэша. Используется для контроля перезаписи при повторных вызовах одного действия. Доступ через `{_cache._namespace.field}`. По умолчанию данные мержатся напрямую в `_cache` (плоское кэширование).
+
+</details>
+
+**Выходные параметры:**
+
+- **`result`** (`string`) — Результат: success, error
+- **`error`** (`object`) (опционально) — Структура ошибки
+  - **`code`** (`string`) — Код ошибки: VALIDATION_ERROR (неверные параметры), FILE_TOO_LARGE (превышен размер), DOWNLOAD_FAILED (ошибка загрузки), UNSUPPORTED_FORMAT (неподдерживаемый формат), EXTRACTION_FAILED (ошибка извлечения текста), TIMEOUT (превышен таймаут), INTERNAL_ERROR (внутренняя ошибка)
+  - **`message`** (`string`) — Сообщение об ошибке
+  - **`details`** (`array`) (опционально) — Детали ошибки (например, ошибки валидации полей)
+- **`response_data`** (`object`) — Данные ответа
+  - **`file_text`** (`string`) — Извлеченный текст из файла
+  - **`file_path`** (`string`) (опционально) — Путь к загруженному файлу (только если keep_file=true, иначе null)
+  - **`file_metadata`** (`object`) — Метаданные файла
+
+**Пример использования:**
+
+```yaml
+# В сценарии
+- action: "download_and_extract"
+  params:
+    tenant_id: 123
+    url: "example"
+    # file_type: string (опционально)
+    # keep_file: boolean (опционально)
+    # max_file_size_mb: integer (опционально)
+    # download_timeout_seconds: integer (опционально)
+```
 
 
 <a id="invoice_service"></a>
