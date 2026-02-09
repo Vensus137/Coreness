@@ -339,13 +339,9 @@ class SystemUpdateHandler:
             latest = get_latest_version(repo_url, token) or available[0]["version"]
             current = self._get_current_version()
 
-            # 3. Display versions
+            # 3. Display versions (always offer update; current is highlighted in the list below)
             print(f"{self.t.get('system_update.current')}: {Colors.version(current)}")
             print(f"{self.t.get('system_update.latest')}: {Colors.version(latest or 'unknown')}")
-
-            if current == (latest or ""):
-                print(Colors.success(f"\n✓ {self.t.get('system_update.up_to_date')}"))
-                return
 
             # 4. Version selection (show repository source)
             print(f"\n{self.t.get('system_update.repository')}: {Colors.info(repo_url)}")

@@ -12,7 +12,7 @@ from typing import Optional
 from ..ui.colors import Colors
 from ..core.dependencies import ensure_dependencies
 from ..core.restart_manager import RestartManager
-from .version_fetcher import get_latest_version
+from .version_fetcher import get_latest_stable_and_prerelease
 
 
 def _remove_readonly(func, path, excinfo):
@@ -29,16 +29,21 @@ class SelfUpdater:
     TEMP_DIR_MARKER = ".core_manager_update_temp"
     BACKUP_DIR_MARKER = ".core_manager_update_backup"
 
-    def __init__(self, utility_root: Path, project_root: Path, config: dict, config_manager, translator, restart_manager):
+    def __init__(self, utility_root: Path, project_root: Path, config: dict, config_manager, version_file, translator, restart_manager):
         self.utility_root = utility_root
         self.project_root = project_root
         self.config = config
         self.config_manager = config_manager
+        self.version_file = version_file
         self.t = translator
         self.restart_manager = restart_manager
 
     def get_current_version(self) -> Optional[str]:
-        """Get current utility version from git tag only. Returns 'unknown' if no tag."""
+        """Get current utility version from version file first, then git tag. Returns 'unknown' if neither available."""
+        if self.version_file:
+            v = self.version_file.get("version")
+            if v:
+                return v.strip()
         try:
             result = subprocess.run(
                 ['git', 'describe', '--tags', '--abbrev=0'],
@@ -49,30 +54,31 @@ class SelfUpdater:
             )
             if result.returncode == 0 and result.stdout.strip():
                 return result.stdout.strip()
-            return "unknown"
         except Exception:
-            return "unknown"
+            pass
+        return "unknown"
 
-    def check_for_updates(self) -> Optional[str]:
-        """Check if updates are available from GitHub using version_fetcher."""
+    def check_for_updates(self) -> Optional[dict]:
+        """Check for updates. Returns dict with current, latest_stable, latest_prerelease (each str or None)."""
         try:
             repo_url = self.config.get('repository', {}).get('url', '')
             if not repo_url:
                 print(Colors.error(self.t.get('self_update.repo_not_configured')))
                 return None
-            
+
             token = self.config_manager.get_github_token()
-            
-            # Use version_fetcher to get latest version (with proper sorting)
-            latest = get_latest_version(repo_url, token)
-            
-            if not latest and not token:
+            latest_stable, latest_prerelease = get_latest_stable_and_prerelease(repo_url, token)
+
+            if not latest_stable and not latest_prerelease and not token:
                 token_env = self.config.get('token_env', 'GITHUB_TOKEN')
                 print(Colors.error(self.t.get('self_update.repo_not_found', token_env=token_env)))
-            
-            # Add 'v' prefix if not present (for display consistency)
-            return f"v{latest}" if latest and not latest.startswith('v') else latest
-            
+
+            current = self.get_current_version()
+            return {
+                "current": current,
+                "latest_stable": latest_stable,
+                "latest_prerelease": latest_prerelease,
+            }
         except ImportError:
             print(Colors.error(self.t.get('self_update.requests_not_installed')))
             return None
@@ -80,30 +86,30 @@ class SelfUpdater:
             print(Colors.error(f"{self.t.get('self_update.check_failed')}: {e}"))
             return None
 
-    def download_update(self, temp_dir: Path) -> bool:
-        """Download latest version from GitHub to temp_dir/core_manager."""
+    def download_update(self, temp_dir: Path, version: Optional[str] = None) -> bool:
+        """Download specified version from GitHub to temp_dir/core_manager. If version is None, clone default branch."""
         try:
             repo_url = self.config.get('repository', {}).get('url', '')
             branch = self.config.get('repository', {}).get('branch', 'main')
-            
+            ref = (version if version and version.startswith('v') else f"v{version}") if version else branch
+
             if not repo_url:
                 print(Colors.error(self.t.get('self_update.repo_not_configured')))
                 return False
-            
+
             token = self.config_manager.get_github_token()
-            
+
             print(Colors.info(f"{self.t.get('self_update.downloading')}"))
 
             repo_temp = temp_dir / "repo"
             env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
-            
+
             # Add token to URL for private repos
             clone_url = repo_url
             if token and repo_url.startswith('https://'):
-                # Insert token into URL: https://github.com/... -> https://token@github.com/...
                 clone_url = repo_url.replace('https://', f'https://{token}@')
-            
-            cmd = ["git", "-c", "credential.helper=", "clone", "--depth", "1", "--branch", branch, clone_url, str(repo_temp)]
+
+            cmd = ["git", "-c", "credential.helper=", "clone", "--depth", "1", "--branch", ref, clone_url, str(repo_temp)]
 
             result = subprocess.run(
                 cmd,
@@ -112,10 +118,16 @@ class SelfUpdater:
                 text=True,
                 timeout=300
             )
-            
+
             if result.returncode != 0:
-                print(Colors.error(f"{self.t.get('self_update.clone_failed')}: {result.stderr}"))
-                return False
+                # If ref is a tag, try without 'v' prefix (e.g. 1.2.0b)
+                if version and ref.startswith('v'):
+                    ref_alt = ref.lstrip('v')
+                    cmd_alt = ["git", "-c", "credential.helper=", "clone", "--depth", "1", "--branch", ref_alt, clone_url, str(repo_temp)]
+                    result = subprocess.run(cmd_alt, env=env, capture_output=True, text=True, timeout=300)
+                if result.returncode != 0:
+                    print(Colors.error(f"{self.t.get('self_update.clone_failed')}: {result.stderr}"))
+                    return False
             
             # Extract core_manager from repo to temp_dir/core_manager
             utility_path = self.config.get('utility_path', 'tools/core_manager')
@@ -258,11 +270,15 @@ class SelfUpdater:
         if backup_marker.exists():
             backup_marker.unlink()
 
-    def perform_update(self) -> bool:
-        """Perform self-update of Core Manager."""
+    def perform_update(self, version: Optional[str]) -> bool:
+        """Perform self-update of Core Manager to the given version (e.g. 1.2.0b or v1.2.0b)."""
         temp_dir = None
         backup_dir = None
-        
+
+        if not version:
+            print(Colors.error(self.t.get('self_update.no_version')))
+            return False
+
         try:
             # Check dependencies first
             deps = self.config.get('dependencies', [])
@@ -271,12 +287,12 @@ class SelfUpdater:
                 return False
 
             print(Colors.info(self.t.get('self_update.preparing')))
-            
+
             # Create temporary directory
             temp_dir = Path(tempfile.mkdtemp(prefix="core_manager_update_"))
-            
+
             # Download update
-            if not self.download_update(temp_dir):
+            if not self.download_update(temp_dir, version):
                 if temp_dir and temp_dir.exists():
                     shutil.rmtree(temp_dir, onerror=_remove_readonly)
                 return False

@@ -106,6 +106,7 @@ class CoreManager:
             self.project_root,
             self.config.get("self_update", {}),
             self.config,
+            self.version_file,
             self.translator,
             self.restart_manager,
         )
