@@ -8,6 +8,15 @@ keywords: coreness changelog, version history, updates, breaking changes, migrat
 
 All notable changes to this project documented in this file.
 
+## [1.2.1] - 2026-02-10
+
+### ⚠️ BREAKING CHANGES
+- **ai_rag_service**: default chunk sizes increased (chunk_size 512→1000, chunk_overlap 100→200, min_chunk_size 50→200). Reprocessed documents will have fewer chunks
+
+### Added
+- **download_service**: action `download_and_extract` — download by URL, text extraction (PDF, DOCX, TXT, MD, HTML, CSV), Google Drive/Docs/Sheets/GitHub support
+- **ai_rag_service**: adaptive chunking and structure preservation (tables, code, lists, headers not split)
+
 ## [1.2.0] - 2026-02-09
 
 ### ⚠️ BREAKING CHANGES

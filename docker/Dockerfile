@@ -57,6 +57,9 @@ RUN pip install cryptography>=41.0.0
 # Step 10: pgvector for vector data (RAG)
 RUN pip install pgvector>=0.2.0
 
+# Step 11: Download service dependencies (file processing)
+RUN pip install aiofiles>=23.0.0 PyMuPDF>=1.23.0 python-docx>=1.1.0 chardet>=5.2.0 beautifulsoup4>=4.12.0 html5lib>=1.1 pandas>=2.0.0 filetype>=1.2.0
+
 # Copy Supervisor configuration
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 

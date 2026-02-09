@@ -20,6 +20,8 @@ Complete description of all available actions with their parameters and results.
 - [ai_service](#ai_service) (2 actions)
   - [completion](#completion)
   - [embedding](#embedding)
+- [download_service](#download_service) (1 actions)
+  - [⭐ download_and_extract](#download_and_extract)
 - [invoice_service](#invoice_service) (7 actions)
   - [cancel_invoice](#cancel_invoice)
   - [confirm_payment](#confirm_payment)
@@ -258,8 +260,8 @@ data:
 - **`chunk_metadata`** (`object`, optional) — Chunk metadata (JSON): chat_id, username etc.; used for filtering and in context
 - **`model`** (`string`, optional) — Embedding model (default from ai_client)
 - **`dimensions`** (`integer`, optional) — Embedding dimensions (default 1024)
-- **`chunk_size`** (`integer`, optional, range: 100-8000) — Chunk size in characters (default 512)
-- **`chunk_overlap`** (`integer`, optional, range: 0-500) — Chunk overlap in characters (~20% of chunk_size)
+- **`chunk_size`** (`integer`, optional, range: 100-8000) — Chunk size in characters (default 1000, ~300-400 tokens, adaptively increased for tables)
+- **`chunk_overlap`** (`integer`, optional, range: 0-1000) — Chunk overlap in characters (~20% of chunk_size)
 - **`replace_existing`** (`boolean`, optional) — Replace existing document (default false; ALREADY_EXISTS if exists)
 - **`generate_embedding`** (`boolean`, optional) — Generate embeddings for chunks (default true); false = text only
 - **`created_at`** (`string`, optional) — Creation date (ISO/YYYY-MM-DD); default current time
@@ -642,6 +644,59 @@ response_data:
 ```
 
 </details>
+
+
+<a id="download_service"></a>
+## download_service
+
+**Description:** Service for downloading files from URLs and extracting text content
+
+<a id="download_and_extract"></a>
+### ⭐ download_and_extract
+
+**Description:** Download file from URL and extract text content. Supports: PDF, DOCX, TXT, MD, HTML, CSV (incl. Google Sheets). Auto-detects file type via magic bytes, Content-Type or extension
+
+**Input Parameters:**
+
+- **`tenant_id`** (`integer`, required, min: 1) — Tenant ID (required for file isolation)
+- **`url`** (`string`) — URL to download file from (direct link, Google Drive, Google Docs/Sheets, etc.)
+- **`file_type`** (`string`, optional, values: [`pdf`, `docx`, `txt`, `md`, `html`, `csv`]) — File type hint (pdf, docx, txt, md, html, csv). If not set - auto-detected via magic bytes, Content-Type or extension
+- **`keep_file`** (`boolean`, optional) — Keep downloaded file instead of auto-cleanup (default false - file deleted after extraction)
+- **`max_file_size_mb`** (`integer`, optional, range: 1-500) — Max file size in MB for this specific action (overrides default setting). Checked via HEAD request before download
+- **`download_timeout_seconds`** (`integer`, optional, range: 10-3600) — Download timeout in seconds for this specific action (overrides default setting)
+
+<details>
+<summary>⚙️ Additional Parameters</summary>
+
+- **`_namespace`** (`string`) (optional) — Custom key for creating nesting in `_cache`. If specified, data is saved in `_cache[_namespace]` instead of flat cache. Used to control overwriting on repeated calls of the same action. Access via `{_cache._namespace.field}`. By default, data is merged directly into `_cache` (flat caching).
+
+</details>
+
+**Output Parameters:**
+
+- **`result`** (`string`) — Result: success, error
+- **`error`** (`object`) (optional) — Error structure
+  - **`code`** (`string`) — Error code: VALIDATION_ERROR, FILE_TOO_LARGE, DOWNLOAD_FAILED, UNSUPPORTED_FORMAT, EXTRACTION_FAILED, TIMEOUT, INTERNAL_ERROR
+  - **`message`** (`string`) — Error message
+  - **`details`** (`array`) (optional) — Error details (e.g. field validation errors)
+- **`response_data`** (`object`) — Response data
+  - **`file_text`** (`string`) — Extracted text from file
+  - **`file_path`** (`string`) (optional) — Path to downloaded file (only if keep_file=true, otherwise null)
+  - **`file_metadata`** (`object`) — File metadata
+
+**Usage Example:**
+
+```yaml
+# In scenario
+- action: "download_and_extract"
+  params:
+    tenant_id: 123
+    url: "example"
+    # file_type: string (optional)
+    # keep_file: boolean (optional)
+    # max_file_size_mb: integer (optional)
+    # download_timeout_seconds: integer (optional)
+```
 
 
 <a id="invoice_service"></a>

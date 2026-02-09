@@ -82,15 +82,11 @@ class PostgreSQLManager:
                 result = sock.connect_ex((self.postgresql_host, self.postgresql_port))
                 sock.close()
                 is_available = result == 0  # True if port is available
-                if not is_available:
-                    self.logger.debug(f"[PostgreSQL] Port {self.postgresql_host}:{self.postgresql_port} unavailable (code: {result})")
                 return is_available
             except Exception as e:
                 sock.close()
-                self.logger.debug(f"[PostgreSQL] Error checking port {self.postgresql_host}:{self.postgresql_port}: {e}")
                 return False
         except Exception as e:
-            self.logger.debug(f"[PostgreSQL] Error creating socket: {e}")
             return False
     
     def get_connection(self, database=None):
