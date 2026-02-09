@@ -17,6 +17,9 @@ All notable changes to this project documented in this file.
 - **download_service**: action `download_and_extract` — download by URL, text extraction (PDF, DOCX, TXT, MD, HTML, CSV), Google Drive/Docs/Sheets/GitHub support
 - **ai_rag_service**: adaptive chunking and structure preservation (tables, code, lists, headers not split)
 
+### Fixed
+- **Core Manager**: pre-release handling in update checks — “latest version” is now latest stable only; system update always shows version list with current highlighted; utility update offers choice when a pre-release exists (pre-release vs latest stable) and downloads by selected tag instead of main branch
+
 ## [1.2.0] - 2026-02-09
 
 ### ⚠️ BREAKING CHANGES

@@ -1,9 +1,19 @@
 """Update handler - manages self-update UI flow."""
 
-from pathlib import Path
 from ..ui.colors import Colors
 from ..ui.dialogs import confirm
 from .self_updater import SelfUpdater
+from .version_fetcher import version_gt
+
+
+def _norm(v: str) -> str:
+    """Normalize version for comparison (strip v prefix)."""
+    return (v or "").lstrip("v").strip()
+
+
+def _display_version(v: str) -> str:
+    """Return version with v prefix for display."""
+    return v if (v or "").startswith("v") else f"v{v}"
 
 
 class UpdateHandler:
@@ -16,7 +26,6 @@ class UpdateHandler:
     def handle_update(self) -> None:
         """Handle complete self-update flow with user interaction."""
         try:
-            # Check dependencies before any update operations
             deps = self.updater.config.get('dependencies', [])
             if deps:
                 from ..core.dependencies import ensure_dependencies
@@ -25,39 +34,56 @@ class UpdateHandler:
                     return
 
             print(Colors.info(f"\n{self.t.get('self_update.checking')}"))
-            
-            # Get current version
-            current_version = self.updater.get_current_version()
-            
-            # Check for updates
-            latest_version = self.updater.check_for_updates()
-            
-            if not latest_version:
+
+            info = self.updater.check_for_updates()
+            if not info:
+                return
+
+            current = info["current"]
+            latest_stable = info.get("latest_stable")
+            latest_prerelease = info.get("latest_prerelease")
+            current_norm = _norm(current) if current != "unknown" else ""
+
+            if not latest_stable and not latest_prerelease:
                 print(Colors.error(self.t.get('self_update.no_version')))
                 return
-            
-            # Display versions
-            current_color = Colors.unknown if current_version == "unknown" else Colors.version
-            print(f"{self.t.get('self_update.current')}: {current_color(current_version)}")
-            print(f"{self.t.get('self_update.latest')}: {Colors.version(latest_version)}")
-            
-            # Check if already up to date
-            if current_version == latest_version:
+
+            # Choose target: prerelease is optional when it's newer than stable
+            target = None
+            if latest_prerelease and (not latest_stable or version_gt(latest_prerelease, latest_stable)):
+                # Pre-release is available and newer than stable: ask
+                print(f"{self.t.get('self_update.current')}: {Colors.unknown(current) if current == 'unknown' else Colors.version(_display_version(current_norm))}")
+                print(f"{self.t.get('self_update.latest_stable')}: {Colors.version(_display_version(latest_stable)) if latest_stable else Colors.version('—')}")
+                print(f"{self.t.get('self_update.latest_prerelease')}: {Colors.version(_display_version(latest_prerelease))}")
+                msg = self.t.get('self_update.confirm_prerelease', version=_display_version(latest_prerelease))
+                if confirm(msg, default=False, translator=self.t):
+                    target = latest_prerelease
+                else:
+                    target = latest_stable
+                    if not target:
+                        print(Colors.info(self.t.get('self_update.no_stable_release')))
+                        return
+            else:
+                target = latest_stable or latest_prerelease
+                print(f"{self.t.get('self_update.current')}: {Colors.unknown(current) if current == 'unknown' else Colors.version(_display_version(current_norm))}")
+                print(f"{self.t.get('self_update.latest')}: {Colors.version(_display_version(target))}")
+
+            if not target:
+                print(Colors.error(self.t.get('self_update.no_version')))
+                return
+
+            if current_norm and _norm(target) == current_norm:
                 print(Colors.success(f"\n✓ {self.t.get('self_update.up_to_date')}"))
                 return
-            
-            # Show update available
+
             print(Colors.warning(f"\n{self.t.get('self_update.update_available')}"))
-            
-            # Confirm update (default=False: Enter = no, safer for destructive action)
-            message = f"{self.t.get('self_update.confirm')} {Colors.version(latest_version)}?"
+            message = f"{self.t.get('self_update.confirm')} {Colors.version(_display_version(target))}?"
             if not confirm(message, default=True, translator=self.t):
                 print(Colors.info(self.t.get('messages.cancelled')))
                 return
-            
-            # Perform update
-            self.updater.perform_update()
-            
+
+            self.updater.perform_update(target)
+
         except KeyboardInterrupt:
             print(Colors.warning(f"\n{self.t.get('messages.interrupted')}"))
         except Exception as e:
