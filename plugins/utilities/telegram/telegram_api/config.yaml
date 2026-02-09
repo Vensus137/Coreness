@@ -251,15 +251,15 @@ methods:
             description: "Reply клавиатура"
             description_en: "Reply keyboard"
           message_edit:
-            type: integer|boolean
+            type: integer|boolean|string
             optional: true
-            description: "Редактирование сообщения: integer (ID сообщения) или true/false (по умолчанию редактирует текущее сообщение из события)"
-            description_en: "Edit message: integer (message ID) or true/false (default: edit current event message)"
+            description: "Редактирование сообщения: integer/string (ID сообщения) или true/false (по умолчанию редактирует текущее сообщение из события)"
+            description_en: "Edit message: integer/string (message ID) or true/false (default: edit current event message)"
           message_reply:
-            type: integer
+            type: integer|boolean|string
             optional: true
-            description: "ID сообщения для ответа"
-            description_en: "Message ID to reply to"
+            description: "Ответ на сообщение: true (ответ на текущее из события), integer/string (ID сообщения)"
+            description_en: "Reply to message: true (reply to current event message), integer/string (message ID)"
           parse_mode:
             type: string
             optional: true

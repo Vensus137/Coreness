@@ -15,16 +15,6 @@ class KeyboardBuilder:
     def build(self, data: dict) -> Dict[str, Any]:
         """
         Build keyboard from items array
-        
-        Args:
-            items: array of IDs
-            keyboard_type: 'inline' or 'reply'
-            text_template: template with $value$ placeholder
-            callback_template: template for inline keyboards (required for inline)
-            buttons_per_row: buttons per row (optional, default from settings)
-        
-        Returns:
-            {result: "success", response_data: {keyboard, keyboard_type, rows_count, buttons_count}}
         """
         try:
             items = data.get('items')

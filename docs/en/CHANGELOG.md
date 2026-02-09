@@ -8,7 +8,7 @@ keywords: coreness changelog, version history, updates, breaking changes, migrat
 
 All notable changes to this project documented in this file.
 
-## [1.2.0] - TBD
+## [1.2.0] - 2026-02-09
 
 ### ⚠️ BREAKING CHANGES
 - **telegram_bot_manager:** Removed `sync_bot`, `stop_all_bots`, `sync_bot_config`, `sync_bot_commands`; sync only via `sync_telegram_bot`. Renamed: `start_bot`→`start_telegram_bot`, `stop_bot`→`stop_telegram_bot`, `get_bot_status`→`get_telegram_bot_status`, `set_bot_token`→`set_telegram_bot_token`. Bot data only via `get_telegram_bot_info_by_id` (by bot_id); `get_bot_info` and `get_telegram_bot_info` (by token) removed.
@@ -18,9 +18,14 @@ All notable changes to this project documented in this file.
 - `get_bot_id_by_tenant_id` (tenant_hub): get bot_id by tenant_id and bot_type (telegram only), for scenarios.
 - `get_tenant_status`: tenant cache only (last_updated_at, last_failed_at, last_error); bot data via `get_telegram_bot_status` by bot_id.
 - `restrict_chat_member` (telegram_api): action to restrict users in supergroups (permission groups: messages, attachments, other, management).
+- **send_message (telegram_api):** support for flag and string for `message_reply`: `true` — reply to current event message, integer/string — message ID. For `message_edit`, string support added (same as integer) so placeholders like `"{message_id}"` work without type errors.
+- **execute_scenario (transition):** new transition type that executes another scenario and returns to current scenario (unlike `jump_to_scenario` which terminates current). Cache from executed scenario automatically merged into current scenario. Supports single scenario (string) or array of scenarios.
 
 ### Changed
 - Tenant management scenarios: `set_telegram_bot_token`; menu uses `get_tenant_status` and `get_telegram_bot_status` by bot_id.
+
+### Fixed
+- General system improvements and bug fixes (incl. ai_rag_service: `ai_token` for action `save_embedding` is now optional when `generate_embedding=false`).
 
 ### Technical Improvements
 - Unified Telegram action naming; single public bot sync — `sync_telegram_bot`.

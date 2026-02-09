@@ -1,6 +1,6 @@
 """
 Transition handler between scenario steps
-Handles all transition types: stop, abort, break, jump_to_scenario, move_steps, jump_to_step
+Handles all transition types: stop, abort, break, jump_to_scenario, execute_scenario, move_steps, jump_to_step
 """
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -61,6 +61,13 @@ class TransitionHandler:
                     return {'action': 'continue', 'value': None}
                 
                 return {'action': 'jump_to_scenario', 'value': transition_value}
+                
+            elif transition_action == 'execute_scenario':
+                # Execute scenario and return to current
+                if not transition_value:
+                    return {'action': 'continue', 'value': None}
+                
+                return {'action': 'execute_scenario', 'value': transition_value}
                 
             elif transition_action == 'move_steps':
                 # Move by specified number of steps
@@ -181,4 +188,56 @@ class TransitionHandler:
             # If index goes beyond bounds - finish scenario
             cache = data.get('_cache') if isinstance(data.get('_cache'), dict) else None
             return ('success', None, cache)
+    
+    async def handle_execute_scenario(self, transition_value: Any, data: Dict[str, Any], step_executor, cache_manager) -> Tuple[str, Optional[Dict[str, Any]]]:
+        """
+        Handle execute_scenario transition by calling execute_scenario action.
+        Executes scenario and returns to current scenario.
+        Returns tuple (result, cache)
+        """
+        if not transition_value:
+            # transition_value is empty or None - continue execution
+            return ('continue', None)
+        
+        try:
+            # Create virtual step for calling execute_scenario action
+            virtual_step = {
+                'action_name': 'execute_scenario',
+                'params': {
+                    'scenario': transition_value,
+                    'return_cache': True,  # Always return cache for merging
+                    # tenant_id and _scenario_metadata are already in data
+                }
+            }
+            
+            # Execute through StepExecutor (like a regular step)
+            step_result = await step_executor.execute_step(virtual_step, data)
+            
+            # Merge response_data into _cache (like in regular step)
+            response_data = step_result.get('response_data', {})
+            if response_data:
+                cache_manager.merge_response_data(
+                    response_data=response_data,
+                    data=data,  # Cache is automatically merged into data!
+                    action_name='execute_scenario',
+                    params=virtual_step['params']
+                )
+            
+            # Check scenario_result for stop/abort
+            scenario_result = response_data.get('scenario_result')
+            if scenario_result == 'abort':
+                # abort - interrupt entire execution chain of current scenario
+                cache = cache_manager.extract_cache(data)
+                return ('abort', cache)
+            elif scenario_result == 'stop':
+                # stop - interrupt entire event processing
+                cache = cache_manager.extract_cache(data)
+                return ('stop', cache)
+            
+            # Continue execution of current scenario
+            return ('continue', None)
+            
+        except Exception as e:
+            self.logger.error(f"Error handling execute_scenario transition: {e}")
+            return ('continue', None)
 
