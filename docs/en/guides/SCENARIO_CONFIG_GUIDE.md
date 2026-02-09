@@ -163,6 +163,7 @@ admin_welcome:
   - `move_steps` — move specified number of steps (positive = forward, negative = backward)
   - `jump_to_step` — jump to specific step by index (steps numbered from 0)
   - `jump_to_scenario` — transition to another scenario (to any tenant scenario)
+  - `execute_scenario` — execute another scenario and return to current
 - **Transition scenarios** — scenarios without triggers, called programmatically from other scenarios
 - **Scheduled scenarios** — scenarios with `schedule` field (cron expression), launched automatically on schedule
 - **Hybrid scenarios** — can have both `trigger` and `schedule` simultaneously (work on events AND on schedule)
@@ -935,10 +936,11 @@ step:
 - **`move_steps`** — move specified number of steps (positive number = forward, negative = backward). E.g., `move_step: 1` jumps to next step, `move_step: 2` skips 1 step and jumps to next
 - **`jump_to_step`** — jump to specific step by index (steps numbered from 0, e.g., `jump_to_step: 5` jumps to step with index 5)
 - **`jump_to_scenario`** — transition to another scenario (similar to break + jump, current scenario doesn't continue executing)
+- **`execute_scenario`** — execute another scenario and return to current (continue current scenario execution after called scenario completes)
 - **`any`** — universal transition processed first regardless of action result
 
 **Transition Features:**
-- **`transition_value`** — required for `move_steps` (number of steps), `jump_to_step` (step index, starting from 0) and `jump_to_scenario` (scenario name)
+- **`transition_value`** — required for `move_steps` (number of steps), `jump_to_step` (step index, starting from 0), `jump_to_scenario` and `execute_scenario` (scenario name or array of names)
 - **Scenario search** — system looks for scenario in same tenant
 - **Transition priority** — `any` transition processed first, regardless of action result
 - **Single transition** — always only one transition executed from all possible
@@ -948,6 +950,7 @@ step:
   - **`abort`** — interrupts entire current scenario chain (including all nested scenarios), but allows other scenarios (from other triggers) to continue working
   - **`stop`** — completely stops event processing in all scenarios, returns control to system
   - **`jump_to_scenario`** — interrupts current scenario execution and transitions to another (similar to break + jump)
+  - **`execute_scenario`** — executes another scenario, then returns and continues current scenario execution (cache from called scenario available in current)
 
 ## 🔧 Placeholders
 
@@ -974,6 +977,27 @@ step:
   - action: "send_message"
     params:
       text: "Regular menu for users"
+```
+
+#### **Example 1.1: Execute scenario and return**
+```yaml
+step:
+  - action: "validate"
+    params:
+      condition: "{user_id} in {_cache.system.admins|fallback:[]}"
+    transition:
+      - action_result: "success"
+        transition_action: "execute_scenario"
+        transition_value: "add_admin_buttons"  # Execute scenario and return
+  
+  # This step WILL execute after add_admin_buttons completes
+  - action: "send_message"
+    params:
+      text: |
+        Hello! {_cache.inline}
+      inline:
+        - "{_cache.inline|fallback:[]}"       # Buttons from add_admin_buttons available
+        - [{"ℹ️ Help": "help"}]
 ```
 
 #### **Example 2: Moving through steps**

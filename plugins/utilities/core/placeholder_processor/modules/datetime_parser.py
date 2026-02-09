@@ -32,6 +32,17 @@ def parse_datetime_value(value) -> Tuple[Optional[datetime], bool]:
         except (ValueError, OSError):
             pass
     
+    # Try parsing ISO format with timezone first (most complex)
+    # ISO format with timezone requires special handling
+    if 'T' in value_str:
+        try:
+            # Try fromisoformat (supports ISO with timezone, microseconds, etc.)
+            # This handles formats like: 2026-02-09T16:02:36.609797+03:00
+            dt = datetime.fromisoformat(value_str.replace('Z', '+00:00'))
+            return dt, True
+        except (ValueError, AttributeError):
+            pass
+    
     # Try different formats
     # Format: (pattern, has_time)
     formats = [
@@ -45,7 +56,7 @@ def parse_datetime_value(value) -> Tuple[Optional[datetime], bool]:
         ('%d.%m.%Y %H:%M', True),
         ('%d.%m.%Y', False),
         
-        # ISO formats
+        # ISO formats (without timezone)
         ('%Y-%m-%dT%H:%M:%S', True),
         ('%Y-%m-%dT%H:%M', True),
     ]

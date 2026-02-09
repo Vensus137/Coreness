@@ -241,18 +241,11 @@ file_info:
 <tr><td><code>keys</code></td><td>Extract keys from object (dict) to array</td><td><code>{storage_values|keys}</code></td><td><code>["group1", "group2"]</code> (if storage_values={"group1": {...}, "group2": {...}})</td></tr>
 <tr><td colspan="4"><strong>Transformations</strong></td></tr>
 <tr><td><code>code</code></td><td>Wrap value in code block</td><td><code>{field|code}</code></td><td><code>&lt;code&gt;value&lt;/code&gt;</code></td></tr>
-<tr><td colspan="4"><strong>Formatting</strong></td></tr>
+<tr><td colspan="4"><strong>String Formatting</strong></td></tr>
 <tr><td><code>truncate:length</code></td><td>Truncate text</td><td><code>{text|truncate:50}</code></td><td><code>Very long text...</code></td></tr>
-<tr><td><code>format:date</code></td><td>Date format</td><td><code>{timestamp|format:date}</code></td><td><code>25.12.2024</code></td></tr>
-<tr><td><code>format:time</code></td><td>Time format</td><td><code>{timestamp|format:time}</code></td><td><code>14:30</code></td></tr>
-<tr><td><code>format:time_full</code></td><td>Time format with seconds</td><td><code>{timestamp|format:time_full}</code></td><td><code>14:30:45</code></td></tr>
-<tr><td><code>format:datetime</code></td><td>Full format</td><td><code>{timestamp|format:datetime}</code></td><td><code>25.12.2024 14:30</code></td></tr>
-<tr><td><code>format:datetime_full</code></td><td>Full format with seconds</td><td><code>{timestamp|format:datetime_full}</code></td><td><code>25.12.2024 14:30:45</code></td></tr>
-<tr><td><code>format:pg_date</code></td><td>PostgreSQL date format (YYYY-MM-DD)</td><td><code>{timestamp|format:pg_date}</code></td><td><code>2024-12-25</code></td></tr>
-<tr><td><code>format:pg_datetime</code></td><td>PostgreSQL date-time format (YYYY-MM-DD HH:MM:SS)</td><td><code>{timestamp|format:pg_datetime}</code></td><td><code>2024-12-25 14:30:45</code></td></tr>
+<tr><td colspan="4"><strong>Date & Time Operations</strong></td></tr>
+<tr><td><code>shift:±interval</code></td><td>Shift date by interval (PostgreSQL style: +1 day, -2 hours, +1 year 2 months). Supports all date formats including ISO with timezone, correct month/year handling</td><td><code>{created|shift:+1 day}</code></td><td><code>2024-12-26</code> (if created="2024-12-25")</td></tr>
 <tr><td><code>seconds</code></td><td>Convert time strings to seconds (supports format: Xw Yd Zh Km Ms)</td><td><code>{duration|seconds}</code></td><td><code>9000</code> (if duration="2h 30m")</td></tr>
-<tr><td><code>shift:±interval</code></td><td>Shift date by interval (PostgreSQL style: +1 day, -2 hours, +1 year 2 months). Supports all date formats, correct month/year handling</td><td><code>{created|shift:+1 day}</code></td><td><code>2024-12-26</code> (if created="2024-12-25")</td></tr>
-<tr><td colspan="4"><strong>Rounding to Period Start</strong></td></tr>
 <tr><td><code>to_date</code></td><td>Round date to day start (00:00:00), returns ISO format</td><td><code>{created|to_date}</code></td><td><code>2024-12-25 00:00:00</code></td></tr>
 <tr><td><code>to_hour</code></td><td>Round date to hour start (minutes and seconds = 0), returns ISO format</td><td><code>{created|to_hour}</code></td><td><code>2024-12-25 15:00:00</code> (if created="2024-12-25 15:30:45")</td></tr>
 <tr><td><code>to_minute</code></td><td>Round date to minute start (seconds = 0), returns ISO format</td><td><code>{created|to_minute}</code></td><td><code>2024-12-25 15:30:00</code> (if created="2024-12-25 15:30:45")</td></tr>
@@ -260,10 +253,19 @@ file_info:
 <tr><td><code>to_week</code></td><td>Round date to week start (Monday 00:00:00), returns ISO format</td><td><code>{created|to_week}</code></td><td><code>2024-12-23 00:00:00</code> (if created="2024-12-25 15:30:45")</td></tr>
 <tr><td><code>to_month</code></td><td>Round date to month start (1st day, 00:00:00), returns ISO format</td><td><code>{created|to_month}</code></td><td><code>2024-12-01 00:00:00</code> (if created="2024-12-25 15:30:45")</td></tr>
 <tr><td><code>to_year</code></td><td>Round date to year start (January 1st, 00:00:00), returns ISO format</td><td><code>{created|to_year}</code></td><td><code>2024-01-01 00:00:00</code> (if created="2024-12-25 15:30:45")</td></tr>
+<tr><td colspan="4"><strong>Date & Time Formatting</strong></td></tr>
+<tr><td><code>format:timestamp</code></td><td>Convert to Unix timestamp</td><td><code>{date|format:timestamp}</code></td><td><code>1703512200</code></td></tr>
+<tr><td><code>format:date</code></td><td>Date format (dd.mm.yyyy)</td><td><code>{timestamp|format:date}</code></td><td><code>25.12.2024</code></td></tr>
+<tr><td><code>format:time</code></td><td>Time format (HH:MM)</td><td><code>{timestamp|format:time}</code></td><td><code>14:30</code></td></tr>
+<tr><td><code>format:time_full</code></td><td>Time format with seconds (HH:MM:SS)</td><td><code>{timestamp|format:time_full}</code></td><td><code>14:30:45</code></td></tr>
+<tr><td><code>format:datetime</code></td><td>Full format (dd.mm.yyyy HH:MM)</td><td><code>{timestamp|format:datetime}</code></td><td><code>25.12.2024 14:30</code></td></tr>
+<tr><td><code>format:datetime_full</code></td><td>Full format with seconds (dd.mm.yyyy HH:MM:SS)</td><td><code>{timestamp|format:datetime_full}</code></td><td><code>25.12.2024 14:30:45</code></td></tr>
+<tr><td><code>format:pg_date</code></td><td>PostgreSQL date format (YYYY-MM-DD)</td><td><code>{timestamp|format:pg_date}</code></td><td><code>2024-12-25</code></td></tr>
+<tr><td><code>format:pg_datetime</code></td><td>PostgreSQL date-time format (YYYY-MM-DD HH:MM:SS)</td><td><code>{timestamp|format:pg_datetime}</code></td><td><code>2024-12-25 14:30:45</code></td></tr>
+<tr><td colspan="4"><strong>Number Formatting</strong></td></tr>
 <tr><td><code>format:currency</code></td><td>Currency formatting</td><td><code>{amount|format:currency}</code></td><td><code>1000.00 ₽</code></td></tr>
 <tr><td><code>format:percent</code></td><td>Percentage formatting</td><td><code>{value|format:percent}</code></td><td><code>25.5%</code></td></tr>
 <tr><td><code>format:number</code></td><td>Number formatting</td><td><code>{value|format:number}</code></td><td><code>1234.56</code></td></tr>
-<tr><td><code>format:timestamp</code></td><td>Convert to timestamp</td><td><code>{date|format:timestamp}</code></td><td><code>1703512200</code></td></tr>
 <tr><td colspan="4"><strong>Conditional</strong></td></tr>
 <tr><td><code>equals:value</code></td><td>Equality check (string comparison)</td><td><code>{status|equals:active}</code></td><td><code>true</code> or <code>false</code></td></tr>
 <tr><td><code>in_list:items</code></td><td>Check inclusion in list</td><td><code>{role|in_list:admin,moderator}</code></td><td><code>true</code> or <code>false</code></td></tr>

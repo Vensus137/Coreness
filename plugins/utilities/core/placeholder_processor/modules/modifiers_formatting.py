@@ -4,6 +4,8 @@ Formatting modifiers
 from datetime import datetime
 from typing import Any
 
+from .datetime_parser import parse_datetime_value
+
 
 class FormattingModifiers:
     """Class with formatting modifiers"""
@@ -13,66 +15,33 @@ class FormattingModifiers:
     
     def modifier_format(self, value: Any, param: str) -> str:
         """Date and number formatting: {field|format:type}"""
-        if not value or not param:
+        if not value and value != 0 or not param:
             return str(value) if value is not None else ""
         
         try:
             if param == 'timestamp':
                 # Convert to timestamp
-                if isinstance(value, str):
-                    dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
-                else:
-                    dt = value
-                return str(int(dt.timestamp()))
-            elif param == 'date':
-                # Date format
-                if isinstance(value, str):
-                    dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
-                else:
-                    dt = value
-                return dt.strftime('%d.%m.%Y')
-            elif param == 'time':
-                # Time format
-                if isinstance(value, str):
-                    dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
-                else:
-                    dt = value
-                return dt.strftime('%H:%M')
-            elif param == 'time_full':
-                # Time format with seconds
-                if isinstance(value, str):
-                    dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
-                else:
-                    dt = value
-                return dt.strftime('%H:%M:%S')
-            elif param == 'datetime':
-                # Full date and time format
-                if isinstance(value, str):
-                    dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
-                else:
-                    dt = value
-                return dt.strftime('%d.%m.%Y %H:%M')
-            elif param == 'datetime_full':
-                # Full date and time format with seconds
-                if isinstance(value, str):
-                    dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
-                else:
-                    dt = value
-                return dt.strftime('%d.%m.%Y %H:%M:%S')
-            elif param == 'pg_date':
-                # Date format for PostgreSQL (YYYY-MM-DD)
-                if isinstance(value, str):
-                    dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
-                else:
-                    dt = value
-                return dt.strftime('%Y-%m-%d')
-            elif param == 'pg_datetime':
-                # Date and time format for PostgreSQL (YYYY-MM-DD HH:MM:SS)
-                if isinstance(value, str):
-                    dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
-                else:
-                    dt = value
-                return dt.strftime('%Y-%m-%d %H:%M:%S')
+                dt, _ = parse_datetime_value(value)
+                if dt:
+                    return str(int(dt.timestamp()))
+            elif param in ('date', 'time', 'time_full', 'datetime', 'datetime_full', 'pg_date', 'pg_datetime'):
+                # Parse datetime from any format (ISO string, Unix timestamp, datetime object)
+                dt, _ = parse_datetime_value(value)
+                if dt:
+                    if param == 'date':
+                        return dt.strftime('%d.%m.%Y')
+                    elif param == 'time':
+                        return dt.strftime('%H:%M')
+                    elif param == 'time_full':
+                        return dt.strftime('%H:%M:%S')
+                    elif param == 'datetime':
+                        return dt.strftime('%d.%m.%Y %H:%M')
+                    elif param == 'datetime_full':
+                        return dt.strftime('%d.%m.%Y %H:%M:%S')
+                    elif param == 'pg_date':
+                        return dt.strftime('%Y-%m-%d')
+                    elif param == 'pg_datetime':
+                        return dt.strftime('%Y-%m-%d %H:%M:%S')
             elif param == 'currency':
                 # Currency formatting
                 return f"{float(value):.2f} ₽"

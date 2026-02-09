@@ -55,11 +55,10 @@ actions:
             description: "ID сообщения для редактирования или флаг"
             description_en: "Message ID to edit or flag"
           message_reply:
-            type: integer
+            type: integer|boolean|string
             optional: true
-            min: 1
-            description: "ID сообщения для ответа"
-            description_en: "Message ID to reply to"
+            description: "Ответ на сообщение: true (ответ на текущее из события), integer/string (ID сообщения)"
+            description_en: "Reply to message: true (reply to current event message), integer/string (message ID)"
           inline:
             type: array
             optional: true

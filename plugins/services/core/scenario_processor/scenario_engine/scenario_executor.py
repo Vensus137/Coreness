@@ -134,6 +134,22 @@ class ScenarioExecutor:
                         # stop, abort or success - return result
                         return (result, cache)
                     
+                elif transition_action == 'execute_scenario':
+                    result, cache = await self.transition_handler.handle_execute_scenario(
+                        transition_value=transition_value,
+                        data=data,
+                        step_executor=self.step_executor,
+                        cache_manager=self.cache_manager
+                    )
+                    
+                    if result == 'continue':
+                        # Continue with next step
+                        i += 1
+                        continue
+                    else:
+                        # stop or abort - return result
+                        return (result, cache)
+                    
                 elif transition_action == 'move_steps':
                     result, new_index, cache = await self.transition_handler.handle_move_steps(
                         transition_value=transition_value,

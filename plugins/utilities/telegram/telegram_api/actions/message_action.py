@@ -62,13 +62,16 @@ class MessageAction:
                     # Edit current message
                     target_message_id = message_id
                 elif isinstance(message_edit, int):
-                    # Edit specified message
                     target_message_id = message_edit
+                elif isinstance(message_edit, str):
+                    parsed = self._parse_message_id(message_edit)
+                    if parsed is not None:
+                        target_message_id = parsed
                 # If False or None - target_message_id remains None (send new)
             else:
                 # Attribute not specified - by default edit current message
                 target_message_id = message_id
-            
+
             # Determine parameters for reply
             reply_to_message_id = None
             if 'message_reply' in data:  # Attribute explicitly specified
@@ -76,6 +79,10 @@ class MessageAction:
                     reply_to_message_id = message_id
                 elif isinstance(message_reply, int):
                     reply_to_message_id = message_reply
+                elif isinstance(message_reply, str):
+                    parsed = self._parse_message_id(message_reply)
+                    if parsed is not None:
+                        reply_to_message_id = parsed
             # If message_reply not specified or False - don't do reply
             
             # Build reply_markup from keyboard
@@ -222,6 +229,17 @@ class MessageAction:
         except Exception as e:
             return None, str(e)
     
+    def _parse_message_id(self, value: str) -> Optional[int]:
+        """Parse string to message ID (integer). Returns None if invalid."""
+        value = (value or "").strip()
+        if not value:
+            return None
+        try:
+            n = int(value)
+            return n if n >= 1 else None
+        except (TypeError, ValueError):
+            return None
+
     def _escape_text_for_parse_mode(self, text: str, parse_mode: str) -> str:
         """
         Converts Markdown to MarkdownV2 using telegramify-markdown library

@@ -263,7 +263,7 @@ data:
 - **`replace_existing`** (`boolean`, optional) — Replace existing document (default false; ALREADY_EXISTS if exists)
 - **`generate_embedding`** (`boolean`, optional) — Generate embeddings for chunks (default true); false = text only
 - **`created_at`** (`string`, optional) — Creation date (ISO/YYYY-MM-DD); default current time
-- 🔑 **`ai_token`** (`string`) — AI API key from tenant config; required if generate_embedding=true
+- 🔑 **`ai_token`** (`string`, optional) — AI API key from tenant config; required if generate_embedding=true
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -310,7 +310,7 @@ data:
     # replace_existing: boolean (optional)
     # generate_embedding: boolean (optional)
     # created_at: string (optional)
-    ai_token: "example"
+    # ai_token: string (optional)
 ```
 
 <details>
@@ -380,7 +380,7 @@ response_data:
 - **`metadata_filter`** (`object`, optional) — Metadata filter (JSON)
 - **`model`** (`string`, optional) — Embedding model (if query_text)
 - **`dimensions`** (`integer`, optional) — Embedding dimensions (if query_text)
-- 🔑 **`ai_token`** (`string`) — AI API key; required if query_text set
+- 🔑 **`ai_token`** (`string`, optional) — AI API key; required if query_text set
 
 <details>
 <summary>⚙️ Additional Parameters</summary>
@@ -421,7 +421,7 @@ response_data:
     # metadata_filter: object (optional)
     # model: string (optional)
     # dimensions: integer (optional)
-    ai_token: "example"
+    # ai_token: string (optional)
 ```
 
 <details>
@@ -1808,7 +1808,7 @@ step:
 - **`text`** (`string`, optional) — Message text
 - **`parse_mode`** (`string`, optional, values: [`HTML`, `Markdown`, `MarkdownV2`]) — Parse mode (HTML, Markdown, MarkdownV2)
 - **`message_edit`** (`integer|boolean|string`, optional) — Message ID to edit or flag
-- **`message_reply`** (`integer`, optional, min: 1) — Message ID to reply to
+- **`message_reply`** (`integer|boolean|string`, optional) — Reply to message: true (reply to current event message), integer/string (message ID)
 - **`inline`** (`array`, optional) — Inline keyboard
 - **`reply`** (`array`, optional) — Reply keyboard
 - **`attachment`** (`array`, optional) — Attachments
@@ -1841,7 +1841,7 @@ step:
     # text: string (optional)
     # parse_mode: string (optional)
     # message_edit: integer|boolean|string (optional)
-    # message_reply: integer (optional)
+    # message_reply: integer|boolean|string (optional)
     # inline: array (optional)
     # reply: array (optional)
     # attachment: array (optional)
