@@ -241,29 +241,31 @@ file_info:
 <tr><td><code>keys</code></td><td>Извлечение ключей из объекта (словаря) в массив</td><td><code>{storage_values|keys}</code></td><td><code>["group1", "group2"]</code> (если storage_values={"group1": {...}, "group2": {...}})</td></tr>
 <tr><td colspan="4"><strong>Преобразования</strong></td></tr>
 <tr><td><code>code</code></td><td>Оборачивание значения в code блок</td><td><code>{field|code}</code></td><td><code>&lt;code&gt;value&lt;/code&gt;</code></td></tr>
-<tr><td colspan="4"><strong>Форматирование</strong></td></tr>
+<tr><td colspan="4"><strong>Форматирование строк</strong></td></tr>
 <tr><td><code>truncate:length</code></td><td>Обрезка текста</td><td><code>{text|truncate:50}</code></td><td><code>Очень длинный текст...</code></td></tr>
-<tr><td><code>format:date</code></td><td>Формат даты</td><td><code>{timestamp|format:date}</code></td><td><code>25.12.2024</code></td></tr>
-<tr><td><code>format:time</code></td><td>Формат времени</td><td><code>{timestamp|format:time}</code></td><td><code>14:30</code></td></tr>
-<tr><td><code>format:time_full</code></td><td>Формат времени с секундами</td><td><code>{timestamp|format:time_full}</code></td><td><code>14:30:45</code></td></tr>
-<tr><td><code>format:datetime</code></td><td>Полный формат</td><td><code>{timestamp|format:datetime}</code></td><td><code>25.12.2024 14:30</code></td></tr>
-<tr><td><code>format:datetime_full</code></td><td>Полный формат с секундами</td><td><code>{timestamp|format:datetime_full}</code></td><td><code>25.12.2024 14:30:45</code></td></tr>
+<tr><td colspan="4"><strong>Операции с датами и временем</strong></td></tr>
+<tr><td><code>shift:±интервал</code></td><td>Сдвиг даты на интервал (PostgreSQL: +1 day, -2 hours, +1 year 2 months). Поддержка всех форматов дат, включая ISO с таймзоной, корректная обработка месяцев/лет</td><td><code>{created|shift:+1 day}</code></td><td><code>2024-12-26</code> (если created="2024-12-25")</td></tr>
+<tr><td><code>seconds</code></td><td>Преобразование временных строк в секунды (формат: Xw Yd Zh Km Ms)</td><td><code>{duration|seconds}</code></td><td><code>9000</code> (если duration="2h 30m")</td></tr>
+<tr><td><code>to_date</code></td><td>Приведение даты к началу дня (00:00:00), возвращает ISO формат</td><td><code>{created|to_date}</code></td><td><code>2024-12-25 00:00:00</code></td></tr>
+<tr><td><code>to_hour</code></td><td>Приведение даты к началу часа (минуты и секунды = 0), возвращает ISO формат</td><td><code>{created|to_hour}</code></td><td><code>2024-12-25 15:00:00</code> (если created="2024-12-25 15:30:45")</td></tr>
+<tr><td><code>to_minute</code></td><td>Приведение даты к началу минуты (секунды = 0), возвращает ISO формат</td><td><code>{created|to_minute}</code></td><td><code>2024-12-25 15:30:00</code> (если created="2024-12-25 15:30:45")</td></tr>
+<tr><td><code>to_second</code></td><td>Приведение даты к началу секунды (микросекунды = 0), возвращает ISO формат</td><td><code>{created|to_second}</code></td><td><code>2024-12-25 15:30:45</code></td></tr>
+<tr><td><code>to_week</code></td><td>Приведение даты к началу недели (понедельник 00:00:00), возвращает ISO формат</td><td><code>{created|to_week}</code></td><td><code>2024-12-23 00:00:00</code> (если created="2024-12-25 15:30:45")</td></tr>
+<tr><td><code>to_month</code></td><td>Приведение даты к началу месяца (1 число, 00:00:00), возвращает ISO формат</td><td><code>{created|to_month}</code></td><td><code>2024-12-01 00:00:00</code> (если created="2024-12-25 15:30:45")</td></tr>
+<tr><td><code>to_year</code></td><td>Приведение даты к началу года (1 января, 00:00:00), возвращает ISO формат</td><td><code>{created|to_year}</code></td><td><code>2024-01-01 00:00:00</code> (если created="2024-12-25 15:30:45")</td></tr>
+<tr><td colspan="4"><strong>Форматирование дат и времени</strong></td></tr>
+<tr><td><code>format:timestamp</code></td><td>Преобразование в Unix timestamp</td><td><code>{date|format:timestamp}</code></td><td><code>1703512200</code></td></tr>
+<tr><td><code>format:date</code></td><td>Формат даты (dd.mm.yyyy)</td><td><code>{timestamp|format:date}</code></td><td><code>25.12.2024</code></td></tr>
+<tr><td><code>format:time</code></td><td>Формат времени (HH:MM)</td><td><code>{timestamp|format:time}</code></td><td><code>14:30</code></td></tr>
+<tr><td><code>format:time_full</code></td><td>Формат времени с секундами (HH:MM:SS)</td><td><code>{timestamp|format:time_full}</code></td><td><code>14:30:45</code></td></tr>
+<tr><td><code>format:datetime</code></td><td>Полный формат (dd.mm.yyyy HH:MM)</td><td><code>{timestamp|format:datetime}</code></td><td><code>25.12.2024 14:30</code></td></tr>
+<tr><td><code>format:datetime_full</code></td><td>Полный формат с секундами (dd.mm.yyyy HH:MM:SS)</td><td><code>{timestamp|format:datetime_full}</code></td><td><code>25.12.2024 14:30:45</code></td></tr>
 <tr><td><code>format:pg_date</code></td><td>Формат даты для PostgreSQL (YYYY-MM-DD)</td><td><code>{timestamp|format:pg_date}</code></td><td><code>2024-12-25</code></td></tr>
 <tr><td><code>format:pg_datetime</code></td><td>Формат даты и времени для PostgreSQL (YYYY-MM-DD HH:MM:SS)</td><td><code>{timestamp|format:pg_datetime}</code></td><td><code>2024-12-25 14:30:45</code></td></tr>
-<tr><td><code>seconds</code></td><td>Преобразование временных строк в секунды (формат: Xw Yd Zh Km Ms)</td><td><code>{duration|seconds}</code></td><td><code>9000</code> (если duration="2h 30m")</td></tr>
-<tr><td><code>shift:±интервал</code></td><td>Сдвиг даты на интервал (PostgreSQL: +1 day, -2 hours, +1 year 2 months). Поддержка всех форматов дат</td><td><code>{created|shift:+1 day}</code></td><td><code>2024-12-26</code> (если created="2024-12-25")</td></tr>
-<tr><td colspan="4"><strong>Приведение к началу периода</strong></td></tr>
-<tr><td><code>to_date</code></td><td>Приведение даты к началу дня (00:00:00), ISO формат</td><td><code>{created|to_date}</code></td><td><code>2024-12-25 00:00:00</code></td></tr>
-<tr><td><code>to_hour</code></td><td>Приведение даты к началу часа (минуты и секунды = 0), ISO формат</td><td><code>{created|to_hour}</code></td><td><code>2024-12-25 15:00:00</code> (если created="2024-12-25 15:30:45")</td></tr>
-<tr><td><code>to_minute</code></td><td>Приведение даты к началу минуты (секунды = 0), ISO формат</td><td><code>{created|to_minute}</code></td><td><code>2024-12-25 15:30:00</code> (если created="2024-12-25 15:30:45")</td></tr>
-<tr><td><code>to_second</code></td><td>Приведение даты к началу секунды (микросекунды = 0), ISO формат</td><td><code>{created|to_second}</code></td><td><code>2024-12-25 15:30:45</code></td></tr>
-<tr><td><code>to_week</code></td><td>Приведение даты к началу недели (понедельник 00:00:00), ISO формат</td><td><code>{created|to_week}</code></td><td><code>2024-12-23 00:00:00</code> (если created="2024-12-25 15:30:45")</td></tr>
-<tr><td><code>to_month</code></td><td>Приведение даты к началу месяца (1 число, 00:00:00), ISO формат</td><td><code>{created|to_month}</code></td><td><code>2024-12-01 00:00:00</code> (если created="2024-12-25 15:30:45")</td></tr>
-<tr><td><code>to_year</code></td><td>Приведение даты к началу года (1 января, 00:00:00), ISO формат</td><td><code>{created|to_year}</code></td><td><code>2024-01-01 00:00:00</code> (если created="2024-12-25 15:30:45")</td></tr>
+<tr><td colspan="4"><strong>Форматирование чисел</strong></td></tr>
 <tr><td><code>format:currency</code></td><td>Форматирование валюты</td><td><code>{amount|format:currency}</code></td><td><code>1000.00 ₽</code></td></tr>
 <tr><td><code>format:percent</code></td><td>Форматирование процентов</td><td><code>{value|format:percent}</code></td><td><code>25.5%</code></td></tr>
 <tr><td><code>format:number</code></td><td>Форматирование чисел</td><td><code>{value|format:number}</code></td><td><code>1234.56</code></td></tr>
-<tr><td><code>format:timestamp</code></td><td>Преобразование в timestamp</td><td><code>{date|format:timestamp}</code></td><td><code>1703512200</code></td></tr>
 <tr><td colspan="4"><strong>Условные</strong></td></tr>
 <tr><td><code>equals:value</code></td><td>Проверка равенства (строковое сравнение)</td><td><code>{status|equals:active}</code></td><td><code>true</code> или <code>false</code></td></tr>
 <tr><td><code>in_list:items</code></td><td>Проверка вхождения в список</td><td><code>{role|in_list:admin,moderator}</code></td><td><code>true</code> или <code>false</code></td></tr>

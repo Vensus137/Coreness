@@ -468,14 +468,41 @@ class PlaceholderProcessor:
                     return False
         return depth == 0
     
+    def _strip_quotes(self, text: str) -> str:
+        """
+        Remove surrounding quotes from parameter text.
+        Handles both single (') and double (") quotes.
+        Only removes if text starts and ends with same quote type.
+        """
+        if not text:
+            return text
+        
+        text_stripped = text.strip()
+        
+        # Remove matching surrounding quotes
+        if len(text_stripped) >= 2:
+            first_char = text_stripped[0]
+            last_char = text_stripped[-1]
+            if (first_char == "'" and last_char == "'") or \
+               (first_char == '"' and last_char == '"'):
+                return text_stripped[1:-1]
+        
+        return text_stripped
+    
     def _apply_modifier(self, value: Any, modifier: str) -> Any:
         """Applies one modifier"""
         # Check if modifier is arithmetic (starts with symbol)
         if modifier and modifier[0] in ['/', '+', '-', '*', '%']:
             mod_name = modifier[0]
             mod_param = modifier[1:] if len(modifier) > 1 else None
+            # Strip surrounding quotes from arithmetic parameter if present
+            if mod_param:
+                mod_param = self._strip_quotes(mod_param)
         elif ':' in modifier:
             mod_name, mod_param = modifier.split(':', 1)
+            # Strip surrounding quotes from parameter if present
+            if mod_param:
+                mod_param = self._strip_quotes(mod_param)
         else:
             mod_name, mod_param = modifier, None
         

@@ -8,7 +8,7 @@ keywords: changelog coreness, история изменений, обновле�
 
 Все важные изменения в проекте документируются в этом файле.
 
-## [1.2.0] - TBD
+## [1.2.0] - 2026-02-09
 
 ### ⚠️ BREAKING CHANGES
 - **telegram_bot_manager:** удалены `sync_bot`, `stop_all_bots`, `sync_bot_config`, `sync_bot_commands`; синк — только `sync_telegram_bot`. Переименованы: `start_bot`→`start_telegram_bot`, `stop_bot`→`stop_telegram_bot`, `get_bot_status`→`get_telegram_bot_status`, `set_bot_token`→`set_telegram_bot_token`. Данные бота — только `get_telegram_bot_info_by_id` (по bot_id); `get_bot_info` и `get_telegram_bot_info` (по токену) удалены.
@@ -18,9 +18,14 @@ keywords: changelog coreness, история изменений, обновле�
 - `get_bot_id_by_tenant_id` (tenant_hub): bot_id по tenant_id и bot_type (пока telegram), для сценариев.
 - `get_tenant_status`: только кэш тенанта (last_updated_at, last_failed_at, last_error); данные бота — через `get_telegram_bot_status` по bot_id.
 - `restrict_chat_member` (telegram_api): действие ограничения пользователей в супергруппах (permission groups: messages, attachments, other, management).
+- **send_message (telegram_api):** поддержка флага и string для `message_reply`: `true` — ответ на текущее сообщение из события, integer/string — ID сообщения. Для `message_edit` добавлена поддержка string (как у integer), чтобы подстановки вида `"{message_id}"` работали без ошибок типов.
+- **execute_scenario (transition):** новый тип перехода, который выполняет другой сценарий и возвращается к текущему (в отличие от `jump_to_scenario`, который прерывает текущий). Кэш из выполненного сценария автоматически мержится в текущий сценарий. Поддерживает одиночный сценарий (string) или массив сценариев.
 
 ### Changed
 - Сценарии управления тенантом: `set_telegram_bot_token`, меню — `get_tenant_status` + `get_telegram_bot_status` по bot_id.
+
+### Fixed
+- Общие улучшения системы и исправления багов (в т.ч. ai_rag_service: параметр `ai_token` для действия `save_embedding` сделан необязательным при `generate_embedding=false`).
 
 ### Technical Improvements
 - Единый стиль имён действий Telegram, один публичный синк бота — `sync_telegram_bot`.

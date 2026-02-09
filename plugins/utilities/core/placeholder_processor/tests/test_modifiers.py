@@ -6,6 +6,43 @@ Tests 4-9, 14-19: All modifiers
 from conftest import assert_equal
 
 
+def test_modifiers_with_quoted_parameters(processor):
+    """Test that modifiers support parameters in quotes"""
+    values_dict = {
+        'text': 'hello world',
+        'number': 100,
+        'status': 'active',
+    }
+    
+    # fallback with single quotes
+    result = processor.process_text_placeholders("{nonexistent|fallback:'default'}", values_dict)
+    assert_equal(result, "default", "fallback with single quoted parameter")
+    
+    # fallback with double quotes
+    result = processor.process_text_placeholders("{nonexistent|fallback:\"default\"}", values_dict)
+    assert_equal(result, "default", "fallback with double quoted parameter")
+    
+    # truncate with quotes (parameter is number, so result is same with or without quotes)
+    result = processor.process_text_placeholders("{text|truncate:'5'}", values_dict)
+    assert_equal(result, "he...", "truncate with quoted parameter (5 chars)")
+    
+    # arithmetic with quotes (should work)
+    result = processor.process_text_placeholders("{number|+'50'}", values_dict)
+    assert_equal(result, "150", "arithmetic with quoted parameter")
+    
+    # equals with quotes (returns Python bool True as string)
+    result = processor.process_text_placeholders("{status|equals:'active'}", values_dict)
+    assert_equal(result, "True", "equals with quoted parameter")
+    
+    # value with quotes
+    result = processor.process_text_placeholders("{status|equals:active|value:'✅ Active'}", values_dict)
+    assert_equal(result, "✅ Active", "value with quoted parameter")
+    
+    # Without quotes (should still work)
+    result = processor.process_text_placeholders("{nonexistent|fallback:default}", values_dict)
+    assert_equal(result, "default", "fallback without quotes still works")
+
+
 def test_modifiers_string(processor):
     """Test 4: String modifiers"""
     values_dict = {

@@ -71,7 +71,7 @@ System automatically adds following service fields for correct action operation:
   - `polling_start_time` — filtering events by time
   - `last_error` — saving action error text for subsequent scenario steps
   - `last_result` — saving action execution result (e.g., `success`, `error`, `timeout`, `not_found`) for debugging and checking in subsequent scenario steps
-  - `scenario_chain` — array of scenario names in call order, automatically updated when launching each scenario and on transitions (`jump_to_scenario`). Current scenario available as `scenario_chain[-1]`, previous — as `scenario_chain[-2]` (if exists). Used for debugging and logging execution flow
+  - `scenario_chain` — array of scenario names in call order, automatically updated when launching each scenario and on transitions (`jump_to_scenario`, `execute_scenario`). Current scenario available as `scenario_chain[-1]`, previous — as `scenario_chain[-2]` (if exists). Used for debugging and logging execution flow
 - **State fields** (`user_state`, `user_state_expired_at`) — can be `null` if state not set or expired
 
 ## Scheduled Scenario Fields

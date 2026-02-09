@@ -236,3 +236,62 @@ def test_shift_abbreviated_units(processor):
     # sec (second)
     result = processor.process_text_placeholders("{'2024-12-25 15:30:00'|shift:+30 sec}", {})
     assert_equal(result, "2024-12-25 15:30:30", "Abbreviation: sec")
+
+
+def test_shift_iso_with_timezone(processor):
+    """Test shift with ISO format dates with timezone"""
+    # ISO format with timezone and microseconds
+    result = processor.process_text_placeholders("{'2026-02-09T16:02:36.609797+03:00'|shift:+1 day}", {})
+    # Check that result is valid date (not original value)
+    assert result != "2026-02-09T16:02:36.609797+03:00", "ISO with timezone should be parsed"
+    assert "2026-02-10" in result, "Should shift by 1 day"
+    
+    # ISO format with Z timezone
+    result = processor.process_text_placeholders("{'2024-12-25T15:30:00Z'|shift:+2 hours}", {})
+    assert result != "2024-12-25T15:30:00Z", "ISO with Z timezone should be parsed"
+    # Result depends on local timezone, just check it's processed
+    assert "2024-12-25" in result or "2024-12-26" in result, "Date should be present in result"
+    
+    # ISO format with positive offset
+    result = processor.process_text_placeholders("{'2024-12-25T15:30:00+05:00'|shift:+1 hour}", {})
+    assert result != "2024-12-25T15:30:00+05:00", "ISO with +offset should be parsed"
+    
+    # ISO format with negative offset
+    result = processor.process_text_placeholders("{'2024-12-25T15:30:00-08:00'|shift:-3 hours}", {})
+    assert result != "2024-12-25T15:30:00-08:00", "ISO with -offset should be parsed"
+
+
+def test_shift_iso_with_microseconds(processor):
+    """Test shift with ISO format dates with microseconds"""
+    # ISO format with microseconds (no timezone)
+    result = processor.process_text_placeholders("{'2024-12-25T15:30:45.123456'|shift:+1 day}", {})
+    # fromisoformat should handle this
+    assert result != "2024-12-25T15:30:45.123456", "ISO with microseconds should be parsed"
+    assert "2024-12-26" in result, "Should shift by 1 day"
+
+
+def test_shift_with_quoted_parameters(processor):
+    """Test shift with parameters in quotes (support for user convenience)"""
+    # Single quotes around parameter
+    result = processor.process_text_placeholders("{'2024-12-25'|shift:'+1 day'}", {})
+    assert_equal(result, "2024-12-26", "Shift with single quoted parameter")
+    
+    # Double quotes around parameter
+    result = processor.process_text_placeholders("{'2024-12-25'|shift:\"+1 day\"}", {})
+    assert_equal(result, "2024-12-26", "Shift with double quoted parameter")
+    
+    # Negative shift with single quotes
+    result = processor.process_text_placeholders("{'2024-12-25'|shift:'-1 day'}", {})
+    assert_equal(result, "2024-12-24", "Shift with negative single quoted parameter")
+    
+    # Complex interval with quotes
+    result = processor.process_text_placeholders("{'2024-12-25'|shift:'+1 year 2 months'}", {})
+    assert_equal(result, "2026-02-25", "Shift with complex quoted parameter")
+    
+    # Hours with quotes (real case from yaml)
+    result = processor.process_text_placeholders("{'2024-12-25 15:30:00'|shift:'-1 hours'}", {})
+    assert_equal(result, "2024-12-25 14:30:00", "Shift hours with quoted parameter")
+    
+    # Without quotes (should still work)
+    result = processor.process_text_placeholders("{'2024-12-25'|shift:+1 day}", {})
+    assert_equal(result, "2024-12-26", "Shift without quotes still works")
