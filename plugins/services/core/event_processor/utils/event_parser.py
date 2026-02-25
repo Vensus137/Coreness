@@ -41,11 +41,9 @@ class EventParser:
             # Determine event type
             if 'message' in telegram_event:
                 message = telegram_event['message']
-                # Check if this is a member join/leave event
-                if 'new_chat_member' in message:
-                    event = await self._parse_member_joined_from_message(message)
-                elif 'left_chat_member' in message:
-                    event = await self._parse_member_left_from_message(message)
+                # Join/leave handled only via chat_member updates to avoid duplicate events
+                if 'new_chat_member' in message or 'left_chat_member' in message:
+                    event = None
                 elif 'successful_payment' in message:
                     event = await self._parse_successful_payment_from_message(message)
                 else:
@@ -54,6 +52,10 @@ class EventParser:
                 event = await self._parse_callback_query(telegram_event['callback_query'])
             elif 'pre_checkout_query' in telegram_event:
                 event = await self._parse_pre_checkout_query(telegram_event['pre_checkout_query'])
+            elif 'chat_member' in telegram_event:
+                event = await self._parse_chat_member_update(telegram_event['chat_member'])
+            elif 'my_chat_member' in telegram_event:
+                event = await self._parse_chat_member_update(telegram_event['my_chat_member'])
             else:
                 # Ignore unknown event types
                 return None
@@ -320,6 +322,73 @@ class EventParser:
             
         except Exception as e:
             self.logger.error(f"Error parsing member_left from message: {e}")
+            return None
+
+    async def _parse_chat_member_update(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Parse chat_member / my_chat_member update into member_joined or member_left by status transition."""
+        try:
+            old = payload.get('old_chat_member') or {}
+            new = payload.get('new_chat_member') or {}
+            old_status = (old.get('status') or '').strip().lower()
+            new_status = (new.get('status') or '').strip().lower()
+
+            join_old = ('left', 'kicked')
+            join_new = ('member', 'administrator')
+            leave_old = ('member', 'restricted', 'administrator')
+            leave_new = ('left', 'kicked')
+
+            if old_status in join_old and new_status in join_new:
+                return await self._build_member_event_from_chat_member(payload, 'member_joined')
+            if old_status in leave_old and new_status in leave_new:
+                return await self._build_member_event_from_chat_member(payload, 'member_left')
+            return None
+        except Exception as e:
+            self.logger.error(f"Error parsing chat_member update: {e}")
+            return None
+
+    async def _build_member_event_from_chat_member(
+        self, payload: Dict[str, Any], event_type: str
+    ) -> Optional[Dict[str, Any]]:
+        """Build member_joined or member_left event from chat_member payload. User = whose status changed (new/old_chat_member.user), not 'from' (e.g. link creator)."""
+        try:
+            chat = payload.get('chat', {})
+            chat_type = chat.get('type')
+            if event_type == 'member_joined':
+                member_user = payload.get('new_chat_member', {}).get('user') or {}
+            else:
+                member_user = payload.get('old_chat_member', {}).get('user') or {}
+            user_id = member_user.get('id') if member_user else None
+
+            event = {
+                'event_source': 'telegram',
+                'event_type': event_type,
+                'user_id': user_id,
+                'chat_id': chat.get('id'),
+                'chat_type': chat_type,
+                'is_group': chat_type in ['group', 'supergroup'],
+                'message_id': None,
+                'event_date': await self.datetime_formatter.to_iso_local_string(
+                    await self.datetime_formatter.to_local(payload.get('date'))
+                    if payload.get('date')
+                    else await self.datetime_formatter.now_local()
+                )
+            }
+            event.update({
+                'username': member_user.get('username'),
+                'first_name': member_user.get('first_name'),
+                'last_name': member_user.get('last_name'),
+                'language_code': member_user.get('language_code'),
+                'is_bot': member_user.get('is_bot', False),
+                'is_premium': member_user.get('is_premium', False)
+            })
+            if chat:
+                event.update({
+                    'chat_title': chat.get('title'),
+                    'chat_username': chat.get('username')
+                })
+            return await self.data_converter.to_safe_dict(event)
+        except Exception as e:
+            self.logger.error(f"Error building member event from chat_member: {e}")
             return None
 
     async def _parse_pre_checkout_query(self, pre_checkout_query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
