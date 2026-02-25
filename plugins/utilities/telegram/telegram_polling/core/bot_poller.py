@@ -371,7 +371,7 @@ class BotPoller:
                 'offset': self.offset,
                 'timeout': self.polling_timeout,
                 'limit': self.polling_limit,
-                'allowed_updates': ['message', 'callback_query', 'pre_checkout_query']  # Explicitly specify event types
+                'allowed_updates': self.allowed_updates
             }
             
             async with self.session.get(url, params=params) as response:
