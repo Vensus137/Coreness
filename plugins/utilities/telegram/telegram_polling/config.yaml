@@ -38,8 +38,8 @@ settings:
   # Update filtering
   allowed_updates:
     type: array
-    default: ["message", "callback_query", "pre_checkout_query"]
-    description: "Типы обновлений для получения от Telegram API. Будут установлены через setWebhook перед запуском пулинга"
+    default: ["message", "callback_query", "pre_checkout_query", "chat_member", "my_chat_member"]
+    description: "Типы обновлений для получения от Telegram API (chat_member/my_chat_member — вступление/выход из групп). Устанавливаются через setWebhook перед пулингом"
     description_en: "Update types to receive from Telegram API. Set via setWebhook before polling"
   
   retry_delay:
