@@ -324,22 +324,28 @@ class EventParser:
             self.logger.error(f"Error parsing member_left from message: {e}")
             return None
 
+    def _is_chat_member_in_chat(self, member: Dict[str, Any]) -> bool:
+        """Whether the user is in the chat. Use is_member when present (e.g. restricted), else infer from status."""
+        status = (member.get('status') or '').strip().lower()
+        if status in ('left', 'kicked'):
+            return False
+        if status in ('member', 'administrator', 'creator'):
+            return True
+        if status == 'restricted':
+            return member.get('is_member', False)
+        return False
+
     async def _parse_chat_member_update(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Parse chat_member / my_chat_member update into member_joined or member_left by status transition."""
+        """Parse chat_member / my_chat_member into member_joined or member_left by is_member (status can stay e.g. restricted)."""
         try:
             old = payload.get('old_chat_member') or {}
             new = payload.get('new_chat_member') or {}
-            old_status = (old.get('status') or '').strip().lower()
-            new_status = (new.get('status') or '').strip().lower()
+            old_in_chat = self._is_chat_member_in_chat(old)
+            new_in_chat = self._is_chat_member_in_chat(new)
 
-            join_old = ('left', 'kicked')
-            join_new = ('member', 'administrator')
-            leave_old = ('member', 'restricted', 'administrator')
-            leave_new = ('left', 'kicked')
-
-            if old_status in join_old and new_status in join_new:
+            if not old_in_chat and new_in_chat:
                 return await self._build_member_event_from_chat_member(payload, 'member_joined')
-            if old_status in leave_old and new_status in leave_new:
+            if old_in_chat and not new_in_chat:
                 return await self._build_member_event_from_chat_member(payload, 'member_left')
             return None
         except Exception as e:
